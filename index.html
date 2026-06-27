@@ -95,14 +95,14 @@
       background: radial-gradient(circle, rgba(0,180,216,0.18) 0%, transparent 65%);
       pointer-events: none;
     }
+    .hero-eyebrow {
       font-family: 'Barlow Condensed', sans-serif;
       font-size: 0.95rem; font-weight: 600; letter-spacing: 0.25em;
       color: var(--blue); text-transform: uppercase;
       position: relative; z-index: 1;
       margin-bottom: 16px;
     }
-    .hero-handbrush {
-      font-family: 'Barlow Condensed', sans-serif;
+F      font-family: 'Barlow Condensed', sans-serif;
       font-size: clamp(4.5rem, 14vw, 11rem);
       font-weight: 900; line-height: 0.88;
       letter-spacing: -0.02em; text-transform: uppercase;
@@ -467,6 +467,7 @@
 
 <!-- HERO -->
 <section id="hero">
+  <p class="hero-eyebrow">🖌️ Hand Brushed</p>
   <p class="hero-handbrush">Hand<br>Brushed</p>
   <h1 class="hero-title">
     We Make<br>
@@ -610,7 +611,7 @@
         <span class="process-big-text">100%</span>
         <p class="process-big-label">Satisfaction Guarantee</p>
         <div class="process-divider"></div>
-        <span class="process-big-text" style="color:var(--cyan)">Hand</span>
+        <span class="process-big-text" style="color:var(--cyan)">hand brushed</span>
         <span class="process-big-text" style="color:var(--cyan);font-size:3rem">Brushed</span>
         <p class="process-big-label">Every Surface, Every Time</p>
         <div class="process-divider"></div>
@@ -858,4 +859,4 @@
         document.getElementById('formSuccess').classList.add('visible');
       })
       .catch(() => {
-        btn.textContent = 'Send My 
+        btn.textContent = 'Send My F
