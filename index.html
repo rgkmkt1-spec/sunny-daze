@@ -35,17 +35,18 @@
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0 40px;
-      height: 90px;
+      padding: 0 24px;
+      height: 70px;
       background: rgba(10,22,40,0.92);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(0,180,216,0.15);
       transition: background 0.3s;
+      gap: 12px;
     }
     .nav-logo {
       font-family: 'Barlow Condensed', sans-serif;
-      font-size: 3.2rem; font-weight: 900; letter-spacing: 0.04em;
-      color: var(--white);
+      font-size: clamp(1rem, 3.5vw, 1.8rem); font-weight: 900; letter-spacing: 0.03em;
+      color: var(--white); white-space: nowrap; flex-shrink: 1; min-width: 0;
     }
     .nav-logo span { color: var(--blue); }
     .nav-links { display: flex; gap: 32px; list-style: none; }
@@ -436,11 +437,17 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
-      nav { padding: 0 20px; }
+      nav { padding: 0 16px; height: 60px; }
       .nav-links { display: none; }
+      .nav-cta { padding: 10px 16px; font-size: 0.85rem; white-space: nowrap; flex-shrink: 0; }
       .process-inner, .contact-inner { grid-template-columns: 1fr; gap: 40px; }
       .form-row { grid-template-columns: 1fr; }
       .hero-stats { gap: 32px; }
+      #hero { padding: 80px 16px 60px; }
+      section { padding: 60px 16px; }
+      .services-grid { grid-template-columns: 1fr; }
+      .process-visual { display: none; }
+      .hero-title { font-size: clamp(2.8rem, 12vw, 5rem); }
     }
   </style>
 </head>
@@ -448,7 +455,7 @@
 
 <!-- NAV -->
 <nav>
-  <div class="nav-logo">SUNNYDAZE PRESSURE WASHING</div>
+  <div class="nav-logo">SUNNY<span>DAZE</span> PRESSURE WASHING</div>
   <ul class="nav-links">
     <li><a href="#services">Services</a></li>
     <li><a href="#gallery">Gallery</a></li>
@@ -461,6 +468,7 @@
 
 <!-- HERO -->
 <section id="hero">
+  <p class="hero-eyebrow">🖌️ Hand Brushed</p>
   <p class="hero-handbrush">Hand<br>Brushed</p>
   <h1 class="hero-title">
     We Make<br>
@@ -754,7 +762,7 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-logo" style="font-size:2rem">SUNNYDAZE PRESSURE WASHING</div>
+  <div class="footer-logo" style="font-size:2rem">SUNNY <span>DAZE</span> PRESSURE WASHING</div>
   <p class="footer-tagline">Sunny Daze Pressure Washing — Serving Western PA Since 2012</p>
   <div class="footer-links">
     <a href="#services">Services</a>
@@ -852,20 +860,4 @@
         document.getElementById('formSuccess').classList.add('visible');
       })
       .catch(() => {
-        btn.textContent = 'Send My Request →';
-        btn.disabled = false;
-        alert('Something went wrong. Please call us directly at (814) 853-0641');
-      });
-  }
-
-  // ── NAV scroll shrink ──
-  window.addEventListener('scroll', () => {
-    const nav = document.querySelector('nav');
-    nav.style.background = window.scrollY > 50
-      ? 'rgba(10,22,40,0.98)' : 'rgba(10,22,40,0.92)';
-  });
-
-  renderGrid();
-</script>
-</body>
-</html>
+        btn.textContent = 'Send My 
