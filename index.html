@@ -38,7 +38,6 @@
     .nav-links { display: flex; gap: 24px; list-style: none; }
     .nav-links a { color: var(--gray); text-decoration: none; font-size: 0.88rem; font-weight: 500; transition: color 0.2s; }
     .nav-links a:hover { color: var(--blue); }
-    .nav-links.open { display: flex !important; }
     .nav-cta {
       background: var(--blue); color: var(--navy);
       padding: 10px 20px; border-radius: 4px;
@@ -250,7 +249,7 @@
     @media (max-width: 768px) {
       nav { padding: 0 14px; height: 70px; }
       .nav-links {
-        display: none;
+        display: none !important;
         flex-direction: column;
         position: fixed;
         top: 70px; left: 0; right: 0;
@@ -634,4 +633,7 @@
   fileInput.addEventListener('change', () => handleFiles(fileInput.files));
   uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragging'); });
   uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragging'));
-  uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragging'); handleFiles(e.dataTransfer.f
+  uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragging'); handleFiles(e.dataTransfer.files); });
+
+  // EMAILJS
+  emailjs.init
