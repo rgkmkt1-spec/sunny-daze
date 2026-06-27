@@ -38,6 +38,7 @@
     .nav-links { display: flex; gap: 24px; list-style: none; }
     .nav-links a { color: var(--gray); text-decoration: none; font-size: 0.88rem; font-weight: 500; transition: color 0.2s; }
     .nav-links a:hover { color: var(--blue); }
+    .nav-links.open { display: flex !important; }
     .nav-cta {
       background: var(--blue); color: var(--navy);
       padding: 10px 20px; border-radius: 4px;
@@ -632,5 +633,4 @@
   // EMAILJS
   emailjs.init('zbkHcCvcl38RCOBw0');
 
-  function sendEmail() {
-    const first = document.getElementB
+  function se
