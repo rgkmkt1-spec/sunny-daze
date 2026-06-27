@@ -248,6 +248,7 @@
     /* MOBILE */
     @media (max-width: 768px) {
       nav { padding: 0 14px; height: 70px; }
+      .nav-logo { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60vw; }
       .nav-links {
         display: none !important;
         flex-direction: column;
@@ -633,7 +634,4 @@
   fileInput.addEventListener('change', () => handleFiles(fileInput.files));
   uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragging'); });
   uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragging'));
-  uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragging'); handleFiles(e.dataTransfer.files); });
-
-  // EMAILJS
-  emailjs.init
+  uploadZone.addEventListener('drop', e => { e.preven
