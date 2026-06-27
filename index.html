@@ -247,13 +247,13 @@
 
     /* MOBILE */
     @media (max-width: 768px) {
-      nav { padding: 0 14px; height: 70px; }
-      .nav-logo { font-size: 1.1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60vw; }
+      nav { padding: 0 14px; height: 80px; }
+      .nav-logo { font-size: 1.4rem; white-space: normal; max-width: 50vw; line-height: 1.1; }
       .nav-links {
         display: none !important;
         flex-direction: column;
         position: fixed;
-        top: 70px; left: 0; right: 0;
+        top: 80px; left: 0; right: 0;
         background: rgba(10,22,40,0.99);
         padding: 20px 24px;
         gap: 0;
@@ -634,4 +634,69 @@
   fileInput.addEventListener('change', () => handleFiles(fileInput.files));
   uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragging'); });
   uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragging'));
-  uploadZone.addEventListener('drop', e => { e.preven
+  uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragging'); handleFiles(e.dataTransfer.files); });
+
+  // EMAILJS
+  emailjs.init('zbkHcCvcl38RCOBw0');
+
+  function sendEmail() {
+    const first = document.getElementById('first_name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    if (!first || !email) { alert('Please enter at least your name and email.'); return; }
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Sending...';
+    btn.disabled = true;
+    const params = {
+      title: 'New Estimate Request',
+      name: first + ' ' + document.getElementById('last_name').value.trim(),
+      email: email,
+      message: 'Phone: ' + document.getElementById('phone').value.trim() +
+               '\nService: ' + document.getElementById('service').value +
+               '\n\n' + document.getElementById('message').value.trim()
+    };
+    emailjs.send('service_1v7he2g', 'template_9p7pa8p', params)
+      .then(() => {
+        document.getElementById('contactForm').style.display = 'none';
+        document.getElementById('formSuccess').classList.add('visible');
+      })
+      .catch(() => {
+        btn.textContent = 'Send My Request →';
+        btn.disabled = false;
+        alert('Something went wrong. Please call us directly at (814) 853-0641');
+      });
+  }
+
+  // HAMBURGER MENU
+  function toggleMenu() {
+    const links = document.getElementById('navLinks');
+    const btn = document.getElementById('hamburger');
+    if (links.classList.contains('open')) {
+      links.classList.remove('open');
+      btn.textContent = '☰';
+    } else {
+      links.classList.add('open');
+      btn.textContent = '✕';
+    }
+  }
+  function closeMenu() {
+    const links = document.getElementById('navLinks');
+    const btn = document.getElementById('hamburger');
+    links.classList.remove('open');
+    btn.textContent = '☰';
+  }
+  // close menu when clicking outside
+  document.addEventListener('click', function(e) {
+    const nav = document.querySelector('nav');
+    if (!nav.contains(e.target)) closeMenu();
+  });
+
+  // NAV scroll
+  window.addEventListener('scroll', () => {
+    document.querySelector('nav').style.background = window.scrollY > 50
+      ? 'rgba(10,22,40,0.98)' : 'rgba(10,22,40,0.92)';
+  });
+
+  renderGrid();
+</script>
+</body>
+</html>
