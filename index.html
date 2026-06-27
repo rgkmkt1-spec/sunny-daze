@@ -238,12 +238,30 @@
     .footer-links a:hover { color: var(--blue); }
     .footer-copy { color: rgba(148,163,184,0.5); font-size: 0.75rem; }
 
+    /* HAMBURGER */
+    .hamburger {
+      display: none; background: none; border: none;
+      color: var(--white); font-size: 1.8rem; cursor: pointer;
+      padding: 4px 8px; line-height: 1;
+    }
+
     /* MOBILE */
     @media (max-width: 768px) {
-      nav { padding: 0 14px; height: 58px; }
-      .nav-links { display: none; }
+      nav { padding: 0 14px; height: 70px; }
+      .nav-links {
+        display: none; flex-direction: column;
+        position: fixed; top: 70px; left: 0; right: 0;
+        background: rgba(10,22,40,0.98);
+        padding: 20px 24px; gap: 0;
+        border-bottom: 1px solid rgba(0,180,216,0.2);
+        z-index: 99;
+      }
+      .nav-links.open { display: flex; }
+      .nav-links li { border-bottom: 1px solid rgba(255,255,255,0.06); }
+      .nav-links a { display: block; padding: 14px 0; font-size: 1.1rem; color: var(--white); }
+      .hamburger { display: block; }
       .nav-cta { padding: 8px 14px; font-size: 0.78rem; }
-      #hero { padding: 80px 16px 50px; }
+      #hero { padding: 90px 16px 50px; }
       section { padding: 56px 16px; }
       .services-grid { grid-template-columns: 1fr; }
       .process-inner { grid-template-columns: 1fr; gap: 32px; }
@@ -261,14 +279,17 @@
 <!-- NAV -->
 <nav>
   <div class="nav-logo">SUNNY<span>DAZE</span> PRESSURE WASHING</div>
-  <ul class="nav-links">
-    <li><a href="#services">Services</a></li>
-    <li><a href="#gallery">Gallery</a></li>
-    <li><a href="#process">Process</a></li>
-    <li><a href="#testimonials">Reviews</a></li>
-    <li><a href="#contact">Contact</a></li>
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#services" onclick="closeMenu()">Services</a></li>
+    <li><a href="#gallery" onclick="closeMenu()">Gallery</a></li>
+    <li><a href="#process" onclick="closeMenu()">Process</a></li>
+    <li><a href="#testimonials" onclick="closeMenu()">Reviews</a></li>
+    <li><a href="#contact" onclick="closeMenu()">Contact</a></li>
   </ul>
-  <a href="#contact" class="nav-cta">Free Estimates</a>
+  <div style="display:flex;align-items:center;gap:12px">
+    <a href="#contact" class="nav-cta">Free Estimates</a>
+    <button class="hamburger" id="hamburger" onclick="toggleMenu()">☰</button>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -612,24 +633,4 @@
   emailjs.init('zbkHcCvcl38RCOBw0');
 
   function sendEmail() {
-    const first = document.getElementById('first_name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    if (!first || !email) { alert('Please enter at least your name and email.'); return; }
-    const btn = document.getElementById('submitBtn');
-    btn.textContent = 'Sending...';
-    btn.disabled = true;
-    const params = {
-      title: 'New Estimate Request',
-      name: first + ' ' + document.getElementById('last_name').value.trim(),
-      email: email,
-      message: 'Phone: ' + document.getElementById('phone').value.trim() +
-               '\nService: ' + document.getElementById('service').value +
-               '\n\n' + document.getElementById('message').value.trim()
-    };
-    emailjs.send('service_1v7he2g', 'template_9p7pa8p', params)
-      .then(() => {
-        document.getElementById('contactForm').style.display = 'none';
-        document.getElementById('formSuccess').classList.add('visible');
-      })
-      .catch(() => {
-        btn.textCon
+    const first = document.getElementB
