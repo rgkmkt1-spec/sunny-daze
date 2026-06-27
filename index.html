@@ -238,6 +238,29 @@
     .footer-links a:hover { color: var(--blue); }
     .footer-copy { color: rgba(148,163,184,0.5); font-size: 0.75rem; }
 
+    /* STATEMENT BANNER */
+    .statement-banner {
+      background: var(--navy-mid);
+      border-top: 1px solid rgba(0,180,216,0.15);
+      border-bottom: 1px solid rgba(0,180,216,0.15);
+      padding: 28px 24px;
+      text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+    }
+    .statement-text {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(1.4rem, 4vw, 2.5rem);
+      font-weight: 700; text-transform: uppercase;
+      color: var(--white); letter-spacing: 0.05em;
+    }
+    .statement-highlight {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(1.8rem, 5vw, 3.2rem);
+      font-weight: 900; text-transform: uppercase;
+      color: #cc0000; letter-spacing: 0.05em;
+      text-shadow: 0 0 30px rgba(204,0,0,0.4);
+    }
+
     /* HAMBURGER */
     .hamburger {
       display: none; background: none; border: none;
@@ -322,9 +345,15 @@
     <span>Scroll</span>
     <div class="scroll-line"></div>
   </div>
+
 </section>
 
 <div class="drop-bar"></div>
+
+<div class="statement-banner">
+  <span class="statement-text">Soft Wash is just a hose job.</span>
+  <span class="statement-highlight">Don't Get Hosed!</span>
+</div>
 
 <!-- SERVICES -->
 <section id="services">
@@ -387,7 +416,10 @@
       <input type="file" id="fileInput" multiple accept="image/*,video/*" />
     </div>
     <div class="media-grid" id="mediaGrid">
-      <div class="empty-gallery" id="emptyGallery">
+      <div class="media-item">
+        <img src="https://res.cloudinary.com/djut03fid/image/upload/f_auto,q_auto/qcWWF3pO6Lyr9WXqPMW5U.1020.IRZXSOY_ig7fpu" alt="Pressure washing job" />
+      </div>
+      <div class="empty-gallery" id="emptyGallery" style="display:none">
         <span style="font-size:2.2rem">🖼️</span>
         <p>Your uploaded photos and videos will appear here.</p>
       </div>
