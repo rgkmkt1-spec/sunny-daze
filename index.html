@@ -706,11 +706,6 @@
     renderGrid();
   }
 
-  fileInput.addEventListener('change', () => handleFiles(fileInput.files));
-  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragging'); });
-  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragging'));
-  uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragging'); handleFiles(e.dataTransfer.files); });
-
   // EMAILJS
   async function sendEmail() {
     const first = document.getElementById('first_name').value.trim();
@@ -768,4 +763,10 @@
   // NAV scroll
   window.addEventListener('scroll', () => {
     document.querySelector('nav').style.background = window.scrollY > 50
-      ? 'rgba(10,2
+      ? 'rgba(10,22,40,0.98)' : 'rgba(10,22,40,0.92)';
+  });
+
+  renderGrid();
+</script>
+</body>
+</html>
