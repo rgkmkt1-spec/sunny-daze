@@ -707,7 +707,7 @@
   uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragging'); handleFiles(e.dataTransfer.files); });
 
   // EMAILJS
-  emailjs.init('zbkHcCvcl38RCOBw0');
+  emailjs.init({publicKey: 'zbkHcCvcl38RCOBw0'});
 
   async function sendEmail() {
     const first = document.getElementById('first_name').value.trim();
