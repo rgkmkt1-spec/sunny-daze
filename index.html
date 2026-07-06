@@ -272,6 +272,19 @@
       text-shadow: 0 0 30px rgba(204,0,0,0.4);
     }
 
+    /* SPINNER */
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 3px solid rgba(10,22,40,0.3);
+      border-top-color: #0A1628;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     /* HAMBURGER */
     .hamburger {
       display: none; background: none; border: none;
@@ -453,8 +466,8 @@
           <div class="process-step">
             <span class="step-num">02</span>
             <div>
-              <h3 class="step-title" style="color:#00B4D8;">We Hand Brush Every Surface</h3>
-              <p class="step-desc">Before a drop of water hits, we scrub every surface by hand. This loosens embedded grime, mold, and buildup that pressure alone can't reach — <strong style="color:#cc0000;font-size:1.1rem;display:block;margin-top:6px;">The Step Most Companies Skip!</strong></p>
+              <h3 class="step-title">We Hand Brush Every Surface</h3>
+              <p class="step-desc">Before a drop of water hits, we scrub every surface by hand. This loosens embedded grime, mold, and buildup that pressure alone can't reach — the step most companies skip.</p>
             </div>
           </div>
           <div class="process-step">
@@ -701,8 +714,9 @@
     const email = document.getElementById('email').value.trim();
     if (!first || !email) { alert('Please enter at least your name and email.'); return; }
     const btn = document.getElementById('submitBtn');
-    btn.textContent = 'Sending...';
+    btn.innerHTML = '<span class="spinner"></span>Sending...';
     btn.disabled = true;
+
     const params = {
       title: 'New Estimate Request',
       name: first + ' ' + document.getElementById('last_name').value.trim(),
@@ -711,15 +725,25 @@
                '\nService: ' + document.getElementById('service').value +
                '\n\n' + document.getElementById('message').value.trim()
     };
+
+    // Timeout after 10 seconds
+    const timeout = setTimeout(() => {
+      btn.textContent = 'Send My Request →';
+      btn.disabled = false;
+      alert('Request timed out. Please call us directly at (814) 853-0641');
+    }, 10000);
+
     emailjs.send('service_1v7he2g', 'template_9p7pa8p', params)
       .then(() => {
+        clearTimeout(timeout);
         document.getElementById('contactForm').style.display = 'none';
         document.getElementById('formSuccess').classList.add('visible');
       })
-      .catch(() => {
+      .catch((err) => {
+        clearTimeout(timeout);
         btn.textContent = 'Send My Request →';
         btn.disabled = false;
-        alert('Something went wrong. Please call us directly at (814) 853-0641');
+        alert('Something went wrong: ' + JSON.stringify(err) + '. Please call us at (814) 853-0641');
       });
   }
 
