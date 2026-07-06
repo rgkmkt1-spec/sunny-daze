@@ -709,10 +709,11 @@
   // EMAILJS
   emailjs.init('zbkHcCvcl38RCOBw0');
 
-  function sendEmail() {
+  async function sendEmail() {
     const first = document.getElementById('first_name').value.trim();
     const email = document.getElementById('email').value.trim();
     if (!first || !email) { alert('Please enter at least your name and email.'); return; }
+    
     const btn = document.getElementById('submitBtn');
     btn.innerHTML = '<span class="spinner"></span>Sending...';
     btn.disabled = true;
@@ -726,25 +727,15 @@
                '\n\n' + document.getElementById('message').value.trim()
     };
 
-    // Timeout after 10 seconds
-    const timeout = setTimeout(() => {
-      btn.textContent = 'Send My Request →';
+    try {
+      await emailjs.send('service_1v7he2g', 'template_9p7pa8p', params);
+      document.getElementById('contactForm').style.display = 'none';
+      document.getElementById('formSuccess').classList.add('visible');
+    } catch(err) {
+      btn.innerHTML = 'Send My Request →';
       btn.disabled = false;
-      alert('Request timed out. Please call us directly at (814) 853-0641');
-    }, 60000);
-
-    emailjs.send('service_1v7he2g', 'template_9p7pa8p', params)
-      .then(() => {
-        clearTimeout(timeout);
-        document.getElementById('contactForm').style.display = 'none';
-        document.getElementById('formSuccess').classList.add('visible');
-      })
-      .catch((err) => {
-        clearTimeout(timeout);
-        btn.textContent = 'Send My Request →';
-        btn.disabled = false;
-        alert('Something went wrong: ' + JSON.stringify(err) + '. Please call us at (814) 853-0641');
-      });
+      alert('Error: ' + JSON.stringify(err));
+    }
   }
 
   // HAMBURGER MENU
