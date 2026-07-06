@@ -731,7 +731,7 @@
       btn.textContent = 'Send My Request →';
       btn.disabled = false;
       alert('Request timed out. Please call us directly at (814) 853-0641');
-    }, 10000);
+    }, 60000);
 
     emailjs.send('service_1v7he2g', 'template_9p7pa8p', params)
       .then(() => {
