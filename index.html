@@ -18,7 +18,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <script type="text/javascript">
+    (function(){
+      emailjs.init("zbkHcCvcl38RCOBw0");
+    })();
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -707,8 +712,6 @@
   uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragging'); handleFiles(e.dataTransfer.files); });
 
   // EMAILJS
-  emailjs.init({publicKey: 'zbkHcCvcl38RCOBw0'});
-
   async function sendEmail() {
     const first = document.getElementById('first_name').value.trim();
     const email = document.getElementById('email').value.trim();
@@ -765,10 +768,4 @@
   // NAV scroll
   window.addEventListener('scroll', () => {
     document.querySelector('nav').style.background = window.scrollY > 50
-      ? 'rgba(10,22,40,0.98)' : 'rgba(10,22,40,0.92)';
-  });
-
-  renderGrid();
-</script>
-</body>
-</html>
+      ? 'rgba(10,2
