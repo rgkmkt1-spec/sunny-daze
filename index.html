@@ -291,16 +291,39 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* AUDIO PLAYER */
-  .audio-btn {
+  .audio-wrapper {
     position: fixed; bottom: 24px; right: 24px; z-index: 999;
-    width: 50px; height: 50px; border-radius: 50%;
-    background: var(--blue); color: var(--navy);
-    border: none; cursor: pointer;
-    font-size: 1.3rem; display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 15px rgba(0,180,216,0.4);
-    transition: background 0.2s, transform 0.2s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
   }
-  .audio-btn:hover { background: var(--cyan); transform: scale(1.1); }
+  .audio-arrow {
+    font-size: 1.8rem;
+    animation: bounceArrow 1s ease-in-out infinite;
+    filter: drop-shadow(0 0 6px rgba(0,180,216,0.8));
+  }
+  @keyframes bounceArrow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(6px); }
+  }
+  .audio-btn {
+    height: 60px; border-radius: 30px;
+    background: linear-gradient(135deg, #00B4D8, #90E0EF);
+    color: #0A1628;
+    border: 3px solid #ffffff;
+    cursor: pointer;
+    font-size: 1.1rem; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 28px; gap: 10px;
+    box-shadow: 0 0 0 4px rgba(0,180,216,0.3), 0 8px 25px rgba(0,180,216,0.6);
+    transition: background 0.2s, transform 0.2s;
+    font-family: 'Barlow Condensed', sans-serif;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    animation: pulseBtn 1.5s ease-in-out infinite;
+  }
+  .audio-btn:hover { transform: scale(1.08); }
+  @keyframes pulseBtn {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(0,180,216,0.3), 0 8px 25px rgba(0,180,216,0.6); }
+    50% { box-shadow: 0 0 0 8px rgba(0,180,216,0.15), 0 8px 35px rgba(0,180,216,0.9); }
+  }
 
   /* HAMBURGER */
     .hamburger {
@@ -349,7 +372,10 @@
 
 <!-- AUDIO -->
 <audio id="bgAudio" src="rgkmkt1_VO_V2.wav" preload="auto"></audio>
-<button class="audio-btn" id="audioBtn" onclick="toggleAudio()" title="Toggle Audio">🔊</button>
+<div class="audio-wrapper">
+  <span class="audio-arrow">👆</span>
+  <button class="audio-btn" id="audioBtn" onclick="toggleAudio()" title="Play Our Ad">🔊 HEAR OUR AD!</button>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -767,24 +793,22 @@
   function toggleAudio() {
     if (audio.paused) {
       audio.play();
-      audioBtn.textContent = '🔊';
+      audioBtn.textContent = '⏸ PLAYING...';
     } else {
       audio.pause();
-      audioBtn.textContent = '🔇';
+      audioBtn.textContent = '🔊 HEAR OUR AD!';
     }
   }
 
-  // Try autoplay on load
   window.addEventListener('load', () => {
     audio.play().catch(() => {
-      // Autoplay blocked - play on first user interaction
       document.addEventListener('click', playAudio, { once: true });
       document.addEventListener('touchstart', playAudio, { once: true });
     });
   });
 
   audio.addEventListener('ended', () => {
-    audioBtn.textContent = '🔇';
+    audioBtn.textContent = '🔁 PLAY AGAIN';
   });
 
   // HAMBURGER MENU
