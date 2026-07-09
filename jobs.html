@@ -518,7 +518,7 @@
   
   // REPS & PINS stored in localStorage so they can be changed
   // Check fingerprint on load
-  window.addEventListener('load', setupFingerprint);
+  
   function getReps() {
     return JSON.parse(localStorage.getItem('sd_reps') || JSON.stringify([
       { name: 'Ringo Fry', id: '1001', pin: '1001' },
