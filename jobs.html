@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SunnyDaze Job Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0A1628; --mid: #0F1E38; --card: #1E293B;
+      --blue: #00B4D8; --cyan: #90E0EF; --white: #F8FAFC;
+      --gray: #94A3B8; --green: #28a745; --red: #dc3545;
+    }
+    body { font-family: 'Arial', sans-serif; background: var(--navy); color: var(--white); min-height: 100vh; }
+
+    /* HEADER */
+    header {
+      background: var(--mid); padding: 16px 20px;
+      border-bottom: 3px solid var(--blue);
+      position: sticky; top: 0; z-index: 100;
+    }
+    header h1 { font-size: 1.3rem; color: var(--blue); font-weight: 900; letter-spacing: 0.05em; }
+    header p { font-size: 0.75rem; color: var(--gray); }
+
+    /* TABS */
+    .tabs { display: flex; background: var(--card); border-bottom: 2px solid var(--blue); }
+    .tab {
+      flex: 1; padding: 14px 8px; text-align: center;
+      font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em;
+      color: var(--gray); cursor: pointer; border: none;
+      background: none; text-transform: uppercase;
+      transition: color 0.2s, border-bottom 0.2s;
+      border-bottom: 3px solid transparent;
+    }
+    .tab.active { color: var(--blue); border-bottom: 3px solid var(--blue); }
+
+    /* VIEWS */
+    .view { display: none; padding: 16px; }
+    .view.active { display: block; }
+
+    /* STATS CARDS */
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .stat-card {
+      background: var(--card); border-radius: 10px; padding: 16px;
+      border: 1px solid rgba(0,180,216,0.2); text-align: center;
+    }
+    .stat-card.green { border-color: var(--green); }
+    .stat-card.red { border-color: var(--red); }
+    .stat-label { font-size: 0.7rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+    .stat-value { font-size: 1.5rem; font-weight: 900; color: var(--white); }
+    .stat-card.green .stat-value { color: #5cb85c; }
+    .stat-card.red .stat-value { color: #e05a6a; }
+
+    /* FORM */
+    .form-card {
+      background: var(--card); border-radius: 12px; padding: 20px;
+      border: 1px solid rgba(0,180,216,0.2);
+    }
+    .form-card h2 { font-size: 1.1rem; color: var(--blue); margin-bottom: 16px; font-weight: 900; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block; font-size: 0.75rem; font-weight: 700;
+      color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; background: var(--mid); border: 1px solid rgba(0,180,216,0.2);
+      border-radius: 8px; padding: 12px 14px; color: var(--white);
+      font-size: 1rem; outline: none; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--blue);
+    }
+    .form-group select option { background: var(--mid); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn-submit {
+      width: 100%; padding: 16px; background: var(--blue); color: var(--navy);
+      border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 900;
+      letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
+      margin-top: 6px; transition: background 0.2s;
+    }
+    .btn-submit:hover { background: var(--cyan); }
+
+    /* JOB LIST */
+    .job-list { display: flex; flex-direction: column; gap: 12px; }
+    .job-card {
+      background: var(--card); border-radius: 10px; padding: 16px;
+      border: 1px solid rgba(0,180,216,0.15);
+    }
+    .job-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .job-name { font-size: 1rem; font-weight: 700; color: var(--white); }
+    .job-amount { font-size: 1.1rem; font-weight: 900; color: var(--blue); }
+    .job-details { font-size: 0.82rem; color: var(--gray); margin-bottom: 8px; line-height: 1.6; }
+    .job-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+    .badge {
+      font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
+      border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .badge-paid { background: rgba(40,167,69,0.2); color: #5cb85c; border: 1px solid #5cb85c; }
+    .badge-unpaid { background: rgba(220,53,69,0.2); color: #e05a6a; border: 1px solid #e05a6a; }
+    .badge-payment { background: rgba(0,180,216,0.15); color: var(--blue); border: 1px solid var(--blue); }
+    .badge-service { background: rgba(144,224,239,0.1); color: var(--cyan); border: 1px solid var(--cyan); }
+    .job-card-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-delete {
+      padding: 6px 14px; background: rgba(220,53,69,0.15); color: #e05a6a;
+      border: 1px solid #e05a6a; border-radius: 6px; font-size: 0.78rem;
+      font-weight: 700; cursor: pointer; text-transform: uppercase;
+    }
+    .btn-toggle-paid {
+      padding: 6px 14px; background: rgba(40,167,69,0.15); color: #5cb85c;
+      border: 1px solid #5cb85c; border-radius: 6px; font-size: 0.78rem;
+      font-weight: 700; cursor: pointer; text-transform: uppercase;
+    }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--gray); }
+    .empty-state span { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+
+    /* SEARCH */
+    .search-bar {
+      width: 100%; background: var(--card); border: 1px solid rgba(0,180,216,0.2);
+      border-radius: 8px; padding: 12px 14px; color: var(--white);
+      font-size: 1rem; outline: none; margin-bottom: 16px;
+    }
+    .search-bar:focus { border-color: var(--blue); }
+
+    /* SUCCESS TOAST */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--green); color: white; padding: 12px 28px;
+      border-radius: 24px; font-weight: 700; font-size: 0.9rem;
+      z-index: 999; display: none; white-space: nowrap;
+    }
+    .toast.show { display: block; }
+
+    /* PIN SCREEN */
+    .pin-screen {
+      position: fixed; inset: 0; background: var(--navy);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 9999; padding: 24px;
+    }
+    .pin-screen h2 { font-size: 1.5rem; color: var(--blue); margin-bottom: 8px; font-weight: 900; }
+    .pin-screen p { color: var(--gray); font-size: 0.9rem; margin-bottom: 24px; text-align: center; }
+    .pin-input {
+      width: 100%; max-width: 280px; background: var(--card);
+      border: 2px solid var(--blue); border-radius: 10px;
+      padding: 16px; color: var(--white); font-size: 1.5rem;
+      text-align: center; letter-spacing: 0.3em; outline: none; margin-bottom: 16px;
+    }
+    .pin-btn {
+      width: 100%; max-width: 280px; padding: 14px; background: var(--blue);
+      color: var(--navy); border: none; border-radius: 8px;
+      font-size: 1rem; font-weight: 900; cursor: pointer; text-transform: uppercase;
+    }
+    .pin-error { color: #e05a6a; font-size: 0.85rem; margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+
+<!-- PIN SCREEN -->
+<div class="pin-screen" id="pinScreen">
+  <h2>🔒 SUNNYDAZE</h2>
+  <p>Enter your PIN to access the Job Dashboard</p>
+  <input type="password" class="pin-input" id="pinInput" placeholder="••••" maxlength="4" inputmode="numeric"/>
+  <button class="pin-btn" onclick="checkPin()">ENTER</button>
+  <p class="pin-error" id="pinError">Incorrect PIN. Try again.</p>
+</div>
+
+<!-- HEADER -->
+<header>
+  <h1>⚡ SUNNYDAZE JOB DASHBOARD</h1>
+  <p>Pressure Washing · Job Log & Revenue Tracker</p>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('dashboard')">📊 Dash</button>
+  <button class="tab" onclick="switchTab('add')">➕ Job</button>
+  <button class="tab" onclick="switchTab('sales')">🤝 Sales</button>
+  <button class="tab" onclick="switchTab('jobs')">📋 Jobs</button>
+</div>
+
+<!-- DASHBOARD -->
+<div class="view active" id="view-dashboard">
+  <div class="stats">
+    <div class="stat-card green">
+      <div class="stat-label">💰 Revenue Collected</div>
+      <div class="stat-value" id="stat-revenue">$0.00</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">⚠️ Outstanding</div>
+      <div class="stat-value" id="stat-outstanding">$0.00</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">📋 Total Jobs</div>
+      <div class="stat-value" id="stat-jobs">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">✅ Paid Jobs</div>
+      <div class="stat-value" id="stat-paid">0</div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <h2>📅 Recent Jobs</h2>
+    <div class="job-list" id="recent-list"></div>
+  </div>
+</div>
+
+<!-- ADD JOB -->
+<div class="view" id="view-add">
+  <div class="form-card">
+    <h2>➕ Log New Job</h2>
+    <div class="form-group">
+      <label>Customer Name *</label>
+      <input type="text" id="f-name" placeholder="John Smith"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input type="tel" id="f-phone" placeholder="(814) 555-0000"/>
+      </div>
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="f-date"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Address</label>
+      <input type="text" id="f-address" placeholder="123 Main St, Erie PA"/>
+    </div>
+    <div class="form-group">
+      <label>Service Performed *</label>
+      <select id="f-service">
+        <option value="">Select service...</option>
+        <option>House Washing</option>
+        <option>Mobile Home Washing</option>
+        <option>Driveway & Concrete</option>
+        <option>Deck & Fence</option>
+        <option>Roof Treatment</option>
+        <option>Gutter Cleaning</option>
+        <option>Commercial Cleaning</option>
+        <option>Multiple Services</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Amount Charged *</label>
+        <input type="number" id="f-amount" placeholder="0.00" step="0.01" min="0"/>
+      </div>
+      <div class="form-group">
+        <label>Payment Method</label>
+        <select id="f-payment">
+          <option>Credit Card</option>
+          <option>Cash</option>
+          <option>Check</option>
+          <option>PayPal</option>
+          <option>Venmo</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Paid?</label>
+      <select id="f-paid">
+        <option value="Yes">Yes — Paid</option>
+        <option value="No">No — Unpaid</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="f-notes" rows="3" placeholder="Any additional notes..."></textarea>
+    </div>
+    <button class="btn-submit" onclick="addJob()">💾 SAVE JOB</button>
+  </div>
+</div>
+
+<!-- SALES -->
+<div class="view" id="view-sales">
+  <div class="stats">
+    <div class="stat-card green">
+      <div class="stat-label">🤝 Estimates Sold</div>
+      <div class="stat-value" id="stat-sold">0</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">📞 Follow Up</div>
+      <div class="stat-value" id="stat-followup">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">💰 Pipeline Value</div>
+      <div class="stat-value" id="stat-pipeline">$0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">✅ Close Rate</div>
+      <div class="stat-value" id="stat-closerate">0%</div>
+    </div>
+  </div>
+
+  <div class="form-card" style="margin-bottom:16px">
+    <h2>🤝 Log New Estimate</h2>
+    <div class="form-group">
+      <label>Customer Name *</label>
+      <input type="text" id="s-name" placeholder="John Smith"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Phone Number</label>
+        <input type="tel" id="s-phone" placeholder="(814) 555-0000"/>
+      </div>
+      <div class="form-group">
+        <label>Date *</label>
+        <input type="date" id="s-date"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Address</label>
+      <input type="text" id="s-address" placeholder="123 Main St, Erie PA"/>
+    </div>
+    <div class="form-group">
+      <label>Service Requested</label>
+      <select id="s-service">
+        <option value="">Select service...</option>
+        <option>House Washing</option>
+        <option>Mobile Home Washing</option>
+        <option>Driveway & Concrete</option>
+        <option>Deck & Fence</option>
+        <option>Roof Treatment</option>
+        <option>Gutter Cleaning</option>
+        <option>Commercial Cleaning</option>
+        <option>Multiple Services</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Estimate Amount *</label>
+      <input type="number" id="s-amount" placeholder="0.00" step="0.01" min="0"/>
+    </div>
+    <div class="form-group">
+      <label>Status *</label>
+      <select id="s-status">
+        <option value="Pending">Pending — Waiting for response</option>
+        <option value="Sold">Sold — They said YES!</option>
+        <option value="Follow Up">Follow Up — Need to call back</option>
+        <option value="Lost">Lost — They said no</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Follow Up Date</label>
+      <input type="date" id="s-followup"/>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="s-notes" rows="3" placeholder="Details about the estimate..."></textarea>
+    </div>
+    <button class="btn-submit" onclick="addEstimate()">💾 SAVE ESTIMATE</button>
+  </div>
+
+  <div class="form-card">
+    <h2>📋 All Estimates</h2>
+    <input class="search-bar" type="text" placeholder="🔍 Search estimates..." oninput="renderEstimates(this.value)" style="margin-top:8px"/>
+    <div class="job-list" id="estimates-list"></div>
+  </div>
+</div>
+
+<!-- ALL JOBS -->
+<div class="view" id="view-jobs">
+  <input class="search-bar" type="text" placeholder="🔍 Search by name, service, address..." oninput="renderJobs(this.value)"/>
+  <div class="job-list" id="all-jobs-list"></div>
+</div>
+
+<div class="toast" id="toast">✅ Job saved!</div>
+
+<script>
+  // PIN
+  const PIN = '1234'; // Change this to your desired PIN
+  function checkPin() {
+    const val = document.getElementById('pinInput').value;
+    if (val === PIN) {
+      document.getElementById('pinScreen').style.display = 'none';
+      init();
+    } else {
+      document.getElementById('pinError').style.display = 'block';
+      document.getElementById('pinInput').value = '';
+    }
+  }
+  document.getElementById('pinInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkPin();
+  });
+
+  // STORAGE
+  async function getJobs() {
+    try {
+      const r = await window.storage.get('sunnydaze_jobs');
+      return r ? JSON.parse(r.value) : [];
+    } catch { return []; }
+  }
+  async function saveJobs(jobs) {
+    await window.storage.set('sunnydaze_jobs', JSON.stringify(jobs));
+  }
+
+  // TABS
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','add','sales','jobs'][i] === tab));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + tab).classList.add('active');
+    if (tab === 'dashboard') updateDashboard();
+    if (tab === 'jobs') renderJobs('');
+    if (tab === 'sales') { updateSalesDash(); renderEstimates(''); }
+  }
+
+  // SALES STORAGE
+  async function getEstimates() {
+    try {
+      const r = await window.storage.get('sunnydaze_estimates');
+      return r ? JSON.parse(r.value) : [];
+    } catch { return []; }
+  }
+  async function saveEstimates(estimates) {
+    await window.storage.set('sunnydaze_estimates', JSON.stringify(estimates));
+  }
+
+  // ADD ESTIMATE
+  async function addEstimate() {
+    const name = document.getElementById('s-name').value.trim();
+    const amount = parseFloat(document.getElementById('s-amount').value);
+    if (!name || !amount) { alert('Please fill in Customer Name and Estimate Amount.'); return; }
+
+    const estimate = {
+      id: Date.now(),
+      name,
+      phone: document.getElementById('s-phone').value.trim(),
+      date: document.getElementById('s-date').value,
+      address: document.getElementById('s-address').value.trim(),
+      service: document.getElementById('s-service').value,
+      amount,
+      status: document.getElementById('s-status').value,
+      followup: document.getElementById('s-followup').value,
+      notes: document.getElementById('s-notes').value.trim()
+    };
+
+    const estimates = await getEstimates();
+    estimates.unshift(estimate);
+    await saveEstimates(estimates);
+
+    ['s-name','s-phone','s-address','s-amount','s-notes','s-followup'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('s-service').value = '';
+    document.getElementById('s-status').value = 'Pending';
+
+    showToast('✅ Estimate saved!');
+    updateSalesDash();
+    renderEstimates('');
+  }
+
+  // RENDER ESTIMATES
+  async function renderEstimates(search = '') {
+    const estimates = await getEstimates();
+    const filtered = search ? estimates.filter(e =>
+      e.name.toLowerCase().includes(search.toLowerCase()) ||
+      (e.service && e.service.toLowerCase().includes(search.toLowerCase())) ||
+      (e.address && e.address.toLowerCase().includes(search.toLowerCase()))
+    ) : estimates;
+
+    const list = document.getElementById('estimates-list');
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty-state"><span>🤝</span>No estimates yet.</div>';
+      return;
+    }
+
+    const statusColors = {
+      'Sold': 'badge-paid',
+      'Lost': 'badge-unpaid',
+      'Pending': 'badge-payment',
+      'Follow Up': 'badge-service'
+    };
+
+    list.innerHTML = filtered.map(e => `
+      <div class="job-card">
+        <div class="job-card-top">
+          <div>
+            <div class="job-name">${e.name}</div>
+            <div class="job-details">
+              ${e.date ? '📅 ' + formatDate(e.date) + '<br>' : ''}
+              ${e.phone ? '📞 ' + e.phone + '<br>' : ''}
+              ${e.address ? '📍 ' + e.address : ''}
+              ${e.followup ? '<br>🔔 Follow up: ' + formatDate(e.followup) : ''}
+            </div>
+          </div>
+          <div class="job-amount">$${parseFloat(e.amount).toFixed(2)}</div>
+        </div>
+        <div class="job-badges">
+          <span class="badge ${statusColors[e.status] || 'badge-payment'}">${e.status}</span>
+          ${e.service ? '<span class="badge badge-service">' + e.service + '</span>' : ''}
+        </div>
+        ${e.notes ? '<div style="margin-top:8px;font-size:0.8rem;color:var(--gray)">📝 ' + e.notes + '</div>' : ''}
+        <div class="job-card-actions">
+          <button class="btn-toggle-paid" onclick="updateEstimateStatus(${e.id}, 'Sold')">✅ Mark Sold</button>
+          <button class="btn-toggle-paid" onclick="updateEstimateStatus(${e.id}, 'Follow Up')" style="background:rgba(0,180,216,0.15);color:var(--blue);border-color:var(--blue)">🔔 Follow Up</button>
+          <button class="btn-delete" onclick="deleteEstimate(${e.id})">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // UPDATE ESTIMATE STATUS
+  async function updateEstimateStatus(id, status) {
+    const estimates = await getEstimates();
+    const e = estimates.find(e => e.id === id);
+    if (e) e.status = status;
+    await saveEstimates(estimates);
+    renderEstimates('');
+    updateSalesDash();
+    showToast(`✅ Marked as ${status}!`);
+  }
+
+  // DELETE ESTIMATE
+  async function deleteEstimate(id) {
+    if (!confirm('Delete this estimate?')) return;
+    const estimates = await getEstimates();
+    await saveEstimates(estimates.filter(e => e.id !== id));
+    renderEstimates('');
+    updateSalesDash();
+    showToast('🗑 Estimate deleted');
+  }
+
+  // SALES DASHBOARD
+  async function updateSalesDash() {
+    const estimates = await getEstimates();
+    const sold = estimates.filter(e => e.status === 'Sold').length;
+    const followup = estimates.filter(e => e.status === 'Follow Up').length;
+    const pipeline = estimates.reduce((s, e) => s + parseFloat(e.amount), 0);
+    const closerate = estimates.length ? Math.round((sold / estimates.length) * 100) : 0;
+
+    document.getElementById('stat-sold').textContent = sold;
+    document.getElementById('stat-followup').textContent = followup;
+    document.getElementById('stat-pipeline').textContent = '$' + pipeline.toFixed(0);
+    document.getElementById('stat-closerate').textContent = closerate + '%';
+  }
+
+  // ADD ESTIMATE
+  async function addJob() {
+    const name = document.getElementById('f-name').value.trim();
+    const amount = parseFloat(document.getElementById('f-amount').value);
+    const service = document.getElementById('f-service').value;
+    if (!name || !amount || !service) { alert('Please fill in Customer Name, Service and Amount.'); return; }
+
+    const job = {
+      id: Date.now(),
+      name,
+      phone: document.getElementById('f-phone').value.trim(),
+      date: document.getElementById('f-date').value,
+      address: document.getElementById('f-address').value.trim(),
+      service,
+      amount,
+      payment: document.getElementById('f-payment').value,
+      paid: document.getElementById('f-paid').value,
+      notes: document.getElementById('f-notes').value.trim()
+    };
+
+    const jobs = await getJobs();
+    jobs.unshift(job);
+    await saveJobs(jobs);
+
+    // Reset form
+    ['f-name','f-phone','f-date','f-address','f-amount','f-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-service').value = '';
+    document.getElementById('f-paid').value = 'Yes';
+
+    showToast('✅ Job saved successfully!');
+    switchTab('dashboard');
+  }
+
+  // RENDER JOBS
+  async function renderJobs(search = '') {
+    const jobs = await getJobs();
+    const filtered = search ? jobs.filter(j =>
+      j.name.toLowerCase().includes(search.toLowerCase()) ||
+      j.service.toLowerCase().includes(search.toLowerCase()) ||
+      (j.address && j.address.toLowerCase().includes(search.toLowerCase()))
+    ) : jobs;
+
+    const list = document.getElementById('all-jobs-list');
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty-state"><span>📋</span>No jobs found.</div>';
+      return;
+    }
+    list.innerHTML = filtered.map(job => `
+      <div class="job-card" id="job-${job.id}">
+        <div class="job-card-top">
+          <div>
+            <div class="job-name">${job.name}</div>
+            <div class="job-details">
+              ${job.date ? '📅 ' + formatDate(job.date) + '<br>' : ''}
+              ${job.phone ? '📞 ' + job.phone + '<br>' : ''}
+              ${job.address ? '📍 ' + job.address : ''}
+            </div>
+          </div>
+          <div class="job-amount">$${parseFloat(job.amount).toFixed(2)}</div>
+        </div>
+        <div class="job-badges">
+          <span class="badge badge-service">${job.service}</span>
+          <span class="badge badge-payment">${job.payment}</span>
+          <span class="badge ${job.paid === 'Yes' ? 'badge-paid' : 'badge-unpaid'}">${job.paid === 'Yes' ? '✅ Paid' : '⚠️ Unpaid'}</span>
+        </div>
+        ${job.notes ? '<div style="margin-top:8px;font-size:0.8rem;color:var(--gray)">📝 ' + job.notes + '</div>' : ''}
+        <div class="job-card-actions">
+          <button class="btn-toggle-paid" onclick="togglePaid(${job.id})">${job.paid === 'Yes' ? 'Mark Unpaid' : 'Mark Paid'}</button>
+          <button class="btn-delete" onclick="deleteJob(${job.id})">🗑 Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // UPDATE DASHBOARD
+  async function updateDashboard() {
+    const jobs = await getJobs();
+    const paid = jobs.filter(j => j.paid === 'Yes');
+    const unpaid = jobs.filter(j => j.paid === 'No');
+    const revenue = paid.reduce((s, j) => s + parseFloat(j.amount), 0);
+    const outstanding = unpaid.reduce((s, j) => s + parseFloat(j.amount), 0);
+
+    document.getElementById('stat-revenue').textContent = '$' + revenue.toFixed(2);
+    document.getElementById('stat-outstanding').textContent = '$' + outstanding.toFixed(2);
+    document.getElementById('stat-jobs').textContent = jobs.length;
+    document.getElementById('stat-paid').textContent = paid.length;
+
+    const recent = document.getElementById('recent-list');
+    const last5 = jobs.slice(0, 5);
+    if (last5.length === 0) {
+      recent.innerHTML = '<div class="empty-state"><span>📋</span>No jobs yet. Add your first job!</div>';
+      return;
+    }
+    recent.innerHTML = last5.map(job => `
+      <div class="job-card">
+        <div class="job-card-top">
+          <div>
+            <div class="job-name">${job.name}</div>
+            <div class="job-details">${job.service}${job.date ? ' · ' + formatDate(job.date) : ''}</div>
+          </div>
+          <div class="job-amount">$${parseFloat(job.amount).toFixed(2)}</div>
+        </div>
+        <div class="job-badges">
+          <span class="badge ${job.paid === 'Yes' ? 'badge-paid' : 'badge-unpaid'}">${job.paid === 'Yes' ? '✅ Paid' : '⚠️ Unpaid'}</span>
+          <span class="badge badge-payment">${job.payment}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // TOGGLE PAID
+  async function togglePaid(id) {
+    const jobs = await getJobs();
+    const job = jobs.find(j => j.id === id);
+    if (job) { job.paid = job.paid === 'Yes' ? 'No' : 'Yes'; }
+    await saveJobs(jobs);
+    renderJobs('');
+    showToast('✅ Payment status updated!');
+  }
+
+  // DELETE JOB
+  async function deleteJob(id) {
+    if (!confirm('Delete this job?')) return;
+    const jobs = await getJobs();
+    await saveJobs(jobs.filter(j => j.id !== id));
+    renderJobs('');
+    showToast('🗑 Job deleted');
+  }
+
+  // HELPERS
+  function formatDate(d) {
+    if (!d) return '';
+    const [y,m,day] = d.split('-');
+    return m + '/' + day + '/' + y;
+  }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function init() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('f-date').value = today;
+    document.getElementById('s-date').value = today;
+    updateDashboard();
+  }
+</script>
+</body>
+</html>
