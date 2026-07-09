@@ -4,6 +4,12 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>SunnyDaze Sales Tool</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#00B4D8"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="SD Sales"/>
+  <link rel="apple-touch-icon" href="/app-icon-192.png"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -14,45 +20,71 @@
     }
     body { font-family: Arial, sans-serif; background: var(--navy); color: var(--white); min-height: 100vh; }
 
-    /* PIN */
-    .pin-screen {
+    /* LOGIN SCREEN */
+    .login-screen {
       position: fixed; inset: 0; background: var(--navy);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       z-index: 9999; padding: 24px;
     }
-    .pin-logo { font-size: 2rem; font-weight: 900; color: var(--blue); margin-bottom: 4px; }
-    .pin-sub { color: var(--gray); font-size: 0.85rem; margin-bottom: 28px; }
-    .pin-input {
-      width: 100%; max-width: 260px; background: var(--card);
-      border: 2px solid var(--blue); border-radius: 10px;
-      padding: 16px; color: var(--white); font-size: 2rem;
-      text-align: center; letter-spacing: 0.4em; outline: none; margin-bottom: 14px;
+    .login-logo { font-size: 2.2rem; font-weight: 900; color: var(--blue); margin-bottom: 4px; text-align: center; }
+    .login-sub { color: var(--gray); font-size: 0.85rem; margin-bottom: 28px; text-align: center; }
+    .login-card { background: var(--card); border-radius: 14px; padding: 24px; width: 100%; max-width: 320px; border: 1px solid rgba(0,180,216,0.2); }
+    .login-card h3 { font-size: 1rem; color: var(--blue); margin-bottom: 16px; text-align: center; text-transform: uppercase; letter-spacing: 0.08em; }
+    .rep-btn {
+      width: 100%; padding: 14px; margin-bottom: 10px;
+      background: var(--mid); border: 1px solid rgba(0,180,216,0.2);
+      border-radius: 8px; color: var(--white); font-size: 1rem;
+      font-weight: 700; cursor: pointer; text-align: left;
+      display: flex; justify-content: space-between; align-items: center;
     }
-    .pin-btn {
-      width: 100%; max-width: 260px; padding: 14px; background: var(--blue);
-      color: var(--navy); border: none; border-radius: 8px;
-      font-size: 1rem; font-weight: 900; cursor: pointer; text-transform: uppercase;
+    .rep-btn:hover { border-color: var(--blue); }
+    .rep-btn .rep-id { color: var(--blue); font-size: 0.85rem; }
+    .manager-btn {
+      width: 100%; padding: 12px; margin-top: 6px;
+      background: transparent; border: 1px solid var(--blue);
+      border-radius: 8px; color: var(--blue); font-size: 0.9rem;
+      font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em;
     }
+
+    /* PIN PAD */
+    .pin-screen {
+      position: fixed; inset: 0; background: rgba(10,22,40,0.97);
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 9999; padding: 24px;
+    }
+    .pin-screen.show { display: flex; }
+    .pin-title { font-size: 1.2rem; font-weight: 900; color: var(--blue); margin-bottom: 6px; }
+    .pin-sub { color: var(--gray); font-size: 0.8rem; margin-bottom: 20px; }
+    .pin-display { font-size: 2rem; letter-spacing: 0.5em; color: var(--white); margin-bottom: 20px; min-height: 44px; }
+    .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 240px; }
+    .pin-key {
+      padding: 18px; background: var(--card); border: 1px solid rgba(0,180,216,0.2);
+      border-radius: 10px; font-size: 1.3rem; font-weight: 700; cursor: pointer;
+      text-align: center; color: var(--white);
+    }
+    .pin-key:hover { background: var(--mid); border-color: var(--blue); }
+    .pin-key.clear { color: var(--red); }
+    .pin-key.enter { background: var(--blue); color: var(--navy); }
+    .pin-key.back { color: var(--gray); }
     .pin-error { color: #e05a6a; font-size: 0.85rem; margin-top: 10px; display: none; }
+    .pin-cancel { color: var(--gray); font-size: 0.8rem; margin-top: 16px; cursor: pointer; text-decoration: underline; }
 
     /* HEADER */
     header {
-      background: var(--mid); padding: 12px 16px;
+      background: var(--mid); padding: 10px 16px;
       border-bottom: 3px solid var(--blue);
       position: sticky; top: 0; z-index: 100;
       display: flex; align-items: center; justify-content: space-between;
     }
-    .header-logo { font-size: 1.1rem; font-weight: 900; color: var(--blue); }
-    .header-date { font-size: 0.75rem; color: var(--gray); }
+    .header-left { display: flex; flex-direction: column; }
+    .header-logo { font-size: 1rem; font-weight: 900; color: var(--blue); }
+    .header-rep { font-size: 0.72rem; color: var(--gray); }
+    .header-right { display: flex; gap: 8px; align-items: center; }
+    .logout-btn { background: none; border: 1px solid rgba(255,255,255,0.2); color: var(--gray); padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
 
     /* TABS */
-    .tabs { display: flex; background: var(--card); border-bottom: 2px solid var(--blue); overflow-x: auto; }
-    .tab {
-      flex: 1; min-width: 70px; padding: 12px 6px; text-align: center;
-      font-size: 0.7rem; font-weight: 700; color: var(--gray); cursor: pointer;
-      border: none; background: none; text-transform: uppercase;
-      border-bottom: 3px solid transparent; white-space: nowrap;
-    }
+    .tabs { display: flex; background: var(--card); border-bottom: 2px solid var(--blue); }
+    .tab { flex: 1; padding: 11px 4px; text-align: center; font-size: 0.68rem; font-weight: 700; color: var(--gray); cursor: pointer; border: none; background: none; text-transform: uppercase; border-bottom: 3px solid transparent; white-space: nowrap; }
     .tab.active { color: var(--blue); border-bottom: 3px solid var(--blue); }
 
     /* VIEWS */
@@ -60,17 +92,15 @@
     .view.active { display: block; }
 
     /* STATS */
-    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
-    .stat-card {
-      background: var(--card); border-radius: 10px; padding: 14px;
-      border: 1px solid rgba(0,180,216,0.2); text-align: center;
-    }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .stats.three { grid-template-columns: 1fr 1fr 1fr; }
+    .stat-card { background: var(--card); border-radius: 10px; padding: 12px; border: 1px solid rgba(0,180,216,0.2); text-align: center; }
     .stat-card.green { border-color: var(--green); }
     .stat-card.red { border-color: var(--red); }
     .stat-card.yellow { border-color: var(--yellow); }
     .stat-card.orange { border-color: var(--orange); }
-    .stat-label { font-size: 0.65rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
-    .stat-value { font-size: 1.4rem; font-weight: 900; color: var(--white); }
+    .stat-label { font-size: 0.62rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .stat-value { font-size: 1.3rem; font-weight: 900; color: var(--white); }
     .stat-card.green .stat-value { color: #5cb85c; }
     .stat-card.red .stat-value { color: #e05a6a; }
     .stat-card.yellow .stat-value { color: var(--yellow); }
@@ -79,36 +109,16 @@
     /* FORM */
     .form-card { background: var(--card); border-radius: 12px; padding: 16px; border: 1px solid rgba(0,180,216,0.2); margin-bottom: 14px; }
     .form-card h2 { font-size: 1rem; color: var(--blue); margin-bottom: 14px; font-weight: 900; }
-    .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; background: var(--mid); border: 1px solid rgba(0,180,216,0.2);
-      border-radius: 8px; padding: 11px 12px; color: var(--white);
-      font-size: 0.95rem; outline: none;
-    }
+    .form-group { margin-bottom: 11px; }
+    .form-group label { display: block; font-size: 0.68rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 11px 12px; color: var(--white); font-size: 0.95rem; outline: none; }
     .form-group input:focus, .form-group select:focus { border-color: var(--blue); }
     .form-group select option { background: var(--mid); }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    /* TAX BOX */
-    .tax-box { background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-    .tax-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
-    .tax-row.total { font-weight: 900; font-size: 1rem; color: var(--blue); border-top: 1px solid rgba(0,180,216,0.2); padding-top: 8px; margin-top: 4px; }
-    .tax-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.8rem; color: var(--gray); }
-    .tax-toggle input[type=checkbox] { width: 16px; height: 16px; }
-
-    /* BUTTONS */
-    .btn-submit { width: 100%; padding: 14px; background: var(--blue); color: var(--navy); border: none; border-radius: 8px; font-size: 1rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; margin-top: 4px; }
-    .btn-sold { background: var(--green); }
-    .btn-lost { background: var(--red); color: white; }
-
     /* STATUS BUTTONS */
     .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-    .status-btn {
-      padding: 12px 8px; border: 2px solid; border-radius: 8px;
-      font-size: 0.8rem; font-weight: 900; cursor: pointer;
-      text-align: center; text-transform: uppercase; background: transparent;
-    }
+    .status-btn { padding: 12px 8px; border: 2px solid; border-radius: 8px; font-size: 0.8rem; font-weight: 900; cursor: pointer; text-align: center; text-transform: uppercase; background: transparent; }
     .status-btn.sold { border-color: var(--green); color: var(--green); }
     .status-btn.sold.active { background: var(--green); color: white; }
     .status-btn.estimate { border-color: var(--yellow); color: var(--yellow); }
@@ -118,6 +128,17 @@
     .status-btn.lost { border-color: var(--red); color: var(--red); }
     .status-btn.lost.active { background: var(--red); color: white; }
 
+    /* TAX BOX */
+    .tax-box { background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px; display: none; }
+    .tax-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.8rem; color: var(--gray); }
+    .tax-toggle input[type=checkbox] { width: 16px; height: 16px; }
+    .tax-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
+    .tax-row.total { font-weight: 900; font-size: 1rem; color: var(--blue); border-top: 1px solid rgba(0,180,216,0.2); padding-top: 8px; margin-top: 4px; }
+
+    /* SUBMIT BTN */
+    .btn-submit { width: 100%; padding: 14px; background: var(--blue); color: var(--navy); border: none; border-radius: 8px; font-size: 1rem; font-weight: 900; text-transform: uppercase; cursor: pointer; margin-top: 4px; }
+    .btn-submit:disabled { opacity: 0.6; }
+
     /* CUSTOMER CARDS */
     .customer-list { display: flex; flex-direction: column; gap: 10px; }
     .customer-card { background: var(--card); border-radius: 10px; padding: 14px; border-left: 4px solid var(--blue); }
@@ -126,74 +147,131 @@
     .customer-card.followup { border-left-color: var(--orange); }
     .customer-card.lost { border-left-color: var(--red); }
     .customer-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-    .customer-name { font-size: 1rem; font-weight: 700; }
-    .customer-amount { font-size: 1rem; font-weight: 900; color: var(--blue); }
-    .customer-details { font-size: 0.78rem; color: var(--gray); line-height: 1.6; margin-bottom: 8px; }
+    .customer-name { font-size: 0.95rem; font-weight: 700; }
+    .customer-amount { font-size: 0.95rem; font-weight: 900; color: var(--blue); }
+    .customer-details { font-size: 0.75rem; color: var(--gray); line-height: 1.6; margin-bottom: 8px; }
     .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-    .badge { font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; }
+    .badge { font-size: 0.62rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; }
     .badge-sold { background: rgba(40,167,69,0.2); color: #5cb85c; border: 1px solid #5cb85c; }
     .badge-estimate { background: rgba(255,193,7,0.2); color: var(--yellow); border: 1px solid var(--yellow); }
     .badge-followup { background: rgba(253,126,20,0.2); color: var(--orange); border: 1px solid var(--orange); }
     .badge-lost { background: rgba(220,53,69,0.2); color: #e05a6a; border: 1px solid #e05a6a; }
-    .badge-service { background: rgba(0,180,216,0.15); color: var(--blue); border: 1px solid var(--blue); }
-    .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-    .action-btn { padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; cursor: pointer; border: 1px solid; text-transform: uppercase; background: transparent; }
+    .badge-blue { background: rgba(0,180,216,0.15); color: var(--blue); border: 1px solid var(--blue); }
+    .badge-rep { background: rgba(144,224,239,0.1); color: var(--cyan); border: 1px solid var(--cyan); }
+    .card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .action-btn { padding: 5px 10px; border-radius: 6px; font-size: 0.68rem; font-weight: 700; cursor: pointer; border: 1px solid; text-transform: uppercase; background: transparent; }
     .action-btn.green { border-color: var(--green); color: var(--green); }
     .action-btn.red { border-color: var(--red); color: #e05a6a; }
     .action-btn.blue { border-color: var(--blue); color: var(--blue); }
     .action-btn.orange { border-color: var(--orange); color: var(--orange); }
 
-    /* SEARCH */
-    .search-bar { width: 100%; background: var(--card); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 11px 14px; color: var(--white); font-size: 0.95rem; outline: none; margin-bottom: 14px; }
-
-    /* FILTER PILLS */
-    .filter-pills { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
-    .pill { padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; white-space: nowrap; background: transparent; text-transform: uppercase; }
+    /* SEARCH & FILTER */
+    .search-bar { width: 100%; background: var(--card); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 11px 14px; color: var(--white); font-size: 0.95rem; outline: none; margin-bottom: 12px; }
+    .filter-pills { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+    .pill { padding: 5px 12px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; cursor: pointer; border: 1px solid; white-space: nowrap; background: transparent; text-transform: uppercase; }
     .pill.all { border-color: var(--blue); color: var(--blue); }
     .pill.all.active { background: var(--blue); color: var(--navy); }
-    .pill.sold { border-color: var(--green); color: var(--green); }
-    .pill.sold.active { background: var(--green); color: white; }
-    .pill.estimate { border-color: var(--yellow); color: var(--yellow); }
-    .pill.estimate.active { background: var(--yellow); color: var(--navy); }
-    .pill.followup { border-color: var(--orange); color: var(--orange); }
-    .pill.followup.active { background: var(--orange); color: white; }
-    .pill.lost { border-color: var(--red); color: #e05a6a; }
-    .pill.lost.active { background: var(--red); color: white; }
+    .pill.p-sold { border-color: var(--green); color: var(--green); }
+    .pill.p-sold.active { background: var(--green); color: white; }
+    .pill.p-estimate { border-color: var(--yellow); color: var(--yellow); }
+    .pill.p-estimate.active { background: var(--yellow); color: var(--navy); }
+    .pill.p-followup { border-color: var(--orange); color: var(--orange); }
+    .pill.p-followup.active { background: var(--orange); color: white; }
+    .pill.p-lost { border-color: var(--red); color: #e05a6a; }
+    .pill.p-lost.active { background: var(--red); color: white; }
+
+    /* MANAGER */
+    .rep-section { background: var(--card); border-radius: 10px; padding: 14px; margin-bottom: 12px; border: 1px solid rgba(0,180,216,0.2); }
+    .rep-section h3 { font-size: 0.9rem; font-weight: 900; color: var(--blue); margin-bottom: 10px; }
+    .rep-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+    .rep-stat { text-align: center; }
+    .rep-stat-val { font-size: 1rem; font-weight: 900; color: var(--white); }
+    .rep-stat-lbl { font-size: 0.58rem; color: var(--gray); text-transform: uppercase; }
+
+    /* SETTINGS */
+    .settings-card { background: var(--card); border-radius: 12px; padding: 16px; border: 1px solid rgba(0,180,216,0.2); margin-bottom: 14px; }
+    .settings-card h2 { font-size: 1rem; color: var(--blue); margin-bottom: 14px; font-weight: 900; }
+    .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .settings-label { font-size: 0.85rem; font-weight: 600; }
+    .settings-val { font-size: 0.78rem; color: var(--gray); }
+    .btn-change { padding: 6px 14px; background: var(--blue); color: var(--navy); border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+    .sheet-btn { width: 100%; padding: 14px; background: var(--green); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 900; cursor: pointer; margin-top: 4px; }
 
     /* TOAST */
-    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--green); color: white; padding: 12px 24px; border-radius: 24px; font-weight: 700; font-size: 0.88rem; z-index: 999; display: none; white-space: nowrap; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--green); color: white; padding: 12px 24px; border-radius: 24px; font-weight: 700; font-size: 0.88rem; z-index: 9999; display: none; white-space: nowrap; }
     .toast.show { display: block; }
+    .toast.error { background: var(--red); }
 
     .empty-state { text-align: center; padding: 32px 20px; color: var(--gray); }
     .empty-state span { font-size: 2rem; display: block; margin-bottom: 8px; }
-
-    /* SECTION TITLE */
-    .section-title { font-size: 0.8rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; margin-top: 4px; }
+    .section-title { font-size: 0.75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; margin-top: 4px; }
+    .saving-indicator { text-align: center; font-size: 0.75rem; color: var(--gray); margin-top: 8px; display: none; }
   </style>
 </head>
 <body>
 
-<!-- PIN -->
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-logo">⚡ SUNNYDAZE</div>
+  <div class="login-sub">Pressure Washing · Sales & Job Tracker</div>
+  <div class="login-card">
+    <h3>Select Your Profile</h3>
+    <button class="rep-btn" onclick="selectRep('Ringo Fry', '1001')">
+      <span>Ringo Fry</span><span class="rep-id">#1001</span>
+    </button>
+    <button class="rep-btn" onclick="selectRep('Brian', '1002')">
+      <span>Brian</span><span class="rep-id">#1002</span>
+    </button>
+    <button class="rep-btn" onclick="selectRep('Rob Keller', '1003')">
+      <span>Rob Keller</span><span class="rep-id">#1003</span>
+    </button>
+    <button class="manager-btn" onclick="showPin('manager')">👔 MANAGER VIEW</button>
+  </div>
+</div>
+
+<!-- PIN SCREEN -->
 <div class="pin-screen" id="pinScreen">
-  <div class="pin-logo">⚡ SUNNYDAZE</div>
-  <div class="pin-sub">Sales & Job Tracker — Enter PIN</div>
-  <input type="password" class="pin-input" id="pinInput" placeholder="••••" maxlength="4" inputmode="numeric"/>
-  <button class="pin-btn" onclick="checkPin()">UNLOCK</button>
-  <div class="pin-error" id="pinError">Wrong PIN. Try again.</div>
+  <div class="pin-title" id="pinTitle">Enter PIN</div>
+  <div class="pin-sub" id="pinSub">Enter your 4-digit ID to continue</div>
+  <div class="pin-display" id="pinDisplay">____</div>
+  <div class="pin-pad">
+    <div class="pin-key" onclick="pinKey('1')">1</div>
+    <div class="pin-key" onclick="pinKey('2')">2</div>
+    <div class="pin-key" onclick="pinKey('3')">3</div>
+    <div class="pin-key" onclick="pinKey('4')">4</div>
+    <div class="pin-key" onclick="pinKey('5')">5</div>
+    <div class="pin-key" onclick="pinKey('6')">6</div>
+    <div class="pin-key" onclick="pinKey('7')">7</div>
+    <div class="pin-key" onclick="pinKey('8')">8</div>
+    <div class="pin-key" onclick="pinKey('9')">9</div>
+    <div class="pin-key clear" onclick="pinClear()">CLR</div>
+    <div class="pin-key" onclick="pinKey('0')">0</div>
+    <div class="pin-key back" onclick="pinBack()">⌫</div>
+  </div>
+  <div class="pin-error" id="pinError">Incorrect PIN. Try again.</div>
+  <div class="pin-cancel" onclick="cancelPin()">Cancel</div>
 </div>
 
 <!-- HEADER -->
-<header>
-  <div class="header-logo">⚡ SUNNYDAZE SALES</div>
-  <div class="header-date" id="headerDate"></div>
+<header id="mainHeader" style="display:none">
+  <div class="header-left">
+    <div class="header-logo">⚡ SUNNYDAZE SALES</div>
+    <div class="header-rep" id="headerRep"></div>
+  </div>
+  <div class="header-right">
+    <div style="font-size:0.7rem;color:var(--gray)" id="headerDate"></div>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
 </header>
 
 <!-- TABS -->
-<div class="tabs">
-  <button class="tab active" onclick="switchTab('dashboard')">📊 Dash</button>
-  <button class="tab" onclick="switchTab('log')">➕ Log</button>
-  <button class="tab" onclick="switchTab('customers')">👥 Leads</button>
-  <button class="tab" onclick="switchTab('jobs')">🔧 Jobs</button>
+<div class="tabs" id="mainTabs" style="display:none">
+  <button class="tab active" id="tab-dashboard" onclick="switchTab('dashboard')">📊 Dash</button>
+  <button class="tab" id="tab-log" onclick="switchTab('log')">➕ Log</button>
+  <button class="tab" id="tab-leads" onclick="switchTab('leads')">👥 Leads</button>
+  <button class="tab" id="tab-jobs" onclick="switchTab('jobs')">🔧 Jobs</button>
+  <button class="tab" id="tab-manager" onclick="switchTab('manager')" style="display:none">👔 Mgr</button>
+  <button class="tab" id="tab-settings" onclick="switchTab('settings')" style="display:none">⚙️ Settings</button>
 </div>
 
 <!-- DASHBOARD -->
@@ -224,20 +302,16 @@
       <div class="stat-value" id="d-lost">0</div>
     </div>
   </div>
-
-  <div class="section-title">Today's Follow Ups</div>
+  <div class="section-title">🔔 Today's Follow Ups</div>
   <div class="customer-list" id="d-followup-list"></div>
-
-  <div class="section-title" style="margin-top:16px">Recent Activity</div>
+  <div class="section-title" style="margin-top:14px">Recent Activity</div>
   <div class="customer-list" id="d-recent"></div>
 </div>
 
-<!-- LOG NEW CUSTOMER -->
+<!-- LOG -->
 <div class="view" id="view-log">
   <div class="form-card">
     <h2>➕ Log Customer</h2>
-
-    <!-- STATUS SELECTOR -->
     <div class="form-group">
       <label>Outcome *</label>
       <div class="status-grid">
@@ -246,9 +320,8 @@
         <button class="status-btn followup" onclick="setStatus('Follow Up')">🔔 FOLLOW UP</button>
         <button class="status-btn lost" onclick="setStatus('Lost')">❌ NOT INTERESTED</button>
       </div>
-      <input type="hidden" id="l-status" value=""/>
+      <input type="hidden" id="l-status"/>
     </div>
-
     <div class="form-row">
       <div class="form-group">
         <label>First Name *</label>
@@ -259,17 +332,14 @@
         <input type="text" id="l-lname" placeholder="Smith"/>
       </div>
     </div>
-
     <div class="form-group">
       <label>Phone Number</label>
       <input type="tel" id="l-phone" placeholder="(814) 555-0000"/>
     </div>
-
     <div class="form-group">
       <label>Address</label>
       <input type="text" id="l-address" placeholder="123 Main St, Erie PA"/>
     </div>
-
     <div class="form-group">
       <label>Service</label>
       <select id="l-service">
@@ -284,14 +354,11 @@
         <option>Multiple Services</option>
       </select>
     </div>
-
-    <!-- AMOUNT + TAX -->
     <div class="form-group">
       <label>Amount ($)</label>
       <input type="number" id="l-amount" placeholder="0.00" step="0.01" min="0" oninput="calcTax()"/>
     </div>
-
-    <div class="tax-box" id="taxBox" style="display:none">
+    <div class="tax-box" id="taxBox">
       <div class="tax-toggle">
         <input type="checkbox" id="l-taxable" onchange="calcTax()"/>
         <label for="l-taxable">Apply PA Sales Tax (6%)</label>
@@ -300,7 +367,6 @@
       <div class="tax-row"><span>PA Tax (6%)</span><span id="t-tax">$0.00</span></div>
       <div class="tax-row total"><span>TOTAL</span><span id="t-total">$0.00</span></div>
     </div>
-
     <div class="form-row">
       <div class="form-group">
         <label>Job Date</label>
@@ -311,7 +377,6 @@
         <input type="date" id="l-followup"/>
       </div>
     </div>
-
     <div class="form-group">
       <label>Payment Method</label>
       <select id="l-payment">
@@ -323,32 +388,31 @@
         <option>Venmo</option>
       </select>
     </div>
-
     <div class="form-group">
       <label>Notes</label>
       <textarea id="l-notes" rows="2" placeholder="Gate code, dog in yard, special instructions..."></textarea>
     </div>
-
-    <button class="btn-submit" onclick="saveCustomer()">💾 SAVE</button>
+    <button class="btn-submit" id="saveBtn" onclick="saveCustomer()">💾 SAVE</button>
+    <div class="saving-indicator" id="savingIndicator">⏳ Saving to Google Sheets...</div>
   </div>
 </div>
 
-<!-- LEADS / CUSTOMERS -->
-<div class="view" id="view-customers">
-  <input class="search-bar" type="text" placeholder="🔍 Search by name, address..." oninput="renderCustomers(this.value, activeFilter)"/>
+<!-- LEADS -->
+<div class="view" id="view-leads">
+  <input class="search-bar" type="text" placeholder="🔍 Search by name, address..." oninput="renderLeads(this.value)"/>
   <div class="filter-pills">
-    <button class="pill all active" onclick="filterBy('All')">All</button>
-    <button class="pill sold" onclick="filterBy('Sold')">✅ Sold</button>
-    <button class="pill estimate" onclick="filterBy('Estimate')">📋 Estimate</button>
-    <button class="pill followup" onclick="filterBy('Follow Up')">🔔 Follow Up</button>
-    <button class="pill lost" onclick="filterBy('Lost')">❌ Lost</button>
+    <button class="pill all active" onclick="filterBy('All', this)">All</button>
+    <button class="pill p-sold" onclick="filterBy('Sold', this)">✅ Sold</button>
+    <button class="pill p-estimate" onclick="filterBy('Estimate', this)">📋 Estimate</button>
+    <button class="pill p-followup" onclick="filterBy('Follow Up', this)">🔔 Follow Up</button>
+    <button class="pill p-lost" onclick="filterBy('Lost', this)">❌ Lost</button>
   </div>
-  <div class="customer-list" id="customers-list"></div>
+  <div class="customer-list" id="leads-list"></div>
 </div>
 
-<!-- JOBS (SOLD + COMPLETED) -->
+<!-- JOBS -->
 <div class="view" id="view-jobs">
-  <div class="stats" style="grid-template-columns:1fr 1fr 1fr;">
+  <div class="stats three">
     <div class="stat-card green">
       <div class="stat-label">💰 Collected</div>
       <div class="stat-value" id="j-collected">$0</div>
@@ -366,54 +430,220 @@
   <div class="customer-list" id="jobs-list"></div>
 </div>
 
-<div class="toast" id="toast">✅ Saved!</div>
+<!-- MANAGER VIEW -->
+<div class="view" id="view-manager">
+  <div class="section-title">📊 Team Overview</div>
+  <div class="stats">
+    <div class="stat-card green">
+      <div class="stat-label">💰 Total Revenue</div>
+      <div class="stat-value" id="m-revenue">$0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">📋 Total Leads</div>
+      <div class="stat-value" id="m-leads">0</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">🤝 Total Sold</div>
+      <div class="stat-value" id="m-sold">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">✅ Team Close Rate</div>
+      <div class="stat-value" id="m-closerate">0%</div>
+    </div>
+  </div>
+
+  <div class="section-title">👤 Individual Performance</div>
+  <div id="rep-sections"></div>
+
+  <div class="section-title" style="margin-top:14px">All Leads</div>
+  <div class="filter-pills">
+    <button class="pill all active" onclick="filterMgr('All', this)">All</button>
+    <button class="pill p-sold" onclick="filterMgr('Sold', this)">✅ Sold</button>
+    <button class="pill p-estimate" onclick="filterMgr('Estimate', this)">📋 Estimate</button>
+    <button class="pill p-followup" onclick="filterMgr('Follow Up', this)">🔔 Follow Up</button>
+    <button class="pill p-lost" onclick="filterMgr('Lost', this)">❌ Lost</button>
+  </div>
+  <div class="customer-list" id="mgr-leads-list"></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="view" id="view-settings">
+  <div class="settings-card">
+    <h2>⚙️ Settings</h2>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Ringo Fry</div>
+        <div class="settings-val">Rep ID: <span id="s-1001">1001</span></div>
+      </div>
+      <button class="btn-change" onclick="changePin('Ringo Fry', '1001')">Change PIN</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Brian</div>
+        <div class="settings-val">Rep ID: <span id="s-1002">1002</span></div>
+      </div>
+      <button class="btn-change" onclick="changePin('Brian', '1002')">Change PIN</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Rob Keller</div>
+        <div class="settings-val">Rep ID: <span id="s-1003">1003</span></div>
+      </div>
+      <button class="btn-change" onclick="changePin('Rob Keller', '1003')">Change PIN</button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <div class="settings-label">Manager PIN</div>
+        <div class="settings-val">Current: ****</div>
+      </div>
+      <button class="btn-change" onclick="changeMgrPin()">Change PIN</button>
+    </div>
+  </div>
+  <div class="settings-card">
+    <h2>📊 Google Sheet</h2>
+    <p style="font-size:0.82rem;color:var(--gray);margin-bottom:14px">View all sales data in Google Sheets</p>
+    <button class="sheet-btn" onclick="openSheet()">📊 OPEN GOOGLE SHEET</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-  const PIN = '1234';
-  let activeFilter = 'All';
-  let selectedStatus = '';
+  // CONFIG
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxMcDyLC5BoesSJ0DiTdGR10HeB_6jkLi7CHdJrLC5RzadI0SUYBNaZdPXrjHiv1fPu/exec';
+  const GOOGLE_SHEET_LINK = 'https://docs.google.com/spreadsheets/d/1/edit'; // update with real sheet URL
+  
+  // REPS & PINS stored in localStorage so they can be changed
+  function getReps() {
+    return JSON.parse(localStorage.getItem('sd_reps') || JSON.stringify([
+      { name: 'Ringo Fry', id: '1001', pin: '1001' },
+      { name: 'Brian', id: '1002', pin: '1002' },
+      { name: 'Rob Keller', id: '1003', pin: '1003' }
+    ]));
+  }
+  function saveReps(reps) { localStorage.setItem('sd_reps', JSON.stringify(reps)); }
+  function getMgrPin() { return localStorage.getItem('sd_mgr_pin') || '1014'; }
+  function saveMgrPin(pin) { localStorage.setItem('sd_mgr_pin', pin); }
 
-  // PIN
+  // CURRENT SESSION
+  let currentRep = null;
+  let isManager = false;
+  let pinMode = ''; // 'rep' or 'manager'
+  let pendingRep = null;
+  let pinValue = '';
+  let activeFilter = 'All';
+  let mgrFilter = 'All';
+
+  // DATA
+  function getData() {
+    try { return JSON.parse(localStorage.getItem('sd_customers') || '[]'); } catch { return []; }
+  }
+  function saveData(data) { localStorage.setItem('sd_customers', JSON.stringify(data)); }
+
+  // LOGIN
+  function selectRep(name, id) {
+    pendingRep = { name, id };
+    pinMode = 'rep';
+    document.getElementById('pinTitle').textContent = `Welcome, ${name}`;
+    document.getElementById('pinSub').textContent = 'Enter your 4-digit PIN';
+    showPinScreen();
+  }
+  function showPin(mode) {
+    pinMode = mode;
+    document.getElementById('pinTitle').textContent = mode === 'manager' ? 'Manager Access' : 'Enter PIN';
+    document.getElementById('pinSub').textContent = 'Enter your 4-digit PIN';
+    showPinScreen();
+  }
+  function showPinScreen() {
+    pinValue = '';
+    updatePinDisplay();
+    document.getElementById('pinError').style.display = 'none';
+    document.getElementById('pinScreen').classList.add('show');
+  }
+  function cancelPin() {
+    document.getElementById('pinScreen').classList.remove('show');
+    pinValue = '';
+  }
+  function pinKey(k) {
+    if (pinValue.length < 4) { pinValue += k; updatePinDisplay(); }
+    if (pinValue.length === 4) setTimeout(checkPin, 100);
+  }
+  function pinBack() { pinValue = pinValue.slice(0, -1); updatePinDisplay(); }
+  function pinClear() { pinValue = ''; updatePinDisplay(); }
+  function updatePinDisplay() {
+    const d = document.getElementById('pinDisplay');
+    d.textContent = pinValue.padEnd(4, '_').split('').join(' ');
+  }
   function checkPin() {
-    if (document.getElementById('pinInput').value === PIN) {
-      document.getElementById('pinScreen').style.display = 'none';
-      init();
+    const reps = getReps();
+    if (pinMode === 'manager') {
+      if (pinValue === getMgrPin()) {
+        isManager = true;
+        currentRep = { name: 'Manager', id: 'MGR' };
+        loginSuccess();
+      } else { pinFail(); }
     } else {
-      document.getElementById('pinError').style.display = 'block';
-      document.getElementById('pinInput').value = '';
+      const rep = reps.find(r => r.id === pendingRep.id && r.pin === pinValue);
+      if (rep) {
+        currentRep = rep;
+        isManager = false;
+        loginSuccess();
+      } else { pinFail(); }
     }
   }
-  document.getElementById('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
-
-  // STORAGE
-  async function getData() {
-    try { const r = await window.storage.get('sd_customers'); return r ? JSON.parse(r.value) : []; } catch { return []; }
+  function pinFail() {
+    document.getElementById('pinError').style.display = 'block';
+    pinValue = '';
+    updatePinDisplay();
   }
-  async function saveData(data) { await window.storage.set('sd_customers', JSON.stringify(data)); }
+  function loginSuccess() {
+    document.getElementById('pinScreen').classList.remove('show');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainHeader').style.display = 'flex';
+    document.getElementById('mainTabs').style.display = 'flex';
+    document.getElementById('headerRep').textContent = isManager ? '👔 Manager View — All Reps' : `Rep #${currentRep.id} — ${currentRep.name}`;
+    document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    document.getElementById('l-date').value = new Date().toISOString().split('T')[0];
+    // Show manager tabs
+    if (isManager) {
+      document.getElementById('tab-manager').style.display = 'block';
+      document.getElementById('tab-settings').style.display = 'block';
+    }
+    switchTab('dashboard');
+  }
+  function logout() {
+    currentRep = null; isManager = false;
+    document.getElementById('mainHeader').style.display = 'none';
+    document.getElementById('mainTabs').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('tab-manager').style.display = 'none';
+    document.getElementById('tab-settings').style.display = 'none';
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-dashboard').classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-dashboard').classList.add('active');
+  }
 
-  // STATUS SELECTOR
+  // STATUS
   function setStatus(s) {
-    selectedStatus = s;
     document.getElementById('l-status').value = s;
     document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
     const map = { 'Sold': 'sold', 'Estimate': 'estimate', 'Follow Up': 'followup', 'Lost': 'lost' };
     document.querySelector(`.status-btn.${map[s]}`).classList.add('active');
-    // Show amount for sold/estimate
     document.getElementById('taxBox').style.display = (s === 'Sold' || s === 'Estimate') ? 'block' : 'none';
   }
 
-  // TAX CALC
+  // TAX
   function calcTax() {
     const amt = parseFloat(document.getElementById('l-amount').value) || 0;
     const taxable = document.getElementById('l-taxable').checked;
     const tax = taxable ? amt * 0.06 : 0;
-    const total = amt + tax;
     document.getElementById('t-subtotal').textContent = '$' + amt.toFixed(2);
     document.getElementById('t-tax').textContent = '$' + tax.toFixed(2);
-    document.getElementById('t-total').textContent = '$' + total.toFixed(2);
+    document.getElementById('t-total').textContent = '$' + (amt + tax).toFixed(2);
   }
 
-  // SAVE CUSTOMER
+  // SAVE
   async function saveCustomer() {
     const fname = document.getElementById('l-fname').value.trim();
     const status = document.getElementById('l-status').value;
@@ -423,27 +653,28 @@
     const amt = parseFloat(document.getElementById('l-amount').value) || 0;
     const taxable = document.getElementById('l-taxable').checked;
     const tax = taxable ? amt * 0.06 : 0;
-    const total = amt + tax;
 
     const customer = {
       id: Date.now(),
+      repId: currentRep.id, repName: currentRep.name,
       fname, lname: document.getElementById('l-lname').value.trim(),
       phone: document.getElementById('l-phone').value.trim(),
       address: document.getElementById('l-address').value.trim(),
       service: document.getElementById('l-service').value,
-      amount: amt, tax, total, taxable,
+      amount: amt, tax, total: amt + tax, taxable,
       status, date: document.getElementById('l-date').value,
       followup: document.getElementById('l-followup').value,
       payment: document.getElementById('l-payment').value,
       notes: document.getElementById('l-notes').value.trim(),
-      paid: status === 'Sold' ? 'No' : ''
+      paid: 'No', createdAt: new Date().toLocaleString()
     };
 
-    const data = await getData();
+    // Save locally first
+    const data = getData();
     data.unshift(customer);
-    await saveData(data);
+    saveData(data);
 
-    // Reset
+    // Reset form
     ['l-fname','l-lname','l-phone','l-address','l-amount','l-notes','l-followup'].forEach(id => document.getElementById(id).value = '');
     document.getElementById('l-service').value = '';
     document.getElementById('l-payment').value = '';
@@ -452,21 +683,38 @@
     document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('l-status').value = '';
     document.getElementById('taxBox').style.display = 'none';
-    selectedStatus = '';
     calcTax();
 
-    showToast('✅ Customer saved!');
+    showToast('✅ Saved locally!');
+
+    // Send to Google Sheets
+    document.getElementById('savingIndicator').style.display = 'block';
+    try {
+      await fetch(SHEET_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customer)
+      });
+      document.getElementById('savingIndicator').style.display = 'none';
+      showToast('✅ Saved to Google Sheets!');
+    } catch(e) {
+      document.getElementById('savingIndicator').style.display = 'none';
+      showToast('⚠️ Saved locally only', true);
+    }
+
     updateDashboard();
   }
 
   // DASHBOARD
-  async function updateDashboard() {
-    const data = await getData();
+  function updateDashboard() {
+    const all = getData();
+    const data = isManager ? all : all.filter(d => d.repId === currentRep.id);
     const sold = data.filter(d => d.status === 'Sold');
     const estimates = data.filter(d => d.status === 'Estimate');
     const followups = data.filter(d => d.status === 'Follow Up');
     const lost = data.filter(d => d.status === 'Lost');
-    const revenue = sold.filter(d => d.paid === 'Yes').reduce((s, d) => s + (d.total || d.amount), 0);
+    const revenue = sold.filter(d => d.paid === 'Yes').reduce((s, d) => s + (d.total || d.amount || 0), 0);
     const total = sold.length + estimates.length + lost.length;
     const closerate = total ? Math.round((sold.length / total) * 100) : 0;
 
@@ -477,52 +725,102 @@
     document.getElementById('d-sold').textContent = sold.length;
     document.getElementById('d-lost').textContent = lost.length;
 
-    // Today's follow ups
     const today = new Date().toISOString().split('T')[0];
-    const todayFollowups = data.filter(d => d.followup === today);
+    const todayFU = data.filter(d => d.followup === today);
     const fuList = document.getElementById('d-followup-list');
-    fuList.innerHTML = todayFollowups.length ? todayFollowups.map(c => customerCardHTML(c)).join('') :
+    fuList.innerHTML = todayFU.length ? todayFU.map(c => cardHTML(c)).join('') :
       '<div class="empty-state"><span>✅</span>No follow ups today!</div>';
 
-    // Recent
-    const recent = document.getElementById('d-recent');
-    recent.innerHTML = data.slice(0, 5).map(c => customerCardHTML(c)).join('') ||
-      '<div class="empty-state"><span>📋</span>No customers logged yet.</div>';
+    document.getElementById('d-recent').innerHTML = data.slice(0, 5).map(c => cardHTML(c)).join('') ||
+      '<div class="empty-state"><span>📋</span>No activity yet.</div>';
   }
 
-  // RENDER CUSTOMERS
-  async function renderCustomers(search = '', filter = 'All') {
-    const data = await getData();
-    let filtered = filter === 'All' ? data : data.filter(d => d.status === filter);
-    if (search) filtered = filtered.filter(d =>
-      (d.fname + ' ' + d.lname).toLowerCase().includes(search.toLowerCase()) ||
-      (d.address && d.address.toLowerCase().includes(search.toLowerCase()))
-    );
-    const list = document.getElementById('customers-list');
-    list.innerHTML = filtered.length ? filtered.map(c => customerCardHTML(c)).join('') :
-      '<div class="empty-state"><span>👥</span>No customers found.</div>';
+  // LEADS
+  let currentLeadSearch = '';
+  function renderLeads(search = '') {
+    currentLeadSearch = search;
+    const all = getData();
+    let data = isManager ? all : all.filter(d => d.repId === currentRep.id);
+    if (activeFilter !== 'All') data = data.filter(d => d.status === activeFilter);
+    if (search) data = data.filter(d => (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase()) || (d.address||'').toLowerCase().includes(search.toLowerCase()));
+    document.getElementById('leads-list').innerHTML = data.length ? data.map(c => cardHTML(c)).join('') :
+      '<div class="empty-state"><span>👥</span>No leads found.</div>';
+  }
+  function filterBy(f, el) {
+    activeFilter = f;
+    document.querySelectorAll('#view-leads .pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    renderLeads(currentLeadSearch);
   }
 
-  // RENDER JOBS
-  async function renderJobs(search = '') {
-    const data = await getData();
-    let jobs = data.filter(d => d.status === 'Sold');
-    if (search) jobs = jobs.filter(d =>
-      (d.fname + ' ' + d.lname).toLowerCase().includes(search.toLowerCase()) ||
-      (d.address && d.address.toLowerCase().includes(search.toLowerCase()))
-    );
-    const collected = jobs.filter(d => d.paid === 'Yes').reduce((s, d) => s + (d.total || d.amount), 0);
-    const unpaid = jobs.filter(d => d.paid !== 'Yes').reduce((s, d) => s + (d.total || d.amount), 0);
+  // JOBS
+  function renderJobs(search = '') {
+    const all = getData();
+    let jobs = isManager ? all.filter(d => d.status === 'Sold') : all.filter(d => d.status === 'Sold' && d.repId === currentRep.id);
+    if (search) jobs = jobs.filter(d => (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase()) || (d.address||'').toLowerCase().includes(search.toLowerCase()));
+    const collected = jobs.filter(d => d.paid === 'Yes').reduce((s, d) => s + (d.total || d.amount || 0), 0);
+    const unpaid = jobs.filter(d => d.paid !== 'Yes').reduce((s, d) => s + (d.total || d.amount || 0), 0);
     document.getElementById('j-collected').textContent = '$' + collected.toFixed(0);
     document.getElementById('j-unpaid').textContent = '$' + unpaid.toFixed(0);
     document.getElementById('j-count').textContent = jobs.length;
-    const list = document.getElementById('jobs-list');
-    list.innerHTML = jobs.length ? jobs.map(c => customerCardHTML(c, true)).join('') :
+    document.getElementById('jobs-list').innerHTML = jobs.length ? jobs.map(c => cardHTML(c, true)).join('') :
       '<div class="empty-state"><span>🔧</span>No sold jobs yet.</div>';
   }
 
-  // CUSTOMER CARD HTML
-  function customerCardHTML(c, showPayToggle = false) {
+  // MANAGER
+  function updateManager() {
+    const data = getData();
+    const reps = getReps();
+    const sold = data.filter(d => d.status === 'Sold');
+    const revenue = sold.filter(d => d.paid === 'Yes').reduce((s, d) => s + (d.total || d.amount || 0), 0);
+    const total = data.filter(d => ['Sold','Estimate','Lost'].includes(d.status)).length;
+    const closerate = total ? Math.round((sold.length / total) * 100) : 0;
+
+    document.getElementById('m-revenue').textContent = '$' + revenue.toFixed(0);
+    document.getElementById('m-leads').textContent = data.length;
+    document.getElementById('m-sold').textContent = sold.length;
+    document.getElementById('m-closerate').textContent = closerate + '%';
+
+    // Per rep stats
+    const repSections = document.getElementById('rep-sections');
+    repSections.innerHTML = reps.map(rep => {
+      const repData = data.filter(d => d.repId === rep.id);
+      const repSold = repData.filter(d => d.status === 'Sold');
+      const repRev = repSold.filter(d => d.paid === 'Yes').reduce((s, d) => s + (d.total || d.amount || 0), 0);
+      const repTotal = repData.filter(d => ['Sold','Estimate','Lost'].includes(d.status)).length;
+      const repClose = repTotal ? Math.round((repSold.length / repTotal) * 100) : 0;
+      return `
+        <div class="rep-section">
+          <h3>👤 ${rep.name} <span style="font-size:0.75rem;color:var(--gray)">#${rep.id}</span></h3>
+          <div class="rep-stats">
+            <div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">$${repRev.toFixed(0)}</div><div class="rep-stat-lbl">Revenue</div></div>
+            <div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">${repSold.length}</div><div class="rep-stat-lbl">Sold</div></div>
+            <div class="rep-stat"><div class="rep-stat-val">${repData.filter(d=>d.status==='Estimate').length}</div><div class="rep-stat-lbl">Estimates</div></div>
+            <div class="rep-stat"><div class="rep-stat-val">${repClose}%</div><div class="rep-stat-lbl">Close Rate</div></div>
+          </div>
+        </div>`;
+    }).join('');
+
+    renderMgrLeads('');
+  }
+
+  function renderMgrLeads(search = '') {
+    let data = getData();
+    if (mgrFilter !== 'All') data = data.filter(d => d.status === mgrFilter);
+    if (search) data = data.filter(d => (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase()));
+    document.getElementById('mgr-leads-list').innerHTML = data.length ? data.map(c => cardHTML(c, false, true)).join('') :
+      '<div class="empty-state"><span>👥</span>No leads found.</div>';
+  }
+
+  function filterMgr(f, el) {
+    mgrFilter = f;
+    document.querySelectorAll('#view-manager .pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    renderMgrLeads('');
+  }
+
+  // CARD HTML
+  function cardHTML(c, showPayToggle = false, showRep = false) {
     const statusClass = { 'Sold': 'sold', 'Estimate': 'estimate', 'Follow Up': 'followup', 'Lost': 'lost' }[c.status] || '';
     const badgeClass = { 'Sold': 'badge-sold', 'Estimate': 'badge-estimate', 'Follow Up': 'badge-followup', 'Lost': 'badge-lost' }[c.status] || '';
     const name = c.fname + (c.lname ? ' ' + c.lname : '');
@@ -536,94 +834,101 @@
               ${c.phone ? '📞 ' + c.phone + '<br>' : ''}
               ${c.address ? '📍 ' + c.address + '<br>' : ''}
               ${c.date ? '📅 ' + formatDate(c.date) : ''}
-              ${c.followup ? ' · 🔔 Follow up: ' + formatDate(c.followup) : ''}
+              ${c.followup ? ' · 🔔 ' + formatDate(c.followup) : ''}
             </div>
           </div>
           ${amount > 0 ? '<div class="customer-amount">$' + parseFloat(amount).toFixed(2) + '</div>' : ''}
         </div>
         <div class="badges">
           <span class="badge ${badgeClass}">${c.status}</span>
-          ${c.service ? '<span class="badge badge-service">' + c.service + '</span>' : ''}
-          ${c.payment ? '<span class="badge badge-service">' + c.payment + '</span>' : ''}
-          ${c.taxable ? '<span class="badge badge-estimate">+Tax</span>' : ''}
+          ${c.service ? '<span class="badge badge-blue">' + c.service + '</span>' : ''}
+          ${c.payment ? '<span class="badge badge-blue">' + c.payment + '</span>' : ''}
+          ${showRep ? '<span class="badge badge-rep">Rep: ' + c.repName + ' #' + c.repId + '</span>' : ''}
           ${showPayToggle ? '<span class="badge ' + (c.paid === 'Yes' ? 'badge-sold' : 'badge-lost') + '">' + (c.paid === 'Yes' ? '✅ Paid' : '⚠️ Unpaid') + '</span>' : ''}
         </div>
-        ${c.notes ? '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:8px">📝 ' + c.notes + '</div>' : ''}
+        ${c.notes ? '<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 ' + c.notes + '</div>' : ''}
         <div class="card-actions">
           ${showPayToggle ? '<button class="action-btn green" onclick="togglePaid(' + c.id + ')">' + (c.paid === 'Yes' ? 'Mark Unpaid' : 'Mark Paid') + '</button>' : ''}
-          <button class="action-btn blue" onclick="changeStatus(${c.id})">✏️ Status</button>
-          <button class="action-btn red" onclick="deleteCustomer(${c.id})">🗑</button>
+          <button class="action-btn orange" onclick="changeStatus(' + c.id + ')">✏️ Status</button>
+          <button class="action-btn red" onclick="deleteCustomer(' + c.id + ')">🗑</button>
         </div>
       </div>`;
   }
 
-  // TOGGLE PAID
-  async function togglePaid(id) {
-    const data = await getData();
+  // ACTIONS
+  function togglePaid(id) {
+    const data = getData();
     const c = data.find(d => d.id === id);
     if (c) c.paid = c.paid === 'Yes' ? 'No' : 'Yes';
-    await saveData(data);
+    saveData(data);
     renderJobs('');
     updateDashboard();
     showToast('✅ Payment updated!');
   }
 
-  // CHANGE STATUS
-  async function changeStatus(id) {
+  function changeStatus(id) {
     const statuses = ['Sold', 'Estimate', 'Follow Up', 'Lost'];
     const s = prompt('New status:\n1. Sold\n2. Estimate\n3. Follow Up\n4. Lost\n\nEnter number:');
     if (!s || !statuses[parseInt(s)-1]) return;
-    const data = await getData();
+    const data = getData();
     const c = data.find(d => d.id === id);
     if (c) { c.status = statuses[parseInt(s)-1]; if (c.status === 'Sold') c.paid = c.paid || 'No'; }
-    await saveData(data);
-    renderCustomers('', activeFilter);
-    renderJobs('');
-    updateDashboard();
+    saveData(data);
+    renderLeads(''); renderJobs(''); updateDashboard();
     showToast('✅ Status updated!');
   }
 
-  // DELETE
-  async function deleteCustomer(id) {
+  function deleteCustomer(id) {
     if (!confirm('Delete this customer?')) return;
-    const data = await getData();
-    await saveData(data.filter(d => d.id !== id));
-    renderCustomers('', activeFilter);
-    renderJobs('');
-    updateDashboard();
+    saveData(getData().filter(d => d.id !== id));
+    renderLeads(''); renderJobs(''); updateDashboard();
+    if (isManager) updateManager();
     showToast('🗑 Deleted');
   }
 
-  // FILTER
-  function filterBy(f) {
-    activeFilter = f;
-    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-    document.querySelector('.pill.' + f.toLowerCase().replace(' ', '')).classList.add('active');
-    renderCustomers('', f);
+  // SETTINGS
+  function changePin(name, currentId) {
+    const newPin = prompt(`Enter new 4-digit PIN for ${name}:`);
+    if (!newPin || newPin.length !== 4 || isNaN(newPin)) { alert('PIN must be exactly 4 digits.'); return; }
+    const reps = getReps();
+    const rep = reps.find(r => r.id === currentId);
+    if (rep) rep.pin = newPin;
+    saveReps(reps);
+    showToast('✅ PIN updated!');
+  }
+
+  function changeMgrPin() {
+    const newPin = prompt('Enter new 4-digit Manager PIN:');
+    if (!newPin || newPin.length !== 4 || isNaN(newPin)) { alert('PIN must be exactly 4 digits.'); return; }
+    saveMgrPin(newPin);
+    showToast('✅ Manager PIN updated!');
+  }
+
+  function openSheet() {
+    window.open('https://docs.google.com/spreadsheets', '_blank');
   }
 
   // TABS
   function switchTab(tab) {
-    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','log','customers','jobs'][i] === tab));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
     document.getElementById('view-' + tab).classList.add('active');
     if (tab === 'dashboard') updateDashboard();
-    if (tab === 'customers') renderCustomers('', activeFilter);
+    if (tab === 'leads') renderLeads('');
     if (tab === 'jobs') renderJobs('');
+    if (tab === 'manager') updateManager();
   }
 
   // HELPERS
   function formatDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
-  function showToast(msg) {
-    const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
     setTimeout(() => t.classList.remove('show'), 2500);
-  }
-
-  function init() {
-    document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
-    document.getElementById('l-date').value = new Date().toISOString().split('T')[0];
-    updateDashboard();
   }
 </script>
 </body>
 </html>
+
