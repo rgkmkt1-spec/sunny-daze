@@ -219,8 +219,8 @@
     <button class="rep-btn" onclick="selectRep('Ringo Fry', '1001')">
       <span>Ringo Fry</span><span class="rep-id">#1001</span>
     </button>
-    <button class="rep-btn" onclick="selectRep('Brian', '1002')">
-      <span>Brian</span><span class="rep-id">#1002</span>
+    <button class="rep-btn" onclick="selectRep('Brian Lydic', '1002')">
+      <span>Brian Lydic</span><span class="rep-id">#1002</span>
     </button>
     <button class="rep-btn" onclick="selectRep('Rob Keller', '1003')">
       <span>Rob Keller</span><span class="rep-id">#1003</span>
@@ -479,10 +479,10 @@
     </div>
     <div class="settings-row">
       <div>
-        <div class="settings-label">Brian</div>
+        <div class="settings-label">Brian Lydic</div>
         <div class="settings-val">Rep ID: <span id="s-1002">1002</span></div>
       </div>
-      <button class="btn-change" onclick="changePin('Brian', '1002')">Change PIN</button>
+      <button class="btn-change" onclick="changePin('Brian Lydic', '1002')">Change PIN</button>
     </div>
     <div class="settings-row">
       <div>
@@ -517,7 +517,7 @@
   function getReps() {
     return JSON.parse(localStorage.getItem('sd_reps') || JSON.stringify([
       { name: 'Ringo Fry', id: '1001', pin: '1001' },
-      { name: 'Brian', id: '1002', pin: '1002' },
+      { name: 'Brian Lydic', id: '1002', pin: '1002' },
       { name: 'Rob Keller', id: '1003', pin: '1003' }
     ]));
   }
@@ -931,4 +931,3 @@
 </script>
 </body>
 </html>
-
