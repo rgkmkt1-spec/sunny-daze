@@ -3,319 +3,276 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SunnyDaze Job Dashboard</title>
+  <title>SunnyDaze Sales Tool</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --navy: #0A1628; --mid: #0F1E38; --card: #1E293B;
       --blue: #00B4D8; --cyan: #90E0EF; --white: #F8FAFC;
       --gray: #94A3B8; --green: #28a745; --red: #dc3545;
+      --yellow: #ffc107; --orange: #fd7e14;
     }
-    body { font-family: 'Arial', sans-serif; background: var(--navy); color: var(--white); min-height: 100vh; }
+    body { font-family: Arial, sans-serif; background: var(--navy); color: var(--white); min-height: 100vh; }
 
-    /* HEADER */
-    header {
-      background: var(--mid); padding: 16px 20px;
-      border-bottom: 3px solid var(--blue);
-      position: sticky; top: 0; z-index: 100;
-    }
-    header h1 { font-size: 1.3rem; color: var(--blue); font-weight: 900; letter-spacing: 0.05em; }
-    header p { font-size: 0.75rem; color: var(--gray); }
-
-    /* TABS */
-    .tabs { display: flex; background: var(--card); border-bottom: 2px solid var(--blue); }
-    .tab {
-      flex: 1; padding: 14px 8px; text-align: center;
-      font-size: 0.85rem; font-weight: 700; letter-spacing: 0.05em;
-      color: var(--gray); cursor: pointer; border: none;
-      background: none; text-transform: uppercase;
-      transition: color 0.2s, border-bottom 0.2s;
-      border-bottom: 3px solid transparent;
-    }
-    .tab.active { color: var(--blue); border-bottom: 3px solid var(--blue); }
-
-    /* VIEWS */
-    .view { display: none; padding: 16px; }
-    .view.active { display: block; }
-
-    /* STATS CARDS */
-    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    .stat-card {
-      background: var(--card); border-radius: 10px; padding: 16px;
-      border: 1px solid rgba(0,180,216,0.2); text-align: center;
-    }
-    .stat-card.green { border-color: var(--green); }
-    .stat-card.red { border-color: var(--red); }
-    .stat-label { font-size: 0.7rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
-    .stat-value { font-size: 1.5rem; font-weight: 900; color: var(--white); }
-    .stat-card.green .stat-value { color: #5cb85c; }
-    .stat-card.red .stat-value { color: #e05a6a; }
-
-    /* FORM */
-    .form-card {
-      background: var(--card); border-radius: 12px; padding: 20px;
-      border: 1px solid rgba(0,180,216,0.2);
-    }
-    .form-card h2 { font-size: 1.1rem; color: var(--blue); margin-bottom: 16px; font-weight: 900; }
-    .form-group { margin-bottom: 14px; }
-    .form-group label {
-      display: block; font-size: 0.75rem; font-weight: 700;
-      color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 6px;
-    }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; background: var(--mid); border: 1px solid rgba(0,180,216,0.2);
-      border-radius: 8px; padding: 12px 14px; color: var(--white);
-      font-size: 1rem; outline: none; transition: border-color 0.2s;
-    }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-      border-color: var(--blue);
-    }
-    .form-group select option { background: var(--mid); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .btn-submit {
-      width: 100%; padding: 16px; background: var(--blue); color: var(--navy);
-      border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 900;
-      letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer;
-      margin-top: 6px; transition: background 0.2s;
-    }
-    .btn-submit:hover { background: var(--cyan); }
-
-    /* JOB LIST */
-    .job-list { display: flex; flex-direction: column; gap: 12px; }
-    .job-card {
-      background: var(--card); border-radius: 10px; padding: 16px;
-      border: 1px solid rgba(0,180,216,0.15);
-    }
-    .job-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-    .job-name { font-size: 1rem; font-weight: 700; color: var(--white); }
-    .job-amount { font-size: 1.1rem; font-weight: 900; color: var(--blue); }
-    .job-details { font-size: 0.82rem; color: var(--gray); margin-bottom: 8px; line-height: 1.6; }
-    .job-badges { display: flex; gap: 8px; flex-wrap: wrap; }
-    .badge {
-      font-size: 0.7rem; font-weight: 700; padding: 3px 10px;
-      border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;
-    }
-    .badge-paid { background: rgba(40,167,69,0.2); color: #5cb85c; border: 1px solid #5cb85c; }
-    .badge-unpaid { background: rgba(220,53,69,0.2); color: #e05a6a; border: 1px solid #e05a6a; }
-    .badge-payment { background: rgba(0,180,216,0.15); color: var(--blue); border: 1px solid var(--blue); }
-    .badge-service { background: rgba(144,224,239,0.1); color: var(--cyan); border: 1px solid var(--cyan); }
-    .job-card-actions { display: flex; gap: 8px; margin-top: 10px; }
-    .btn-delete {
-      padding: 6px 14px; background: rgba(220,53,69,0.15); color: #e05a6a;
-      border: 1px solid #e05a6a; border-radius: 6px; font-size: 0.78rem;
-      font-weight: 700; cursor: pointer; text-transform: uppercase;
-    }
-    .btn-toggle-paid {
-      padding: 6px 14px; background: rgba(40,167,69,0.15); color: #5cb85c;
-      border: 1px solid #5cb85c; border-radius: 6px; font-size: 0.78rem;
-      font-weight: 700; cursor: pointer; text-transform: uppercase;
-    }
-    .empty-state { text-align: center; padding: 40px 20px; color: var(--gray); }
-    .empty-state span { font-size: 2.5rem; display: block; margin-bottom: 10px; }
-
-    /* SEARCH */
-    .search-bar {
-      width: 100%; background: var(--card); border: 1px solid rgba(0,180,216,0.2);
-      border-radius: 8px; padding: 12px 14px; color: var(--white);
-      font-size: 1rem; outline: none; margin-bottom: 16px;
-    }
-    .search-bar:focus { border-color: var(--blue); }
-
-    /* SUCCESS TOAST */
-    .toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: var(--green); color: white; padding: 12px 28px;
-      border-radius: 24px; font-weight: 700; font-size: 0.9rem;
-      z-index: 999; display: none; white-space: nowrap;
-    }
-    .toast.show { display: block; }
-
-    /* PIN SCREEN */
+    /* PIN */
     .pin-screen {
       position: fixed; inset: 0; background: var(--navy);
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       z-index: 9999; padding: 24px;
     }
-    .pin-screen h2 { font-size: 1.5rem; color: var(--blue); margin-bottom: 8px; font-weight: 900; }
-    .pin-screen p { color: var(--gray); font-size: 0.9rem; margin-bottom: 24px; text-align: center; }
+    .pin-logo { font-size: 2rem; font-weight: 900; color: var(--blue); margin-bottom: 4px; }
+    .pin-sub { color: var(--gray); font-size: 0.85rem; margin-bottom: 28px; }
     .pin-input {
-      width: 100%; max-width: 280px; background: var(--card);
+      width: 100%; max-width: 260px; background: var(--card);
       border: 2px solid var(--blue); border-radius: 10px;
-      padding: 16px; color: var(--white); font-size: 1.5rem;
-      text-align: center; letter-spacing: 0.3em; outline: none; margin-bottom: 16px;
+      padding: 16px; color: var(--white); font-size: 2rem;
+      text-align: center; letter-spacing: 0.4em; outline: none; margin-bottom: 14px;
     }
     .pin-btn {
-      width: 100%; max-width: 280px; padding: 14px; background: var(--blue);
+      width: 100%; max-width: 260px; padding: 14px; background: var(--blue);
       color: var(--navy); border: none; border-radius: 8px;
       font-size: 1rem; font-weight: 900; cursor: pointer; text-transform: uppercase;
     }
-    .pin-error { color: #e05a6a; font-size: 0.85rem; margin-top: 8px; display: none; }
+    .pin-error { color: #e05a6a; font-size: 0.85rem; margin-top: 10px; display: none; }
+
+    /* HEADER */
+    header {
+      background: var(--mid); padding: 12px 16px;
+      border-bottom: 3px solid var(--blue);
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-logo { font-size: 1.1rem; font-weight: 900; color: var(--blue); }
+    .header-date { font-size: 0.75rem; color: var(--gray); }
+
+    /* TABS */
+    .tabs { display: flex; background: var(--card); border-bottom: 2px solid var(--blue); overflow-x: auto; }
+    .tab {
+      flex: 1; min-width: 70px; padding: 12px 6px; text-align: center;
+      font-size: 0.7rem; font-weight: 700; color: var(--gray); cursor: pointer;
+      border: none; background: none; text-transform: uppercase;
+      border-bottom: 3px solid transparent; white-space: nowrap;
+    }
+    .tab.active { color: var(--blue); border-bottom: 3px solid var(--blue); }
+
+    /* VIEWS */
+    .view { display: none; padding: 14px; }
+    .view.active { display: block; }
+
+    /* STATS */
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .stat-card {
+      background: var(--card); border-radius: 10px; padding: 14px;
+      border: 1px solid rgba(0,180,216,0.2); text-align: center;
+    }
+    .stat-card.green { border-color: var(--green); }
+    .stat-card.red { border-color: var(--red); }
+    .stat-card.yellow { border-color: var(--yellow); }
+    .stat-card.orange { border-color: var(--orange); }
+    .stat-label { font-size: 0.65rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+    .stat-value { font-size: 1.4rem; font-weight: 900; color: var(--white); }
+    .stat-card.green .stat-value { color: #5cb85c; }
+    .stat-card.red .stat-value { color: #e05a6a; }
+    .stat-card.yellow .stat-value { color: var(--yellow); }
+    .stat-card.orange .stat-value { color: var(--orange); }
+
+    /* FORM */
+    .form-card { background: var(--card); border-radius: 12px; padding: 16px; border: 1px solid rgba(0,180,216,0.2); margin-bottom: 14px; }
+    .form-card h2 { font-size: 1rem; color: var(--blue); margin-bottom: 14px; font-weight: 900; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.7rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; background: var(--mid); border: 1px solid rgba(0,180,216,0.2);
+      border-radius: 8px; padding: 11px 12px; color: var(--white);
+      font-size: 0.95rem; outline: none;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--blue); }
+    .form-group select option { background: var(--mid); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* TAX BOX */
+    .tax-box { background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .tax-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; margin-bottom: 4px; }
+    .tax-row.total { font-weight: 900; font-size: 1rem; color: var(--blue); border-top: 1px solid rgba(0,180,216,0.2); padding-top: 8px; margin-top: 4px; }
+    .tax-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.8rem; color: var(--gray); }
+    .tax-toggle input[type=checkbox] { width: 16px; height: 16px; }
+
+    /* BUTTONS */
+    .btn-submit { width: 100%; padding: 14px; background: var(--blue); color: var(--navy); border: none; border-radius: 8px; font-size: 1rem; font-weight: 900; letter-spacing: 0.05em; text-transform: uppercase; cursor: pointer; margin-top: 4px; }
+    .btn-sold { background: var(--green); }
+    .btn-lost { background: var(--red); color: white; }
+
+    /* STATUS BUTTONS */
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .status-btn {
+      padding: 12px 8px; border: 2px solid; border-radius: 8px;
+      font-size: 0.8rem; font-weight: 900; cursor: pointer;
+      text-align: center; text-transform: uppercase; background: transparent;
+    }
+    .status-btn.sold { border-color: var(--green); color: var(--green); }
+    .status-btn.sold.active { background: var(--green); color: white; }
+    .status-btn.estimate { border-color: var(--yellow); color: var(--yellow); }
+    .status-btn.estimate.active { background: var(--yellow); color: var(--navy); }
+    .status-btn.followup { border-color: var(--orange); color: var(--orange); }
+    .status-btn.followup.active { background: var(--orange); color: white; }
+    .status-btn.lost { border-color: var(--red); color: var(--red); }
+    .status-btn.lost.active { background: var(--red); color: white; }
+
+    /* CUSTOMER CARDS */
+    .customer-list { display: flex; flex-direction: column; gap: 10px; }
+    .customer-card { background: var(--card); border-radius: 10px; padding: 14px; border-left: 4px solid var(--blue); }
+    .customer-card.sold { border-left-color: var(--green); }
+    .customer-card.estimate { border-left-color: var(--yellow); }
+    .customer-card.followup { border-left-color: var(--orange); }
+    .customer-card.lost { border-left-color: var(--red); }
+    .customer-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .customer-name { font-size: 1rem; font-weight: 700; }
+    .customer-amount { font-size: 1rem; font-weight: 900; color: var(--blue); }
+    .customer-details { font-size: 0.78rem; color: var(--gray); line-height: 1.6; margin-bottom: 8px; }
+    .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .badge { font-size: 0.65rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; }
+    .badge-sold { background: rgba(40,167,69,0.2); color: #5cb85c; border: 1px solid #5cb85c; }
+    .badge-estimate { background: rgba(255,193,7,0.2); color: var(--yellow); border: 1px solid var(--yellow); }
+    .badge-followup { background: rgba(253,126,20,0.2); color: var(--orange); border: 1px solid var(--orange); }
+    .badge-lost { background: rgba(220,53,69,0.2); color: #e05a6a; border: 1px solid #e05a6a; }
+    .badge-service { background: rgba(0,180,216,0.15); color: var(--blue); border: 1px solid var(--blue); }
+    .card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .action-btn { padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; cursor: pointer; border: 1px solid; text-transform: uppercase; background: transparent; }
+    .action-btn.green { border-color: var(--green); color: var(--green); }
+    .action-btn.red { border-color: var(--red); color: #e05a6a; }
+    .action-btn.blue { border-color: var(--blue); color: var(--blue); }
+    .action-btn.orange { border-color: var(--orange); color: var(--orange); }
+
+    /* SEARCH */
+    .search-bar { width: 100%; background: var(--card); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 11px 14px; color: var(--white); font-size: 0.95rem; outline: none; margin-bottom: 14px; }
+
+    /* FILTER PILLS */
+    .filter-pills { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
+    .pill { padding: 6px 14px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; cursor: pointer; border: 1px solid; white-space: nowrap; background: transparent; text-transform: uppercase; }
+    .pill.all { border-color: var(--blue); color: var(--blue); }
+    .pill.all.active { background: var(--blue); color: var(--navy); }
+    .pill.sold { border-color: var(--green); color: var(--green); }
+    .pill.sold.active { background: var(--green); color: white; }
+    .pill.estimate { border-color: var(--yellow); color: var(--yellow); }
+    .pill.estimate.active { background: var(--yellow); color: var(--navy); }
+    .pill.followup { border-color: var(--orange); color: var(--orange); }
+    .pill.followup.active { background: var(--orange); color: white; }
+    .pill.lost { border-color: var(--red); color: #e05a6a; }
+    .pill.lost.active { background: var(--red); color: white; }
+
+    /* TOAST */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--green); color: white; padding: 12px 24px; border-radius: 24px; font-weight: 700; font-size: 0.88rem; z-index: 999; display: none; white-space: nowrap; }
+    .toast.show { display: block; }
+
+    .empty-state { text-align: center; padding: 32px 20px; color: var(--gray); }
+    .empty-state span { font-size: 2rem; display: block; margin-bottom: 8px; }
+
+    /* SECTION TITLE */
+    .section-title { font-size: 0.8rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; margin-top: 4px; }
   </style>
 </head>
 <body>
 
-<!-- PIN SCREEN -->
+<!-- PIN -->
 <div class="pin-screen" id="pinScreen">
-  <h2>🔒 SUNNYDAZE</h2>
-  <p>Enter your PIN to access the Job Dashboard</p>
+  <div class="pin-logo">⚡ SUNNYDAZE</div>
+  <div class="pin-sub">Sales & Job Tracker — Enter PIN</div>
   <input type="password" class="pin-input" id="pinInput" placeholder="••••" maxlength="4" inputmode="numeric"/>
-  <button class="pin-btn" onclick="checkPin()">ENTER</button>
-  <p class="pin-error" id="pinError">Incorrect PIN. Try again.</p>
+  <button class="pin-btn" onclick="checkPin()">UNLOCK</button>
+  <div class="pin-error" id="pinError">Wrong PIN. Try again.</div>
 </div>
 
 <!-- HEADER -->
 <header>
-  <h1>⚡ SUNNYDAZE JOB DASHBOARD</h1>
-  <p>Pressure Washing · Job Log & Revenue Tracker</p>
+  <div class="header-logo">⚡ SUNNYDAZE SALES</div>
+  <div class="header-date" id="headerDate"></div>
 </header>
 
 <!-- TABS -->
 <div class="tabs">
   <button class="tab active" onclick="switchTab('dashboard')">📊 Dash</button>
-  <button class="tab" onclick="switchTab('add')">➕ Job</button>
-  <button class="tab" onclick="switchTab('sales')">🤝 Sales</button>
-  <button class="tab" onclick="switchTab('jobs')">📋 Jobs</button>
+  <button class="tab" onclick="switchTab('log')">➕ Log</button>
+  <button class="tab" onclick="switchTab('customers')">👥 Leads</button>
+  <button class="tab" onclick="switchTab('jobs')">🔧 Jobs</button>
 </div>
 
 <!-- DASHBOARD -->
 <div class="view active" id="view-dashboard">
   <div class="stats">
     <div class="stat-card green">
-      <div class="stat-label">💰 Revenue Collected</div>
-      <div class="stat-value" id="stat-revenue">$0.00</div>
+      <div class="stat-label">💰 Revenue</div>
+      <div class="stat-value" id="d-revenue">$0</div>
     </div>
-    <div class="stat-card red">
-      <div class="stat-label">⚠️ Outstanding</div>
-      <div class="stat-value" id="stat-outstanding">$0.00</div>
+    <div class="stat-card yellow">
+      <div class="stat-label">📋 Estimates</div>
+      <div class="stat-value" id="d-estimates">0</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">📋 Total Jobs</div>
-      <div class="stat-value" id="stat-jobs">0</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">✅ Paid Jobs</div>
-      <div class="stat-value" id="stat-paid">0</div>
-    </div>
-  </div>
-
-  <div class="form-card">
-    <h2>📅 Recent Jobs</h2>
-    <div class="job-list" id="recent-list"></div>
-  </div>
-</div>
-
-<!-- ADD JOB -->
-<div class="view" id="view-add">
-  <div class="form-card">
-    <h2>➕ Log New Job</h2>
-    <div class="form-group">
-      <label>Customer Name *</label>
-      <input type="text" id="f-name" placeholder="John Smith"/>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Phone Number</label>
-        <input type="tel" id="f-phone" placeholder="(814) 555-0000"/>
-      </div>
-      <div class="form-group">
-        <label>Date *</label>
-        <input type="date" id="f-date"/>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Address</label>
-      <input type="text" id="f-address" placeholder="123 Main St, Erie PA"/>
-    </div>
-    <div class="form-group">
-      <label>Service Performed *</label>
-      <select id="f-service">
-        <option value="">Select service...</option>
-        <option>House Washing</option>
-        <option>Mobile Home Washing</option>
-        <option>Driveway & Concrete</option>
-        <option>Deck & Fence</option>
-        <option>Roof Treatment</option>
-        <option>Gutter Cleaning</option>
-        <option>Commercial Cleaning</option>
-        <option>Multiple Services</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Amount Charged *</label>
-        <input type="number" id="f-amount" placeholder="0.00" step="0.01" min="0"/>
-      </div>
-      <div class="form-group">
-        <label>Payment Method</label>
-        <select id="f-payment">
-          <option>Credit Card</option>
-          <option>Cash</option>
-          <option>Check</option>
-          <option>PayPal</option>
-          <option>Venmo</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Paid?</label>
-      <select id="f-paid">
-        <option value="Yes">Yes — Paid</option>
-        <option value="No">No — Unpaid</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Notes</label>
-      <textarea id="f-notes" rows="3" placeholder="Any additional notes..."></textarea>
-    </div>
-    <button class="btn-submit" onclick="addJob()">💾 SAVE JOB</button>
-  </div>
-</div>
-
-<!-- SALES -->
-<div class="view" id="view-sales">
-  <div class="stats">
-    <div class="stat-card green">
-      <div class="stat-label">🤝 Estimates Sold</div>
-      <div class="stat-value" id="stat-sold">0</div>
-    </div>
-    <div class="stat-card red">
-      <div class="stat-label">📞 Follow Up</div>
-      <div class="stat-value" id="stat-followup">0</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">💰 Pipeline Value</div>
-      <div class="stat-value" id="stat-pipeline">$0</div>
+    <div class="stat-card orange">
+      <div class="stat-label">🔔 Follow Ups</div>
+      <div class="stat-value" id="d-followups">0</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">✅ Close Rate</div>
-      <div class="stat-value" id="stat-closerate">0%</div>
+      <div class="stat-value" id="d-closerate">0%</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">🤝 Sold</div>
+      <div class="stat-value" id="d-sold">0</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">❌ Lost</div>
+      <div class="stat-value" id="d-lost">0</div>
     </div>
   </div>
 
-  <div class="form-card" style="margin-bottom:16px">
-    <h2>🤝 Log New Estimate</h2>
+  <div class="section-title">Today's Follow Ups</div>
+  <div class="customer-list" id="d-followup-list"></div>
+
+  <div class="section-title" style="margin-top:16px">Recent Activity</div>
+  <div class="customer-list" id="d-recent"></div>
+</div>
+
+<!-- LOG NEW CUSTOMER -->
+<div class="view" id="view-log">
+  <div class="form-card">
+    <h2>➕ Log Customer</h2>
+
+    <!-- STATUS SELECTOR -->
     <div class="form-group">
-      <label>Customer Name *</label>
-      <input type="text" id="s-name" placeholder="John Smith"/>
+      <label>Outcome *</label>
+      <div class="status-grid">
+        <button class="status-btn sold" onclick="setStatus('Sold')">✅ SOLD</button>
+        <button class="status-btn estimate" onclick="setStatus('Estimate')">📋 ESTIMATE</button>
+        <button class="status-btn followup" onclick="setStatus('Follow Up')">🔔 FOLLOW UP</button>
+        <button class="status-btn lost" onclick="setStatus('Lost')">❌ NOT INTERESTED</button>
+      </div>
+      <input type="hidden" id="l-status" value=""/>
     </div>
+
     <div class="form-row">
       <div class="form-group">
-        <label>Phone Number</label>
-        <input type="tel" id="s-phone" placeholder="(814) 555-0000"/>
+        <label>First Name *</label>
+        <input type="text" id="l-fname" placeholder="John"/>
       </div>
       <div class="form-group">
-        <label>Date *</label>
-        <input type="date" id="s-date"/>
+        <label>Last Name</label>
+        <input type="text" id="l-lname" placeholder="Smith"/>
       </div>
     </div>
+
+    <div class="form-group">
+      <label>Phone Number</label>
+      <input type="tel" id="l-phone" placeholder="(814) 555-0000"/>
+    </div>
+
     <div class="form-group">
       <label>Address</label>
-      <input type="text" id="s-address" placeholder="123 Main St, Erie PA"/>
+      <input type="text" id="l-address" placeholder="123 Main St, Erie PA"/>
     </div>
+
     <div class="form-group">
-      <label>Service Requested</label>
-      <select id="s-service">
+      <label>Service</label>
+      <select id="l-service">
         <option value="">Select service...</option>
         <option>House Washing</option>
         <option>Mobile Home Washing</option>
@@ -327,51 +284,98 @@
         <option>Multiple Services</option>
       </select>
     </div>
+
+    <!-- AMOUNT + TAX -->
     <div class="form-group">
-      <label>Estimate Amount *</label>
-      <input type="number" id="s-amount" placeholder="0.00" step="0.01" min="0"/>
+      <label>Amount ($)</label>
+      <input type="number" id="l-amount" placeholder="0.00" step="0.01" min="0" oninput="calcTax()"/>
     </div>
+
+    <div class="tax-box" id="taxBox" style="display:none">
+      <div class="tax-toggle">
+        <input type="checkbox" id="l-taxable" onchange="calcTax()"/>
+        <label for="l-taxable">Apply PA Sales Tax (6%)</label>
+      </div>
+      <div class="tax-row"><span>Subtotal</span><span id="t-subtotal">$0.00</span></div>
+      <div class="tax-row"><span>PA Tax (6%)</span><span id="t-tax">$0.00</span></div>
+      <div class="tax-row total"><span>TOTAL</span><span id="t-total">$0.00</span></div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Job Date</label>
+        <input type="date" id="l-date"/>
+      </div>
+      <div class="form-group">
+        <label>Follow Up Date</label>
+        <input type="date" id="l-followup"/>
+      </div>
+    </div>
+
     <div class="form-group">
-      <label>Status *</label>
-      <select id="s-status">
-        <option value="Pending">Pending — Waiting for response</option>
-        <option value="Sold">Sold — They said YES!</option>
-        <option value="Follow Up">Follow Up — Need to call back</option>
-        <option value="Lost">Lost — They said no</option>
+      <label>Payment Method</label>
+      <select id="l-payment">
+        <option value="">N/A</option>
+        <option>Credit Card</option>
+        <option>Cash</option>
+        <option>Check</option>
+        <option>PayPal</option>
+        <option>Venmo</option>
       </select>
     </div>
-    <div class="form-group">
-      <label>Follow Up Date</label>
-      <input type="date" id="s-followup"/>
-    </div>
+
     <div class="form-group">
       <label>Notes</label>
-      <textarea id="s-notes" rows="3" placeholder="Details about the estimate..."></textarea>
+      <textarea id="l-notes" rows="2" placeholder="Gate code, dog in yard, special instructions..."></textarea>
     </div>
-    <button class="btn-submit" onclick="addEstimate()">💾 SAVE ESTIMATE</button>
-  </div>
 
-  <div class="form-card">
-    <h2>📋 All Estimates</h2>
-    <input class="search-bar" type="text" placeholder="🔍 Search estimates..." oninput="renderEstimates(this.value)" style="margin-top:8px"/>
-    <div class="job-list" id="estimates-list"></div>
+    <button class="btn-submit" onclick="saveCustomer()">💾 SAVE</button>
   </div>
 </div>
 
-<!-- ALL JOBS -->
+<!-- LEADS / CUSTOMERS -->
+<div class="view" id="view-customers">
+  <input class="search-bar" type="text" placeholder="🔍 Search by name, address..." oninput="renderCustomers(this.value, activeFilter)"/>
+  <div class="filter-pills">
+    <button class="pill all active" onclick="filterBy('All')">All</button>
+    <button class="pill sold" onclick="filterBy('Sold')">✅ Sold</button>
+    <button class="pill estimate" onclick="filterBy('Estimate')">📋 Estimate</button>
+    <button class="pill followup" onclick="filterBy('Follow Up')">🔔 Follow Up</button>
+    <button class="pill lost" onclick="filterBy('Lost')">❌ Lost</button>
+  </div>
+  <div class="customer-list" id="customers-list"></div>
+</div>
+
+<!-- JOBS (SOLD + COMPLETED) -->
 <div class="view" id="view-jobs">
-  <input class="search-bar" type="text" placeholder="🔍 Search by name, service, address..." oninput="renderJobs(this.value)"/>
-  <div class="job-list" id="all-jobs-list"></div>
+  <div class="stats" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="stat-card green">
+      <div class="stat-label">💰 Collected</div>
+      <div class="stat-value" id="j-collected">$0</div>
+    </div>
+    <div class="stat-card red">
+      <div class="stat-label">⚠️ Unpaid</div>
+      <div class="stat-value" id="j-unpaid">$0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">📋 Jobs</div>
+      <div class="stat-value" id="j-count">0</div>
+    </div>
+  </div>
+  <input class="search-bar" type="text" placeholder="🔍 Search jobs..." oninput="renderJobs(this.value)"/>
+  <div class="customer-list" id="jobs-list"></div>
 </div>
 
-<div class="toast" id="toast">✅ Job saved!</div>
+<div class="toast" id="toast">✅ Saved!</div>
 
 <script>
+  const PIN = '1234';
+  let activeFilter = 'All';
+  let selectedStatus = '';
+
   // PIN
-  const PIN = '1234'; // Change this to your desired PIN
   function checkPin() {
-    const val = document.getElementById('pinInput').value;
-    if (val === PIN) {
+    if (document.getElementById('pinInput').value === PIN) {
       document.getElementById('pinScreen').style.display = 'none';
       init();
     } else {
@@ -379,304 +383,245 @@
       document.getElementById('pinInput').value = '';
     }
   }
-  document.getElementById('pinInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') checkPin();
-  });
+  document.getElementById('pinInput').addEventListener('keydown', e => { if (e.key === 'Enter') checkPin(); });
 
   // STORAGE
-  async function getJobs() {
-    try {
-      const r = await window.storage.get('sunnydaze_jobs');
-      return r ? JSON.parse(r.value) : [];
-    } catch { return []; }
+  async function getData() {
+    try { const r = await window.storage.get('sd_customers'); return r ? JSON.parse(r.value) : []; } catch { return []; }
   }
-  async function saveJobs(jobs) {
-    await window.storage.set('sunnydaze_jobs', JSON.stringify(jobs));
+  async function saveData(data) { await window.storage.set('sd_customers', JSON.stringify(data)); }
+
+  // STATUS SELECTOR
+  function setStatus(s) {
+    selectedStatus = s;
+    document.getElementById('l-status').value = s;
+    document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+    const map = { 'Sold': 'sold', 'Estimate': 'estimate', 'Follow Up': 'followup', 'Lost': 'lost' };
+    document.querySelector(`.status-btn.${map[s]}`).classList.add('active');
+    // Show amount for sold/estimate
+    document.getElementById('taxBox').style.display = (s === 'Sold' || s === 'Estimate') ? 'block' : 'none';
   }
 
-  // TABS
-  function switchTab(tab) {
-    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','add','sales','jobs'][i] === tab));
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-' + tab).classList.add('active');
-    if (tab === 'dashboard') updateDashboard();
-    if (tab === 'jobs') renderJobs('');
-    if (tab === 'sales') { updateSalesDash(); renderEstimates(''); }
+  // TAX CALC
+  function calcTax() {
+    const amt = parseFloat(document.getElementById('l-amount').value) || 0;
+    const taxable = document.getElementById('l-taxable').checked;
+    const tax = taxable ? amt * 0.06 : 0;
+    const total = amt + tax;
+    document.getElementById('t-subtotal').textContent = '$' + amt.toFixed(2);
+    document.getElementById('t-tax').textContent = '$' + tax.toFixed(2);
+    document.getElementById('t-total').textContent = '$' + total.toFixed(2);
   }
 
-  // SALES STORAGE
-  async function getEstimates() {
-    try {
-      const r = await window.storage.get('sunnydaze_estimates');
-      return r ? JSON.parse(r.value) : [];
-    } catch { return []; }
-  }
-  async function saveEstimates(estimates) {
-    await window.storage.set('sunnydaze_estimates', JSON.stringify(estimates));
-  }
+  // SAVE CUSTOMER
+  async function saveCustomer() {
+    const fname = document.getElementById('l-fname').value.trim();
+    const status = document.getElementById('l-status').value;
+    if (!fname) { alert('Please enter a customer name.'); return; }
+    if (!status) { alert('Please select an outcome.'); return; }
 
-  // ADD ESTIMATE
-  async function addEstimate() {
-    const name = document.getElementById('s-name').value.trim();
-    const amount = parseFloat(document.getElementById('s-amount').value);
-    if (!name || !amount) { alert('Please fill in Customer Name and Estimate Amount.'); return; }
+    const amt = parseFloat(document.getElementById('l-amount').value) || 0;
+    const taxable = document.getElementById('l-taxable').checked;
+    const tax = taxable ? amt * 0.06 : 0;
+    const total = amt + tax;
 
-    const estimate = {
+    const customer = {
       id: Date.now(),
-      name,
-      phone: document.getElementById('s-phone').value.trim(),
-      date: document.getElementById('s-date').value,
-      address: document.getElementById('s-address').value.trim(),
-      service: document.getElementById('s-service').value,
-      amount,
-      status: document.getElementById('s-status').value,
-      followup: document.getElementById('s-followup').value,
-      notes: document.getElementById('s-notes').value.trim()
+      fname, lname: document.getElementById('l-lname').value.trim(),
+      phone: document.getElementById('l-phone').value.trim(),
+      address: document.getElementById('l-address').value.trim(),
+      service: document.getElementById('l-service').value,
+      amount: amt, tax, total, taxable,
+      status, date: document.getElementById('l-date').value,
+      followup: document.getElementById('l-followup').value,
+      payment: document.getElementById('l-payment').value,
+      notes: document.getElementById('l-notes').value.trim(),
+      paid: status === 'Sold' ? 'No' : ''
     };
 
-    const estimates = await getEstimates();
-    estimates.unshift(estimate);
-    await saveEstimates(estimates);
+    const data = await getData();
+    data.unshift(customer);
+    await saveData(data);
 
-    ['s-name','s-phone','s-address','s-amount','s-notes','s-followup'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('s-service').value = '';
-    document.getElementById('s-status').value = 'Pending';
+    // Reset
+    ['l-fname','l-lname','l-phone','l-address','l-amount','l-notes','l-followup'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('l-service').value = '';
+    document.getElementById('l-payment').value = '';
+    document.getElementById('l-taxable').checked = false;
+    document.getElementById('l-date').value = new Date().toISOString().split('T')[0];
+    document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('l-status').value = '';
+    document.getElementById('taxBox').style.display = 'none';
+    selectedStatus = '';
+    calcTax();
 
-    showToast('✅ Estimate saved!');
-    updateSalesDash();
-    renderEstimates('');
+    showToast('✅ Customer saved!');
+    updateDashboard();
   }
 
-  // RENDER ESTIMATES
-  async function renderEstimates(search = '') {
-    const estimates = await getEstimates();
-    const filtered = search ? estimates.filter(e =>
-      e.name.toLowerCase().includes(search.toLowerCase()) ||
-      (e.service && e.service.toLowerCase().includes(search.toLowerCase())) ||
-      (e.address && e.address.toLowerCase().includes(search.toLowerCase()))
-    ) : estimates;
+  // DASHBOARD
+  async function updateDashboard() {
+    const data = await getData();
+    const sold = data.filter(d => d.status === 'Sold');
+    const estimates = data.filter(d => d.status === 'Estimate');
+    const followups = data.filter(d => d.status === 'Follow Up');
+    const lost = data.filter(d => d.status === 'Lost');
+    const revenue = sold.filter(d => d.paid === 'Yes').reduce((s, d) => s + (d.total || d.amount), 0);
+    const total = sold.length + estimates.length + lost.length;
+    const closerate = total ? Math.round((sold.length / total) * 100) : 0;
 
-    const list = document.getElementById('estimates-list');
-    if (filtered.length === 0) {
-      list.innerHTML = '<div class="empty-state"><span>🤝</span>No estimates yet.</div>';
-      return;
-    }
+    document.getElementById('d-revenue').textContent = '$' + revenue.toFixed(0);
+    document.getElementById('d-estimates').textContent = estimates.length;
+    document.getElementById('d-followups').textContent = followups.length;
+    document.getElementById('d-closerate').textContent = closerate + '%';
+    document.getElementById('d-sold').textContent = sold.length;
+    document.getElementById('d-lost').textContent = lost.length;
 
-    const statusColors = {
-      'Sold': 'badge-paid',
-      'Lost': 'badge-unpaid',
-      'Pending': 'badge-payment',
-      'Follow Up': 'badge-service'
-    };
+    // Today's follow ups
+    const today = new Date().toISOString().split('T')[0];
+    const todayFollowups = data.filter(d => d.followup === today);
+    const fuList = document.getElementById('d-followup-list');
+    fuList.innerHTML = todayFollowups.length ? todayFollowups.map(c => customerCardHTML(c)).join('') :
+      '<div class="empty-state"><span>✅</span>No follow ups today!</div>';
 
-    list.innerHTML = filtered.map(e => `
-      <div class="job-card">
-        <div class="job-card-top">
-          <div>
-            <div class="job-name">${e.name}</div>
-            <div class="job-details">
-              ${e.date ? '📅 ' + formatDate(e.date) + '<br>' : ''}
-              ${e.phone ? '📞 ' + e.phone + '<br>' : ''}
-              ${e.address ? '📍 ' + e.address : ''}
-              ${e.followup ? '<br>🔔 Follow up: ' + formatDate(e.followup) : ''}
-            </div>
-          </div>
-          <div class="job-amount">$${parseFloat(e.amount).toFixed(2)}</div>
-        </div>
-        <div class="job-badges">
-          <span class="badge ${statusColors[e.status] || 'badge-payment'}">${e.status}</span>
-          ${e.service ? '<span class="badge badge-service">' + e.service + '</span>' : ''}
-        </div>
-        ${e.notes ? '<div style="margin-top:8px;font-size:0.8rem;color:var(--gray)">📝 ' + e.notes + '</div>' : ''}
-        <div class="job-card-actions">
-          <button class="btn-toggle-paid" onclick="updateEstimateStatus(${e.id}, 'Sold')">✅ Mark Sold</button>
-          <button class="btn-toggle-paid" onclick="updateEstimateStatus(${e.id}, 'Follow Up')" style="background:rgba(0,180,216,0.15);color:var(--blue);border-color:var(--blue)">🔔 Follow Up</button>
-          <button class="btn-delete" onclick="deleteEstimate(${e.id})">🗑</button>
-        </div>
-      </div>
-    `).join('');
+    // Recent
+    const recent = document.getElementById('d-recent');
+    recent.innerHTML = data.slice(0, 5).map(c => customerCardHTML(c)).join('') ||
+      '<div class="empty-state"><span>📋</span>No customers logged yet.</div>';
   }
 
-  // UPDATE ESTIMATE STATUS
-  async function updateEstimateStatus(id, status) {
-    const estimates = await getEstimates();
-    const e = estimates.find(e => e.id === id);
-    if (e) e.status = status;
-    await saveEstimates(estimates);
-    renderEstimates('');
-    updateSalesDash();
-    showToast(`✅ Marked as ${status}!`);
-  }
-
-  // DELETE ESTIMATE
-  async function deleteEstimate(id) {
-    if (!confirm('Delete this estimate?')) return;
-    const estimates = await getEstimates();
-    await saveEstimates(estimates.filter(e => e.id !== id));
-    renderEstimates('');
-    updateSalesDash();
-    showToast('🗑 Estimate deleted');
-  }
-
-  // SALES DASHBOARD
-  async function updateSalesDash() {
-    const estimates = await getEstimates();
-    const sold = estimates.filter(e => e.status === 'Sold').length;
-    const followup = estimates.filter(e => e.status === 'Follow Up').length;
-    const pipeline = estimates.reduce((s, e) => s + parseFloat(e.amount), 0);
-    const closerate = estimates.length ? Math.round((sold / estimates.length) * 100) : 0;
-
-    document.getElementById('stat-sold').textContent = sold;
-    document.getElementById('stat-followup').textContent = followup;
-    document.getElementById('stat-pipeline').textContent = '$' + pipeline.toFixed(0);
-    document.getElementById('stat-closerate').textContent = closerate + '%';
-  }
-
-  // ADD ESTIMATE
-  async function addJob() {
-    const name = document.getElementById('f-name').value.trim();
-    const amount = parseFloat(document.getElementById('f-amount').value);
-    const service = document.getElementById('f-service').value;
-    if (!name || !amount || !service) { alert('Please fill in Customer Name, Service and Amount.'); return; }
-
-    const job = {
-      id: Date.now(),
-      name,
-      phone: document.getElementById('f-phone').value.trim(),
-      date: document.getElementById('f-date').value,
-      address: document.getElementById('f-address').value.trim(),
-      service,
-      amount,
-      payment: document.getElementById('f-payment').value,
-      paid: document.getElementById('f-paid').value,
-      notes: document.getElementById('f-notes').value.trim()
-    };
-
-    const jobs = await getJobs();
-    jobs.unshift(job);
-    await saveJobs(jobs);
-
-    // Reset form
-    ['f-name','f-phone','f-date','f-address','f-amount','f-notes'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('f-service').value = '';
-    document.getElementById('f-paid').value = 'Yes';
-
-    showToast('✅ Job saved successfully!');
-    switchTab('dashboard');
+  // RENDER CUSTOMERS
+  async function renderCustomers(search = '', filter = 'All') {
+    const data = await getData();
+    let filtered = filter === 'All' ? data : data.filter(d => d.status === filter);
+    if (search) filtered = filtered.filter(d =>
+      (d.fname + ' ' + d.lname).toLowerCase().includes(search.toLowerCase()) ||
+      (d.address && d.address.toLowerCase().includes(search.toLowerCase()))
+    );
+    const list = document.getElementById('customers-list');
+    list.innerHTML = filtered.length ? filtered.map(c => customerCardHTML(c)).join('') :
+      '<div class="empty-state"><span>👥</span>No customers found.</div>';
   }
 
   // RENDER JOBS
   async function renderJobs(search = '') {
-    const jobs = await getJobs();
-    const filtered = search ? jobs.filter(j =>
-      j.name.toLowerCase().includes(search.toLowerCase()) ||
-      j.service.toLowerCase().includes(search.toLowerCase()) ||
-      (j.address && j.address.toLowerCase().includes(search.toLowerCase()))
-    ) : jobs;
-
-    const list = document.getElementById('all-jobs-list');
-    if (filtered.length === 0) {
-      list.innerHTML = '<div class="empty-state"><span>📋</span>No jobs found.</div>';
-      return;
-    }
-    list.innerHTML = filtered.map(job => `
-      <div class="job-card" id="job-${job.id}">
-        <div class="job-card-top">
-          <div>
-            <div class="job-name">${job.name}</div>
-            <div class="job-details">
-              ${job.date ? '📅 ' + formatDate(job.date) + '<br>' : ''}
-              ${job.phone ? '📞 ' + job.phone + '<br>' : ''}
-              ${job.address ? '📍 ' + job.address : ''}
-            </div>
-          </div>
-          <div class="job-amount">$${parseFloat(job.amount).toFixed(2)}</div>
-        </div>
-        <div class="job-badges">
-          <span class="badge badge-service">${job.service}</span>
-          <span class="badge badge-payment">${job.payment}</span>
-          <span class="badge ${job.paid === 'Yes' ? 'badge-paid' : 'badge-unpaid'}">${job.paid === 'Yes' ? '✅ Paid' : '⚠️ Unpaid'}</span>
-        </div>
-        ${job.notes ? '<div style="margin-top:8px;font-size:0.8rem;color:var(--gray)">📝 ' + job.notes + '</div>' : ''}
-        <div class="job-card-actions">
-          <button class="btn-toggle-paid" onclick="togglePaid(${job.id})">${job.paid === 'Yes' ? 'Mark Unpaid' : 'Mark Paid'}</button>
-          <button class="btn-delete" onclick="deleteJob(${job.id})">🗑 Delete</button>
-        </div>
-      </div>
-    `).join('');
+    const data = await getData();
+    let jobs = data.filter(d => d.status === 'Sold');
+    if (search) jobs = jobs.filter(d =>
+      (d.fname + ' ' + d.lname).toLowerCase().includes(search.toLowerCase()) ||
+      (d.address && d.address.toLowerCase().includes(search.toLowerCase()))
+    );
+    const collected = jobs.filter(d => d.paid === 'Yes').reduce((s, d) => s + (d.total || d.amount), 0);
+    const unpaid = jobs.filter(d => d.paid !== 'Yes').reduce((s, d) => s + (d.total || d.amount), 0);
+    document.getElementById('j-collected').textContent = '$' + collected.toFixed(0);
+    document.getElementById('j-unpaid').textContent = '$' + unpaid.toFixed(0);
+    document.getElementById('j-count').textContent = jobs.length;
+    const list = document.getElementById('jobs-list');
+    list.innerHTML = jobs.length ? jobs.map(c => customerCardHTML(c, true)).join('') :
+      '<div class="empty-state"><span>🔧</span>No sold jobs yet.</div>';
   }
 
-  // UPDATE DASHBOARD
-  async function updateDashboard() {
-    const jobs = await getJobs();
-    const paid = jobs.filter(j => j.paid === 'Yes');
-    const unpaid = jobs.filter(j => j.paid === 'No');
-    const revenue = paid.reduce((s, j) => s + parseFloat(j.amount), 0);
-    const outstanding = unpaid.reduce((s, j) => s + parseFloat(j.amount), 0);
-
-    document.getElementById('stat-revenue').textContent = '$' + revenue.toFixed(2);
-    document.getElementById('stat-outstanding').textContent = '$' + outstanding.toFixed(2);
-    document.getElementById('stat-jobs').textContent = jobs.length;
-    document.getElementById('stat-paid').textContent = paid.length;
-
-    const recent = document.getElementById('recent-list');
-    const last5 = jobs.slice(0, 5);
-    if (last5.length === 0) {
-      recent.innerHTML = '<div class="empty-state"><span>📋</span>No jobs yet. Add your first job!</div>';
-      return;
-    }
-    recent.innerHTML = last5.map(job => `
-      <div class="job-card">
-        <div class="job-card-top">
+  // CUSTOMER CARD HTML
+  function customerCardHTML(c, showPayToggle = false) {
+    const statusClass = { 'Sold': 'sold', 'Estimate': 'estimate', 'Follow Up': 'followup', 'Lost': 'lost' }[c.status] || '';
+    const badgeClass = { 'Sold': 'badge-sold', 'Estimate': 'badge-estimate', 'Follow Up': 'badge-followup', 'Lost': 'badge-lost' }[c.status] || '';
+    const name = c.fname + (c.lname ? ' ' + c.lname : '');
+    const amount = c.total || c.amount || 0;
+    return `
+      <div class="customer-card ${statusClass}">
+        <div class="customer-top">
           <div>
-            <div class="job-name">${job.name}</div>
-            <div class="job-details">${job.service}${job.date ? ' · ' + formatDate(job.date) : ''}</div>
+            <div class="customer-name">${name}</div>
+            <div class="customer-details">
+              ${c.phone ? '📞 ' + c.phone + '<br>' : ''}
+              ${c.address ? '📍 ' + c.address + '<br>' : ''}
+              ${c.date ? '📅 ' + formatDate(c.date) : ''}
+              ${c.followup ? ' · 🔔 Follow up: ' + formatDate(c.followup) : ''}
+            </div>
           </div>
-          <div class="job-amount">$${parseFloat(job.amount).toFixed(2)}</div>
+          ${amount > 0 ? '<div class="customer-amount">$' + parseFloat(amount).toFixed(2) + '</div>' : ''}
         </div>
-        <div class="job-badges">
-          <span class="badge ${job.paid === 'Yes' ? 'badge-paid' : 'badge-unpaid'}">${job.paid === 'Yes' ? '✅ Paid' : '⚠️ Unpaid'}</span>
-          <span class="badge badge-payment">${job.payment}</span>
+        <div class="badges">
+          <span class="badge ${badgeClass}">${c.status}</span>
+          ${c.service ? '<span class="badge badge-service">' + c.service + '</span>' : ''}
+          ${c.payment ? '<span class="badge badge-service">' + c.payment + '</span>' : ''}
+          ${c.taxable ? '<span class="badge badge-estimate">+Tax</span>' : ''}
+          ${showPayToggle ? '<span class="badge ' + (c.paid === 'Yes' ? 'badge-sold' : 'badge-lost') + '">' + (c.paid === 'Yes' ? '✅ Paid' : '⚠️ Unpaid') + '</span>' : ''}
         </div>
-      </div>
-    `).join('');
+        ${c.notes ? '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:8px">📝 ' + c.notes + '</div>' : ''}
+        <div class="card-actions">
+          ${showPayToggle ? '<button class="action-btn green" onclick="togglePaid(' + c.id + ')">' + (c.paid === 'Yes' ? 'Mark Unpaid' : 'Mark Paid') + '</button>' : ''}
+          <button class="action-btn blue" onclick="changeStatus(${c.id})">✏️ Status</button>
+          <button class="action-btn red" onclick="deleteCustomer(${c.id})">🗑</button>
+        </div>
+      </div>`;
   }
 
   // TOGGLE PAID
   async function togglePaid(id) {
-    const jobs = await getJobs();
-    const job = jobs.find(j => j.id === id);
-    if (job) { job.paid = job.paid === 'Yes' ? 'No' : 'Yes'; }
-    await saveJobs(jobs);
+    const data = await getData();
+    const c = data.find(d => d.id === id);
+    if (c) c.paid = c.paid === 'Yes' ? 'No' : 'Yes';
+    await saveData(data);
     renderJobs('');
-    showToast('✅ Payment status updated!');
+    updateDashboard();
+    showToast('✅ Payment updated!');
   }
 
-  // DELETE JOB
-  async function deleteJob(id) {
-    if (!confirm('Delete this job?')) return;
-    const jobs = await getJobs();
-    await saveJobs(jobs.filter(j => j.id !== id));
+  // CHANGE STATUS
+  async function changeStatus(id) {
+    const statuses = ['Sold', 'Estimate', 'Follow Up', 'Lost'];
+    const s = prompt('New status:\n1. Sold\n2. Estimate\n3. Follow Up\n4. Lost\n\nEnter number:');
+    if (!s || !statuses[parseInt(s)-1]) return;
+    const data = await getData();
+    const c = data.find(d => d.id === id);
+    if (c) { c.status = statuses[parseInt(s)-1]; if (c.status === 'Sold') c.paid = c.paid || 'No'; }
+    await saveData(data);
+    renderCustomers('', activeFilter);
     renderJobs('');
-    showToast('🗑 Job deleted');
+    updateDashboard();
+    showToast('✅ Status updated!');
+  }
+
+  // DELETE
+  async function deleteCustomer(id) {
+    if (!confirm('Delete this customer?')) return;
+    const data = await getData();
+    await saveData(data.filter(d => d.id !== id));
+    renderCustomers('', activeFilter);
+    renderJobs('');
+    updateDashboard();
+    showToast('🗑 Deleted');
+  }
+
+  // FILTER
+  function filterBy(f) {
+    activeFilter = f;
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    document.querySelector('.pill.' + f.toLowerCase().replace(' ', '')).classList.add('active');
+    renderCustomers('', f);
+  }
+
+  // TABS
+  function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ['dashboard','log','customers','jobs'][i] === tab));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + tab).classList.add('active');
+    if (tab === 'dashboard') updateDashboard();
+    if (tab === 'customers') renderCustomers('', activeFilter);
+    if (tab === 'jobs') renderJobs('');
   }
 
   // HELPERS
-  function formatDate(d) {
-    if (!d) return '';
-    const [y,m,day] = d.split('-');
-    return m + '/' + day + '/' + y;
-  }
+  function formatDate(d) { if (!d) return ''; const [y,m,day] = d.split('-'); return m+'/'+day+'/'+y; }
   function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
+    const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
   function init() {
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('f-date').value = today;
-    document.getElementById('s-date').value = today;
+    document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', {weekday:'short', month:'short', day:'numeric'});
+    document.getElementById('l-date').value = new Date().toISOString().split('T')[0];
     updateDashboard();
   }
 </script>
