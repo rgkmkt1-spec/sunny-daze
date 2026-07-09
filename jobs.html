@@ -547,14 +547,23 @@
 
   // FINGERPRINT AUTH
   async function setupFingerprint() {
-    if (!window.PublicKeyCredential) return;
     try {
+      if (!window.PublicKeyCredential) return;
       const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
       if (available) {
         document.getElementById('fingerprintLoginBtn').style.display = 'block';
         document.getElementById('fingerprintPinBtn').style.display = 'block';
       }
-    } catch(e) {}
+    } catch(e) {
+      // Fingerprint not available - silently fail
+    }
+  }
+
+  function showPin(mode) {
+    pinMode = mode;
+    document.getElementById('pinTitle').textContent = mode === 'manager' ? 'Manager Access' : 'Enter PIN';
+    document.getElementById('pinSub').textContent = 'Enter your 4-digit PIN';
+    showPinScreen();
   }
 
   async function fingerprintLogin() {
@@ -643,12 +652,6 @@
     pendingRep = { name, id };
     pinMode = 'rep';
     document.getElementById('pinTitle').textContent = `Welcome, ${name}`;
-    document.getElementById('pinSub').textContent = 'Enter your 4-digit PIN';
-    showPinScreen();
-  }
-  function showPin(mode) {
-    pinMode = mode;
-    document.getElementById('pinTitle').textContent = mode === 'manager' ? 'Manager Access' : 'Enter PIN';
     document.getElementById('pinSub').textContent = 'Enter your 4-digit PIN';
     showPinScreen();
   }
