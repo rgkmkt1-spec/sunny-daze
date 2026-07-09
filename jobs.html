@@ -226,6 +226,7 @@
       <span>Rob Keller</span>
     </button>
     <button class="manager-btn" onclick="showPin('manager')">👔 MANAGER VIEW</button>
+    <button class="manager-btn" id="fingerprintLoginBtn" onclick="fingerprintLogin()" style="margin-top:8px;border-color:#5cb85c;color:#5cb85c;display:none;">👆 USE FINGERPRINT</button>
   </div>
 </div>
 
@@ -249,6 +250,7 @@
     <div class="pin-key back" onclick="pinBack()">⌫</div>
   </div>
   <div class="pin-error" id="pinError">Incorrect PIN. Try again.</div>
+  <button id="fingerprintPinBtn" onclick="fingerprintLogin()" style="display:none;margin-top:14px;background:none;border:1px solid #5cb85c;color:#5cb85c;padding:10px 24px;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;">👆 USE FINGERPRINT INSTEAD</button>
   <div class="pin-cancel" onclick="cancelPin()">Cancel</div>
 </div>
 
@@ -260,6 +262,7 @@
   </div>
   <div class="header-right">
     <div style="font-size:0.7rem;color:var(--gray)" id="headerDate"></div>
+    <button class="logout-btn" id="mgrHeaderBtn" onclick="switchTab('manager')" style="display:none;background:rgba(0,180,216,0.15);border-color:var(--blue);color:var(--blue);">👔 Mgr</button>
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>
 </header>
@@ -511,9 +514,11 @@
 <script>
   // CONFIG
   const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxMcDyLC5BoesSJ0DiTdGR10HeB_6jkLi7CHdJrLC5RzadI0SUYBNaZdPXrjHiv1fPu/exec';
-  const GOOGLE_SHEET_LINK = 'https://docs.google.com/spreadsheets/d/1/edit'; // update with real sheet URL
+  const GOOGLE_SHEET_LINK = 'https://docs.google.com/spreadsheets/d/1L2ieCAX6EHKWncVMKV_hbuLjrALOHD4gGsKXD9BP_zQ/edit?gid=0#gid=0';
   
   // REPS & PINS stored in localStorage so they can be changed
+  // Check fingerprint on load
+  window.addEventListener('load', setupFingerprint);
   function getReps() {
     return JSON.parse(localStorage.getItem('sd_reps') || JSON.stringify([
       { name: 'Ringo Fry', id: '1001', pin: '1001' },
@@ -539,6 +544,99 @@
     try { return JSON.parse(localStorage.getItem('sd_customers') || '[]'); } catch { return []; }
   }
   function saveData(data) { localStorage.setItem('sd_customers', JSON.stringify(data)); }
+
+  // FINGERPRINT AUTH
+  async function setupFingerprint() {
+    if (!window.PublicKeyCredential) return;
+    try {
+      const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      if (available) {
+        document.getElementById('fingerprintLoginBtn').style.display = 'block';
+        document.getElementById('fingerprintPinBtn').style.display = 'block';
+      }
+    } catch(e) {}
+  }
+
+  async function fingerprintLogin() {
+    try {
+      // Check if we have a stored credential
+      const storedCred = localStorage.getItem('sd_fingerprint_cred');
+      
+      if (!storedCred) {
+        // First time — register fingerprint
+        const repName = pendingRep ? pendingRep.name : 'Manager';
+        const challenge = new Uint8Array(32);
+        window.crypto.getRandomValues(challenge);
+        
+        const credential = await navigator.credentials.create({
+          publicKey: {
+            challenge,
+            rp: { name: 'SunnyDaze Sales', id: location.hostname },
+            user: {
+              id: new TextEncoder().encode(repName),
+              name: repName,
+              displayName: repName
+            },
+            pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+            authenticatorSelection: {
+              authenticatorAttachment: 'platform',
+              userVerification: 'required'
+            },
+            timeout: 60000
+          }
+        });
+
+        // Store credential ID and who registered
+        localStorage.setItem('sd_fingerprint_cred', JSON.stringify({
+          id: Array.from(new Uint8Array(credential.rawId)),
+          repId: pendingRep ? pendingRep.id : 'MGR',
+          repName: pendingRep ? pendingRep.name : 'Manager',
+          isManager: !pendingRep
+        }));
+
+        showToast('✅ Fingerprint registered! Use it next time to login.');
+        return;
+      }
+
+      // Verify fingerprint
+      const cred = JSON.parse(storedCred);
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      await navigator.credentials.get({
+        publicKey: {
+          challenge,
+          allowCredentials: [{
+            type: 'public-key',
+            id: new Uint8Array(cred.id)
+          }],
+          userVerification: 'required',
+          timeout: 60000
+        }
+      });
+
+      // Success — log in as stored rep or manager
+      if (cred.isManager) {
+        isManager = true;
+        currentRep = { name: 'Manager', id: 'MGR' };
+      } else {
+        const reps = getReps();
+        currentRep = reps.find(r => r.id === cred.repId) || { name: cred.repName, id: cred.repId };
+        isManager = false;
+      }
+
+      document.getElementById('pinScreen').classList.remove('show');
+      loginSuccess();
+      showToast('👆 Fingerprint login successful!');
+
+    } catch(e) {
+      if (e.name === 'NotAllowedError') {
+        showToast('Fingerprint cancelled', true);
+      } else {
+        showToast('Fingerprint not available', true);
+      }
+    }
+  }
 
   // LOGIN
   function selectRep(name, id) {
@@ -608,6 +706,7 @@
     if (isManager) {
       document.getElementById('tab-manager').style.display = 'block';
       document.getElementById('tab-settings').style.display = 'block';
+      document.getElementById('mgrHeaderBtn').style.display = 'block';
     }
     switchTab('dashboard');
   }
@@ -618,6 +717,7 @@
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('tab-manager').style.display = 'none';
     document.getElementById('tab-settings').style.display = 'none';
+    document.getElementById('mgrHeaderBtn').style.display = 'none';
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-dashboard').classList.add('active');
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -904,8 +1004,8 @@
     showToast('✅ Manager PIN updated!');
   }
 
-  function openSheet() {
-    window.open('https://docs.google.com/spreadsheets', '_blank');
+  function openSheet() { window.open(GOOGLE_SHEET_LINK, '_blank'); }
+    prompt('Copy this link to open your Google Sheet:', 'https://docs.google.com/spreadsheets');
   }
 
   // TABS
