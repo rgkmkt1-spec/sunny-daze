@@ -734,8 +734,6 @@ function updateManager() {
     .then(function(r) { return r.json(); })
     .then(function(response) {
       var sheetData = response.data || [];
-      
-      // Merge sheet data with local data (avoid duplicates by repId+fname+date)
       var allData = sheetData.length > 0 ? sheetData : data;
       
       var sold = allData.filter(function(d){return d.status==='Sold';});
@@ -751,6 +749,19 @@ function updateManager() {
       document.getElementById('m-estimates').textContent = estimates.length;
       document.getElementById('m-followups').textContent = followups.length;
       document.getElementById('m-closerate').textContent = (total ? Math.round((sold.length/total)*100) : 0) + '%';
+
+      // Check today's follow ups and alert
+      var today = new Date().toISOString().split('T')[0];
+      var todayFU = allData.filter(function(d){ return d.followup === today && d.status === 'Follow Up'; });
+      if (todayFU.length > 0) {
+        // Show badge on Follow Up pill
+        var fuPill = document.querySelector('#view-manager .p-followup');
+        if (fuPill) fuPill.textContent = '🔔 Follow Up (' + todayFU.length + ' TODAY)';
+        // Show alert
+        setTimeout(function() {
+          showFollowUpAlert(todayFU);
+        }, 500);
+      }
 
       // Per rep stats
       document.getElementById('rep-sections').innerHTML = reps.map(function(rep) {
@@ -772,7 +783,6 @@ function updateManager() {
       renderMgrLeads('');
     })
     .catch(function() {
-      // Fallback to local data if fetch fails
       var allData = data;
       var sold = allData.filter(function(d){return d.status==='Sold';});
       var estimates = allData.filter(function(d){return d.status==='Estimate';});
@@ -792,10 +802,66 @@ function updateManager() {
     });
 }
 
+function showFollowUpAlert(followups) {
+  var existing = document.getElementById('fuAlert');
+  if (existing) existing.remove();
+  
+  var alert = document.createElement('div');
+  alert.id = 'fuAlert';
+  alert.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,22,40,0.95);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;';
+  
+  var names = followups.map(function(f){ return '• ' + f.fname + ' ' + (f.lname||'') + (f.phone?' — 📞 '+f.phone:''); }).join('\n');
+  
+  alert.innerHTML = '<div style="background:var(--card);border:2px solid var(--orange);border-radius:16px;padding:24px;width:100%;max-width:340px;text-align:center;">' +
+    '<div style="font-size:2rem;margin-bottom:8px;">🔔</div>' +
+    '<div style="font-size:1.2rem;font-weight:900;color:var(--orange);margin-bottom:6px;">TODAY\'S FOLLOW UPS</div>' +
+    '<div style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;">You have <strong style="color:var(--white)">'+followups.length+'</strong> follow up'+(followups.length>1?'s':'')+' due today!</div>' +
+    '<div style="background:var(--mid);border-radius:8px;padding:12px;margin-bottom:16px;text-align:left;">' +
+    followups.map(function(f){
+      return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+        '<div style="font-size:0.9rem;font-weight:700;color:var(--white)">'+f.fname+' '+(f.lname||'')+'</div>' +
+        (f.phone?'<div style="font-size:0.78rem;color:var(--gray)">📞 '+f.phone+'</div>':'') +
+        (f.repName?'<div style="font-size:0.72rem;color:var(--blue)">Rep: '+f.repName+'</div>':'') +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    '<button onclick="document.getElementById(\'fuAlert\').remove(); filterMgr(\'Follow Up\', document.querySelector(\'#view-manager .p-followup\'))" style="width:100%;padding:14px;background:var(--orange);color:white;border:none;border-radius:8px;font-weight:900;font-size:1rem;cursor:pointer;margin-bottom:8px;">VIEW FOLLOW UPS</button>' +
+    '<button onclick="document.getElementById(\'fuAlert\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.85rem;cursor:pointer;">Dismiss</button>' +
+    '</div>';
+  
+  document.body.appendChild(alert);
+}
+
 function renderMgrLeads(search) {
   var data = mgrAllData.length > 0 ? mgrAllData : getData();
   if(mgrFilter!=='All') data=data.filter(function(d){return d.status===mgrFilter;});
   if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase());});
+  
+  // Sort follow ups by follow up date ascending
+  if(mgrFilter==='Follow Up') {
+    data = data.sort(function(a,b){
+      var da = a.followup || '9999';
+      var db = b.followup || '9999';
+      return da < db ? -1 : da > db ? 1 : 0;
+    });
+    var today = new Date().toISOString().split('T')[0];
+    var todayFU = data.filter(function(d){ return d.followup === today; });
+    var otherFU = data.filter(function(d){ return d.followup !== today; });
+    var html = '';
+    if(todayFU.length > 0) {
+      html += '<div style="background:rgba(253,126,20,0.15);border:1px solid var(--orange);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:0.75rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.08em;">🔔 Due Today — ' + todayFU.length + ' Follow Up' + (todayFU.length>1?'s':'') + '</div>';
+      html += todayFU.map(function(c){return cardHTML(c,false,true);}).join('');
+      if(otherFU.length > 0) {
+        html += '<div style="font-size:0.72rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin:12px 0 8px;">Upcoming</div>';
+        html += otherFU.map(function(c){return cardHTML(c,false,true);}).join('');
+      }
+    } else {
+      html = data.length ? data.map(function(c){return cardHTML(c,false,true);}).join('') : '<div class="empty-state"><span>🔔</span>No follow ups found.</div>';
+    }
+    document.getElementById('mgr-leads-list').innerHTML = html;
+    return;
+  }
+  
   document.getElementById('mgr-leads-list').innerHTML=data.length?data.map(function(c){return cardHTML(c,false,true);}).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
 }
 
