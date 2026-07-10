@@ -223,7 +223,7 @@
   </div>
   <div class="header-right">
     <div style="font-size:0.7rem;color:var(--gray)" id="headerDate"></div>
-    <button class="hdr-btn blue" id="mgrHeaderBtn" onclick="switchTab('manager')" style="display:none">👔 Mgr</button>
+    <button class="hdr-btn blue" id="mgrHeaderBtn" onclick="showPin('manager')" style="display:none">👔 Mgr</button>
     <button class="hdr-btn" onclick="logout()">Logout</button>
   </div>
 </header>
@@ -458,9 +458,21 @@
     var reps = getReps();
     if (pinMode === 'manager') {
       if (pinValue === getMgrPin()) {
-        isManager = true;
-        currentRep = {name:'Manager', id:'MGR'};
-        loginSuccess();
+        if (!currentRep) {
+          // Logging in fresh as manager
+          isManager = true;
+          currentRep = {name:'Manager', id:'MGR'};
+          loginSuccess();
+        } else {
+          // Already logged in as rep — just unlock manager tabs
+          isManager = true;
+          document.getElementById('headerRep').textContent = '👔 Manager View';
+          document.getElementById('tab-manager').style.display = 'block';
+          document.getElementById('tab-settings').style.display = 'block';
+          document.getElementById('pinScreen').classList.remove('show');
+          switchTab('manager');
+          showToast('👔 Manager access granted!');
+        }
       } else { pinFail(); }
     } else {
       var rep = null;
@@ -486,10 +498,10 @@
     document.getElementById('headerRep').textContent = isManager ? '👔 Manager View' : 'Rep #' + currentRep.id + ' — ' + currentRep.name;
     document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
     document.getElementById('l-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('mgrHeaderBtn').style.display = 'block';
     if (isManager) {
       document.getElementById('tab-manager').style.display = 'block';
       document.getElementById('tab-settings').style.display = 'block';
-      document.getElementById('mgrHeaderBtn').style.display = 'block';
     }
     switchTab('dashboard');
   }
