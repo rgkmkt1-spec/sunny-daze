@@ -999,18 +999,25 @@ function changeStatus(id) {
 function deleteCustomer(id) {
   if (!confirm('Are you sure you want to delete this customer?')) return;
   if (!confirm('FINAL CONFIRMATION: Delete permanently from Google Sheets?')) return;
-  saveData(getData().filter(function(d){return d.id!==id;}));
+  var data = getData();
+  var customer = data.find(function(d){return d.id===id;});
+  saveData(data.filter(function(d){return d.id!==id;}));
   mgrAllData = mgrAllData.filter(function(d){return d.id!==id;});
-  fetch(SHEET_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({type:'delete', rowId: id})
-  }).then(function(){
-    showToast('🗑 Customer deleted!');
-  }).catch(function(){
-    showToast('🗑 Deleted locally only', true);
-  });
+  if (customer) {
+    fetch(SHEET_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        type: 'delete',
+        repId: customer.repId,
+        fname: customer.fname,
+        lname: customer.lname || '',
+        date: customer.date || ''
+      })
+    }).then(function(){ showToast('🗑 Customer deleted!'); })
+      .catch(function(){ showToast('🗑 Deleted locally', true); });
+  }
   renderLeads(''); renderJobs(''); updateDashboard();
   if(isManager) updateManager();
 }
