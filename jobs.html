@@ -380,8 +380,17 @@ function repFingerprint() {
     }).then(function() {
       var reps = getReps();
       var rep = reps.find(function(r) { return r.id === saved.repId; });
-      if (rep) { currentRep = rep; isManager = false; loginSuccess(); showToast('👆 Welcome ' + rep.name + '!'); }
-    }).catch(function() { showToast('Fingerprint failed — use PIN', true); });
+      if (rep) {
+        document.getElementById('pinScreen').classList.remove('show');
+        document.getElementById('loginScreen').style.display = 'none';
+        currentRep = rep;
+        isManager = false;
+        loginSuccess();
+        showToast('👆 Welcome ' + rep.name + '!');
+      } else {
+        showToast('Rep not found — use PIN', true);
+      }
+    }).catch(function(e) { showToast('Fingerprint failed — use PIN', true); });
   } catch(e) { showToast('Fingerprint not available', true); }
 }
 
@@ -395,6 +404,8 @@ function mgrAccess() {
       navigator.credentials.get({
         publicKey: { challenge: challenge, allowCredentials: [{ type: 'public-key', id: new Uint8Array(mgrFp.id) }], userVerification: 'required', timeout: 60000 }
       }).then(function() {
+        document.getElementById('pinScreen').classList.remove('show');
+        document.getElementById('loginScreen').style.display = 'none';
         unlockManager();
         showToast('👆 Manager access granted!');
       }).catch(function() {
