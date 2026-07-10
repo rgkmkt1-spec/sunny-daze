@@ -514,10 +514,17 @@ function registerMgrFingerprint() {
       }
     }).then(function(cred) {
       localStorage.setItem('sd_mgr_fp', JSON.stringify({ id: Array.from(new Uint8Array(cred.rawId)) }));
+      document.getElementById('pinScreen').classList.remove('show');
       showToast('👆 Manager fingerprint registered!');
       unlockManager();
-    }).catch(function() { unlockManager(); });
-  } catch(e) { unlockManager(); }
+    }).catch(function() {
+      document.getElementById('pinScreen').classList.remove('show');
+      unlockManager();
+    });
+  } catch(e) {
+    document.getElementById('pinScreen').classList.remove('show');
+    unlockManager();
+  }
 }
 
 function registerRepFingerprint(rep) {
@@ -535,10 +542,17 @@ function registerRepFingerprint(rep) {
       }
     }).then(function(cred) {
       localStorage.setItem('sd_rep_fp', JSON.stringify({ id: Array.from(new Uint8Array(cred.rawId)), repId: rep.id }));
+      document.getElementById('pinScreen').classList.remove('show');
       showToast('👆 Fingerprint registered!');
       currentRep = rep; isManager = false; loginSuccess();
-    }).catch(function() { currentRep = rep; isManager = false; loginSuccess(); });
-  } catch(e) { currentRep = rep; isManager = false; loginSuccess(); }
+    }).catch(function() {
+      document.getElementById('pinScreen').classList.remove('show');
+      currentRep = rep; isManager = false; loginSuccess();
+    });
+  } catch(e) {
+    document.getElementById('pinScreen').classList.remove('show');
+    currentRep = rep; isManager = false; loginSuccess();
+  }
 }
 
 function pinFail() {
