@@ -197,6 +197,7 @@
   <button class="tab" id="tab-log" onclick="switchTab('log')">➕ Log</button>
   <button class="tab" id="tab-leads" onclick="switchTab('leads')">👥 Leads</button>
   <button class="tab" id="tab-jobs" onclick="switchTab('jobs')">🔧 Jobs</button>
+  <button class="tab" id="tab-commercial" onclick="switchTab('commercial')" style="display:none">🏢 Biz</button>
   <button class="tab" id="tab-manager" onclick="switchTab('manager')" style="display:none">👔 Mgr</button>
   <button class="tab" id="tab-settings" onclick="switchTab('settings')" style="display:none">⚙️ Set</button>
 </div>
@@ -297,6 +298,61 @@
   </div>
   <input class="search-bar" type="text" placeholder="🔍 Search jobs..." oninput="renderJobs(this.value)"/>
   <div class="customer-list" id="jobs-list"></div>
+</div>
+
+<!-- COMMERCIAL -->
+<div class="view" id="view-commercial">
+  <div class="stats three">
+    <div class="stat-card green"><div class="stat-label">💰 Monthly Revenue</div><div class="stat-value" id="c-revenue">$0</div></div>
+    <div class="stat-card"><div class="stat-label">🏢 Accounts</div><div class="stat-value" id="c-count">0</div></div>
+    <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="c-unpaid">0</div></div>
+  </div>
+  <div class="form-card" style="margin-bottom:14px">
+    <h2>🏢 Add Commercial Account</h2>
+    <div class="form-group"><label>Business Name *</label><input type="text" id="c-business" placeholder="ABC Restaurant"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>Contact Name</label><input type="text" id="c-contact" placeholder="John Smith"/></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="c-phone" placeholder="(814) 555-0000"/></div>
+    </div>
+    <div class="form-group"><label>Address</label><input type="text" id="c-address" placeholder="123 Main St, Erie PA"/></div>
+    <div class="form-group">
+      <label>Service</label>
+      <select id="c-service">
+        <option value="">Select service...</option>
+        <option>Parking Lot Cleaning</option>
+        <option>Building Exterior Wash</option>
+        <option>Dumpster Area Cleaning</option>
+        <option>Sidewalk & Entrance</option>
+        <option>Grease Trap Area</option>
+        <option>Full Commercial Clean</option>
+        <option>Multiple Services</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Schedule</label>
+        <select id="c-schedule">
+          <option value="">Select...</option>
+          <option>Daily</option>
+          <option>Weekly</option>
+          <option>Bi-Weekly</option>
+          <option>Monthly</option>
+          <option>Quarterly</option>
+          <option>Yearly</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Amount ($)</label><input type="number" id="c-amount" placeholder="0.00" step="0.01" min="0"/></div>
+    </div>
+    <div class="form-group"><label>Next Service Date</label><input type="date" id="c-nextdate"/></div>
+    <div class="form-group"><label>Notes</label><textarea id="c-notes" rows="2" placeholder="Gate code, special instructions..."></textarea></div>
+    <button class="btn-submit" onclick="saveCommercial()">💾 SAVE ACCOUNT</button>
+    <div class="saving-ind" id="c-savingInd">⏳ Saving to Google Sheets...</div>
+  </div>
+  <div class="form-card">
+    <h2>📋 Commercial Accounts</h2>
+    <input class="search-bar" type="text" placeholder="🔍 Search accounts..." oninput="renderCommercial(this.value)" style="margin-top:8px"/>
+    <div class="customer-list" id="commercial-list"></div>
+  </div>
 </div>
 
 <div class="view" id="view-manager">
@@ -600,6 +656,7 @@ function unlockManager() {
   } else {
     isManager = true;
     document.getElementById('headerRep').textContent = '👔 Manager View';
+    document.getElementById('tab-commercial').style.display = 'block';
     document.getElementById('tab-manager').style.display = 'block';
     document.getElementById('tab-settings').style.display = 'block';
     switchTab('manager');
@@ -616,6 +673,7 @@ function loginSuccess() {
   document.getElementById('l-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('mgrHeaderBtn').style.display = 'block';
   if (isManager) {
+    document.getElementById('tab-commercial').style.display = 'block';
     document.getElementById('tab-manager').style.display = 'block';
     document.getElementById('tab-settings').style.display = 'block';
   }
@@ -629,6 +687,7 @@ function logout() {
   document.getElementById('mainHeader').style.display = 'none';
   document.getElementById('mainTabs').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('tab-commercial').style.display = 'none';
   document.getElementById('tab-manager').style.display = 'none';
   document.getElementById('tab-settings').style.display = 'none';
   document.getElementById('mgrHeaderBtn').style.display = 'none';
@@ -1014,6 +1073,95 @@ function switchTab(tab) {
   if(tab==='jobs') renderJobs('');
   if(tab==='manager') updateManager();
   if(tab==='settings') renderRepList();
+  if(tab==='commercial') { renderCommercial(''); updateCommercialStats(); }
+}
+
+function saveCommercial() {
+  var business = document.getElementById('c-business').value.trim();
+  if (!business) { alert('Please enter a business name.'); return; }
+  var account = {
+    id: Date.now(), type: 'commercial',
+    business: business,
+    contact: document.getElementById('c-contact').value.trim(),
+    phone: document.getElementById('c-phone').value.trim(),
+    address: document.getElementById('c-address').value.trim(),
+    service: document.getElementById('c-service').value,
+    schedule: document.getElementById('c-schedule').value,
+    amount: parseFloat(document.getElementById('c-amount').value) || 0,
+    nextDate: document.getElementById('c-nextdate').value,
+    notes: document.getElementById('c-notes').value.trim(),
+    repName: currentRep.name, paid: 'No'
+  };
+  var accounts = getCommercialData();
+  accounts.unshift(account);
+  localStorage.setItem('sd_commercial', JSON.stringify(accounts));
+  ['c-business','c-contact','c-phone','c-address','c-amount','c-notes','c-nextdate'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('c-service').value='';
+  document.getElementById('c-schedule').value='';
+  showToast('✅ Account saved!');
+  document.getElementById('c-savingInd').style.display='block';
+  fetch(SHEET_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(account)})
+    .then(function(){ document.getElementById('c-savingInd').style.display='none'; showToast('✅ Saved to Google Sheets!'); })
+    .catch(function(){ document.getElementById('c-savingInd').style.display='none'; });
+  renderCommercial('');
+  updateCommercialStats();
+}
+
+function getCommercialData() {
+  try { return JSON.parse(localStorage.getItem('sd_commercial') || '[]'); } catch(e) { return []; }
+}
+
+function updateCommercialStats() {
+  var accounts = getCommercialData();
+  var monthly = accounts.reduce(function(s,a){ return s+(a.amount||0); }, 0);
+  var unpaid = accounts.filter(function(a){ return a.paid !== 'Yes'; }).length;
+  document.getElementById('c-revenue').textContent = '$'+monthly.toFixed(0);
+  document.getElementById('c-count').textContent = accounts.length;
+  document.getElementById('c-unpaid').textContent = unpaid;
+}
+
+function renderCommercial(search) {
+  search = search || '';
+  var accounts = getCommercialData();
+  if (search) accounts = accounts.filter(function(a){ return a.business.toLowerCase().includes(search.toLowerCase())||(a.address||'').toLowerCase().includes(search.toLowerCase()); });
+  var list = document.getElementById('commercial-list');
+  if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
+  list.innerHTML = accounts.map(function(a) {
+    return '<div class="customer-card" style="border-left-color:#00B4D8">'+
+      '<div class="customer-top"><div><div class="customer-name">'+a.business+'</div>'+
+      '<div class="customer-details">'+
+      (a.contact?'👤 '+a.contact+'<br>':'')+
+      (a.phone?'📞 '+a.phone+'<br>':'')+
+      (a.address?'📍 '+a.address+'<br>':'')+
+      (a.nextDate?'📅 Next: '+fmtDate(a.nextDate):'')+'</div></div>'+
+      '<div class="customer-amount">$'+parseFloat(a.amount||0).toFixed(2)+'</div></div>'+
+      '<div class="badges">'+
+      (a.schedule?'<span class="badge badge-blue">'+a.schedule+'</span>':'')+
+      (a.service?'<span class="badge badge-blue">'+a.service+'</span>':'')+
+      '<span class="badge '+(a.paid==='Yes'?'badge-sold':'badge-lost')+'">'+(a.paid==='Yes'?'✅ Paid':'⚠️ Unpaid')+'</span>'+
+      '</div>'+
+      (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
+      '<div class="card-actions">'+
+      '<button class="action-btn green" onclick="toggleCommercialPaid('+a.id+')">'+(a.paid==='Yes'?'Mark Unpaid':'Mark Paid')+'</button>'+
+      '<button class="action-btn red" onclick="deleteCommercial('+a.id+')">🗑</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function toggleCommercialPaid(id) {
+  var accounts = getCommercialData();
+  var a = accounts.find(function(x){ return x.id===id; });
+  if (a) a.paid = a.paid==='Yes'?'No':'Yes';
+  localStorage.setItem('sd_commercial', JSON.stringify(accounts));
+  renderCommercial(''); updateCommercialStats();
+  showToast('✅ Payment updated!');
+}
+
+function deleteCommercial(id) {
+  if (!confirm('Delete this commercial account?')) return;
+  localStorage.setItem('sd_commercial', JSON.stringify(getCommercialData().filter(function(a){ return a.id!==id; })));
+  renderCommercial(''); updateCommercialStats();
+  showToast('🗑 Account deleted');
 }
 
 function fmtDate(d) { if(!d) return ''; var p=d.split('-'); return p[1]+'/'+p[2]+'/'+p[0]; }
