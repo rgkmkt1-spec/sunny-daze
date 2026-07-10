@@ -347,6 +347,26 @@ var pinValue = '';
 var activeFilter = 'All';
 var mgrFilter = 'All';
 var mgrAllData = [];
+var sessionTimer = null;
+var SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+function resetSessionTimer() {
+  if (!currentRep) return;
+  clearTimeout(sessionTimer);
+  sessionTimer = setTimeout(function() {
+    showToast('⏰ Session expired — logging out', true);
+    setTimeout(function() { logout(); }, 1500);
+  }, SESSION_TIMEOUT);
+}
+
+function clearSessionTimer() {
+  clearTimeout(sessionTimer);
+  sessionTimer = null;
+}
+
+// Reset timer on any user interaction
+document.addEventListener('touchstart', function() { if (currentRep) resetSessionTimer(); });
+document.addEventListener('click', function() { if (currentRep) resetSessionTimer(); });
 
 function getReps() {
   try { return JSON.parse(localStorage.getItem('sd_reps') || 'null') || [{name:'Ringo Fry',id:'1001',pin:'1001'},{name:'Brian Lydic',id:'1002',pin:'1002'},{name:'Rob Keller',id:'1003',pin:'1003'}]; }
@@ -600,9 +620,11 @@ function loginSuccess() {
     document.getElementById('tab-settings').style.display = 'block';
   }
   switchTab('dashboard');
+  resetSessionTimer();
 }
 
 function logout() {
+  clearSessionTimer();
   currentRep = null; isManager = false;
   document.getElementById('mainHeader').style.display = 'none';
   document.getElementById('mainTabs').style.display = 'none';
@@ -944,10 +966,28 @@ function addNewRep() {
 }
 
 function removeRep(id) {
-  var reps=getReps(), rep=reps.find(function(r){return r.id===id;});
-  if(!rep||!confirm('Remove '+rep.name+'?')) return;
+  var reps = getReps();
+  var rep = reps.find(function(r){return r.id===id;});
+  if (!rep) return;
+  
+  // Protection 1 — cant remove yourself
+  if (currentRep && currentRep.id === id) {
+    alert('You cannot remove yourself while logged in!');
+    return;
+  }
+  
+  // Protection 2 — cant remove last rep
+  if (reps.length <= 1) {
+    alert('Cannot remove the last rep. Add a new rep first!');
+    return;
+  }
+  
+  // Protection 3 — double confirm
+  if (!confirm('Are you sure you want to remove ' + rep.name + '?\n\nThis cannot be undone!')) return;
+  if (!confirm('FINAL CONFIRMATION: Remove ' + rep.name + ' permanently?')) return;
+  
   saveReps(reps.filter(function(r){return r.id!==id;}));
-  renderRepList(); renderLoginButtons(); showToast('🗑 Rep removed');
+  renderRepList(); renderLoginButtons(); showToast('🗑 ' + rep.name + ' removed');
 }
 
 function changePin(name,id) {
