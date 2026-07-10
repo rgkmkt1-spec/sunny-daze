@@ -722,24 +722,75 @@ function saveCustomer() {
   var status = document.getElementById('l-status').value;
   if (!fname) { alert('Please enter a customer name.'); return; }
   if (!status) { alert('Please select an outcome.'); return; }
+  var editId = document.getElementById('l-fname').dataset.editId;
   var checked = document.querySelectorAll('.svc-check:checked');
   var services = Array.prototype.map.call(checked, function(c){ return c.value; }).join(', ');
   var amt = parseFloat(document.getElementById('l-amount').value) || 0;
   var taxable = document.getElementById('l-taxable').checked;
   var tax = taxable ? amt*0.06 : 0;
-  var customer = {
-    id: Date.now(), repId: currentRep.id, repName: currentRep.name,
-    fname: fname, lname: document.getElementById('l-lname').value.trim(),
-    phone: document.getElementById('l-phone').value.trim(),
-    address: document.getElementById('l-address').value.trim(),
-    service: services,
-    amount: amt, tax: tax, total: amt+tax, taxable: taxable, status: status,
-    date: document.getElementById('l-date').value,
-    followup: document.getElementById('l-followup').value,
-    payment: document.getElementById('l-payment').value,
-    notes: document.getElementById('l-notes').value.trim(), paid: 'No'
-  };
-  var data = getData(); data.unshift(customer); saveData(data);
+
+  if (editId) {
+    var data = getData();
+    var idx = -1;
+    for (var i=0; i<data.length; i++) { if (data[i].id === parseInt(editId)) { idx = i; break; } }
+    if (idx >= 0) {
+      var oldCustomer = data[idx];
+      data[idx].fname = fname;
+      data[idx].lname = document.getElementById('l-lname').value.trim();
+      data[idx].phone = document.getElementById('l-phone').value.trim();
+      data[idx].address = document.getElementById('l-address').value.trim();
+      data[idx].service = services;
+      data[idx].amount = amt; data[idx].tax = tax; data[idx].total = amt+tax;
+      data[idx].status = status;
+      data[idx].date = document.getElementById('l-date').value;
+      data[idx].followup = document.getElementById('l-followup').value;
+      data[idx].payment = document.getElementById('l-payment').value;
+      data[idx].notes = document.getElementById('l-notes').value.trim();
+      saveData(data);
+      
+      // Delete old row from sheet then add updated row
+      var updatedCustomer = data[idx];
+      fetch(SHEET_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          type: 'delete',
+          repId: oldCustomer.repId,
+          fname: oldCustomer.fname,
+          lname: oldCustomer.lname || ''
+        })
+      }).then(function() {
+        // Add updated row
+        fetch(SHEET_URL, {
+          method: 'POST', mode: 'no-cors',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(updatedCustomer)
+        });
+      });
+    }
+    delete document.getElementById('l-fname').dataset.editId;
+    showToast('✅ Customer updated!');
+  } else {
+    var customer = {
+      id: Date.now(), repId: currentRep.id, repName: currentRep.name,
+      fname: fname, lname: document.getElementById('l-lname').value.trim(),
+      phone: document.getElementById('l-phone').value.trim(),
+      address: document.getElementById('l-address').value.trim(),
+      service: services, amount: amt, tax: tax, total: amt+tax,
+      taxable: taxable, status: status,
+      date: document.getElementById('l-date').value,
+      followup: document.getElementById('l-followup').value,
+      payment: document.getElementById('l-payment').value,
+      notes: document.getElementById('l-notes').value.trim(), paid: 'No'
+    };
+    var data = getData(); data.unshift(customer); saveData(data);
+    showToast('✅ Saved!');
+    document.getElementById('savingInd').style.display='block';
+    fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(customer)})
+      .then(function(){document.getElementById('savingInd').style.display='none'; showToast('✅ Saved to Google Sheets!');})
+      .catch(function(){document.getElementById('savingInd').style.display='none';});
+  }
+
   ['l-fname','l-lname','l-phone','l-address','l-amount','l-notes','l-followup'].forEach(function(id){document.getElementById(id).value='';});
   document.querySelectorAll('.svc-check').forEach(function(c){c.checked=false;});
   document.getElementById('l-payment').value='';
@@ -747,11 +798,6 @@ function saveCustomer() {
   document.getElementById('l-date').value=new Date().toISOString().split('T')[0];
   document.querySelectorAll('.status-btn').forEach(function(b){b.classList.remove('active');});
   document.getElementById('l-status').value=''; document.getElementById('taxBox').style.display='none'; calcTax();
-  showToast('✅ Saved!');
-  document.getElementById('savingInd').style.display='block';
-  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(customer)})
-    .then(function(){document.getElementById('savingInd').style.display='none'; showToast('✅ Saved to Google Sheets!');})
-    .catch(function(){document.getElementById('savingInd').style.display='none';});
   updateDashboard();
 }
 
@@ -990,9 +1036,65 @@ function cardHTML(c,showPay,showRep) {
     '</div>'+(c.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+c.notes+'</div>':'')+
     '<div class="card-actions">'+
     (showPay?'<button class="action-btn green" onclick="togglePaid('+c.id+')">'+(c.paid==='Yes'?'Mark Unpaid':'Mark Paid')+'</button>':'')+
-    '<button class="action-btn orange" onclick="changeStatus('+c.id+')">✏️ Status</button>'+
+    '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
+    '<button class="action-btn orange" onclick="changeStatus('+c.id+')">🔄 Status</button>'+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
+}
+
+function editCustomer(id) {
+  var data = getData();
+  var c = data.find(function(d){ return d.id===id; });
+  if (!c) return;
+  // Switch to log tab and pre-fill form
+  switchTab('log');
+  document.getElementById('l-fname').value = c.fname || '';
+  document.getElementById('l-lname').value = c.lname || '';
+  document.getElementById('l-phone').value = c.phone || '';
+  document.getElementById('l-address').value = c.address || '';
+  document.getElementById('l-amount').value = c.amount || '';
+  document.getElementById('l-date').value = c.date || '';
+  document.getElementById('l-followup').value = c.followup || '';
+  document.getElementById('l-payment').value = c.payment || '';
+  document.getElementById('l-notes').value = c.notes || '';
+  // Set status
+  if (c.status) setStatus(c.status);
+  // Set services
+  document.querySelectorAll('.svc-check').forEach(function(cb) { cb.checked = false; });
+  if (c.service) {
+    var svcs = c.service.split(', ');
+    document.querySelectorAll('.svc-check').forEach(function(cb) {
+      if (svcs.indexOf(cb.value) >= 0) cb.checked = true;
+    });
+  }
+  calcTax();
+  // Store editing ID so save updates instead of creates
+  document.getElementById('l-fname').dataset.editId = id;
+  showToast('✏️ Editing customer — make changes and tap Save');
+}
+
+function editCommercial(id) {
+  var accounts = getCommercialData();
+  var a = accounts.find(function(x){ return x.id===id; });
+  if (!a) return;
+  switchTab('commercial');
+  document.getElementById('c-business').value = a.business || '';
+  document.getElementById('c-contact').value = a.contact || '';
+  document.getElementById('c-phone').value = a.phone || '';
+  document.getElementById('c-address').value = a.address || '';
+  document.getElementById('c-schedule').value = a.schedule || '';
+  document.getElementById('c-amount').value = a.amount || '';
+  document.getElementById('c-nextdate').value = a.nextDate || '';
+  document.getElementById('c-notes').value = a.notes || '';
+  document.querySelectorAll('.c-svc-check').forEach(function(cb){ cb.checked = false; });
+  if (a.service) {
+    var svcs = a.service.split(', ');
+    document.querySelectorAll('.c-svc-check').forEach(function(cb){
+      if (svcs.indexOf(cb.value) >= 0) cb.checked = true;
+    });
+  }
+  document.getElementById('c-business').dataset.editId = id;
+  showToast('✏️ Editing account — make changes and tap Save');
 }
 
 function togglePaid(id) {
@@ -1197,6 +1299,7 @@ function renderCommercial(search) {
           (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
           '<div class="card-actions">'+
           '<button class="action-btn green" onclick="toggleCommercialPaid('+a.id+')">'+(a.paid==='Yes'?'Mark Unpaid':'Mark Paid')+'</button>'+
+          '<button class="action-btn blue" onclick="editCommercial('+a.id+')">✏️ Edit</button>'+
           '<button class="action-btn red" onclick="deleteCommercial('+a.id+')">🗑</button>'+
           '</div></div>';
       }).join('');
@@ -1222,6 +1325,7 @@ function renderCommercial(search) {
           (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
           '<div class="card-actions">'+
           '<button class="action-btn green" onclick="toggleCommercialPaid('+a.id+')">'+(a.paid==='Yes'?'Mark Unpaid':'Mark Paid')+'</button>'+
+          '<button class="action-btn blue" onclick="editCommercial('+a.id+')">✏️ Edit</button>'+
           '<button class="action-btn red" onclick="deleteCommercial('+a.id+')">🗑</button>'+
           '</div></div>';
       }).join('');
