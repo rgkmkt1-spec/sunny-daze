@@ -338,7 +338,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-var SHEET_URL = 'https://script.google.com/macros/s/AKfycbxMcDyLC5BoesSJ0DiTdGR10HeB_6jkLi7CHdJrLC5RzadI0SUYBNaZdPXrjHiv1fPu/exec';
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbxNYUylSfxPrVY8Km0DVUillOMjfipIlSCDFsn0KEfnxymufJTWfKxZ9YTln89TZqIs/exec';
 var currentRep = null;
 var isManager = false;
 var pinMode = '';
@@ -727,7 +727,10 @@ function updateManager() {
   document.getElementById('mgr-leads-list').innerHTML = '<div class="empty-state"><span>⏳</span>Loading all leads from Google Sheets...</div>';
 
   // Fetch all data from Google Sheets
-  fetch(SHEET_URL + '?t=' + Date.now())
+  fetch(SHEET_URL + '?t=' + Date.now(), {
+    method: 'GET',
+    mode: 'cors'
+  })
     .then(function(r) { return r.json(); })
     .then(function(response) {
       var sheetData = response.data || [];
