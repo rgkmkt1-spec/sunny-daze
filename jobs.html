@@ -1043,9 +1043,11 @@ function cardHTML(c,showPay,showRep) {
 }
 
 function editCustomer(id) {
+  id = parseInt(id);
   var data = getData();
-  var c = data.find(function(d){ return d.id===id; });
-  if (!c) return;
+  var c = null;
+  for (var i=0; i<data.length; i++) { if (parseInt(data[i].id) === id) { c = data[i]; break; } }
+  if (!c) { showToast('Customer not found', true); return; }
   // Switch to log tab and pre-fill form
   switchTab('log');
   document.getElementById('l-fname').value = c.fname || '';
@@ -1074,9 +1076,11 @@ function editCustomer(id) {
 }
 
 function editCommercial(id) {
+  id = parseInt(id);
   var accounts = getCommercialData();
-  var a = accounts.find(function(x){ return x.id===id; });
-  if (!a) return;
+  var a = null;
+  for (var i=0; i<accounts.length; i++) { if (parseInt(accounts[i].id) === id) { a = accounts[i]; break; } }
+  if (!a) { showToast('Account not found', true); return; }
   switchTab('commercial');
   document.getElementById('c-business').value = a.business || '';
   document.getElementById('c-contact').value = a.contact || '';
