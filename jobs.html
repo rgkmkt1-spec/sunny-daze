@@ -188,7 +188,7 @@
       <button class="rep-btn" onclick="selectRep('Brian Lydic','1002')">Brian Lydic</button>
       <button class="rep-btn" onclick="selectRep('Rob Keller','1003')">Rob Keller</button>
     </div>
-    <button class="manager-btn" onclick="showPin('manager')">👔 MANAGER VIEW</button>
+    <button class="manager-btn" onclick="mgrAccess()">👔 MANAGER VIEW</button>
     <button class="manager-btn" id="fpBtn" onclick="doFingerprint()" style="display:none;margin-top:8px;border-color:#5cb85c;color:#5cb85c;">👆 FINGERPRINT LOGIN</button>
   </div>
 </div>
@@ -225,7 +225,7 @@
   </div>
   <div class="header-right">
     <div style="font-size:0.7rem;color:var(--gray)" id="headerDate"></div>
-    <button class="hdr-btn blue" id="mgrHeaderBtn" onclick="showPin('manager')" style="display:none">👔 Mgr</button>
+    <button class="hdr-btn blue" id="mgrHeaderBtn" onclick="mgrAccess()" style="display:none">👔 Mgr</button>
     <button class="hdr-btn" onclick="logout()">Logout</button>
   </div>
 </header>
@@ -446,21 +446,17 @@
     var reps = getReps();
     if (pinMode === 'manager') {
       if (pinValue === getMgrPin()) {
-        if (!currentRep) {
-          // Logging in fresh as manager
-          isManager = true;
-          currentRep = {name:'Manager', id:'MGR'};
-          loginSuccess();
-        } else {
-          // Already logged in as rep — just unlock manager tabs
-          isManager = true;
-          document.getElementById('headerRep').textContent = '👔 Manager View';
-          document.getElementById('tab-manager').style.display = 'block';
-          document.getElementById('tab-settings').style.display = 'block';
-          document.getElementById('pinScreen').classList.remove('show');
-          switchTab('manager');
-          showToast('👔 Manager access granted!');
+        // Check if manager fingerprint is registered
+        var mgrFp = localStorage.getItem('sd_mgr_fp');
+        document.getElementById('pinScreen').classList.remove('show');
+        if (!mgrFp && window.PublicKeyCredential) {
+          // Ask to register fingerprint
+          if (confirm('Would you like to register your fingerprint for faster manager access next time?')) {
+            registerManagerFingerprint();
+            return;
+          }
         }
+        unlockManager();
       } else { pinFail(); }
     } else {
       var rep = null;
@@ -470,6 +466,75 @@
       if (rep) { currentRep = rep; isManager = false; loginSuccess(); }
       else { pinFail(); }
     }
+  }
+
+  function registerManagerFingerprint() {
+    try {
+      var challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      navigator.credentials.create({
+        publicKey: {
+          challenge: challenge,
+          rp: { name: 'SunnyDaze Manager', id: location.hostname },
+          user: { id: new TextEncoder().encode('manager'), name: 'manager', displayName: 'Manager' },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+          timeout: 60000
+        }
+      }).then(function(cred) {
+        localStorage.setItem('sd_mgr_fp', JSON.stringify({ id: Array.from(new Uint8Array(cred.rawId)) }));
+        showToast('👆 Manager fingerprint registered!');
+        unlockManager();
+      }).catch(function() {
+        showToast('Fingerprint setup skipped', true);
+        unlockManager();
+      });
+    } catch(e) { unlockManager(); }
+  }
+
+  function mgrAccess() {
+    var mgrFp = localStorage.getItem('sd_mgr_fp');
+    if (mgrFp) {
+      doManagerFingerprint();
+    } else {
+      showPin('manager');
+    }
+  }
+    if (!currentRep) {
+      isManager = true;
+      currentRep = { name: 'Manager', id: 'MGR' };
+      loginSuccess();
+    } else {
+      isManager = true;
+      document.getElementById('headerRep').textContent = '👔 Manager View';
+      document.getElementById('tab-manager').style.display = 'block';
+      document.getElementById('tab-settings').style.display = 'block';
+      switchTab('manager');
+      showToast('👔 Manager access granted!');
+    }
+  }
+
+  function doManagerFingerprint() {
+    try {
+      var saved = JSON.parse(localStorage.getItem('sd_mgr_fp'));
+      if (!saved) { showPin('manager'); return; }
+      var challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      navigator.credentials.get({
+        publicKey: {
+          challenge: challenge,
+          allowCredentials: [{ type: 'public-key', id: new Uint8Array(saved.id) }],
+          userVerification: 'required',
+          timeout: 60000
+        }
+      }).then(function() {
+        unlockManager();
+        showToast('👆 Manager access granted!');
+      }).catch(function() {
+        showToast('Fingerprint failed — use PIN', true);
+        showPin('manager');
+      });
+    } catch(e) { showPin('manager'); }
   }
 
   function pinFail() {
