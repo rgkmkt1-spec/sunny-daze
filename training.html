@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SunnyDaze Training — Employee Access</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0A1628; --mid: #0F1E38; --card: #1E293B;
+      --blue: #00B4D8; --cyan: #90E0EF; --white: #F8FAFC;
+      --gray: #94A3B8; --green: #28a745; --red: #dc3545;
+    }
+    body { font-family: Arial, sans-serif; background: var(--navy); color: var(--white); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+
+    /* LOCK SCREEN */
+    .lock-screen { width: 100%; max-width: 360px; text-align: center; }
+    .lock-logo { font-size: 2rem; font-weight: 900; color: var(--blue); margin-bottom: 4px; }
+    .lock-sub { color: var(--gray); font-size: 0.85rem; margin-bottom: 28px; }
+    .lock-card { background: var(--card); border-radius: 14px; padding: 28px 24px; border: 1px solid rgba(0,180,216,0.2); }
+    .lock-card h2 { font-size: 1rem; color: var(--blue); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.08em; }
+    .lock-card p { font-size: 0.8rem; color: var(--gray); margin-bottom: 20px; }
+    .pin-display { font-size: 2rem; letter-spacing: 0.5em; color: var(--white); margin-bottom: 20px; min-height: 44px; }
+    .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+    .pin-key { padding: 18px; background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 10px; font-size: 1.3rem; font-weight: 700; cursor: pointer; color: var(--white); user-select: none; }
+    .pin-key:active { background: var(--navy); }
+    .pin-key.clear { color: var(--red); }
+    .pin-key.back { color: var(--gray); }
+    .pin-error { color: #e05a6a; font-size: 0.85rem; margin-top: 8px; display: none; }
+
+    /* TRAINING PAGE */
+    .training-page { display: none; width: 100%; max-width: 700px; }
+    .page-header { background: var(--mid); border-radius: 14px; padding: 28px; text-align: center; margin-bottom: 24px; border: 1px solid rgba(0,180,216,0.2); }
+    .page-header .logo { font-size: 1.8rem; font-weight: 900; color: var(--blue); margin-bottom: 4px; }
+    .page-header .sub { color: var(--cyan); font-size: 0.9rem; margin-bottom: 4px; }
+    .page-header .contact { color: var(--gray); font-size: 0.8rem; }
+
+    .section-card { background: var(--card); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid rgba(0,180,216,0.2); }
+    .section-card h2 { font-size: 1rem; color: var(--blue); margin-bottom: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid rgba(0,180,216,0.2); padding-bottom: 10px; }
+
+    .download-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 16px 20px; background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 10px; color: var(--white); text-decoration: none; margin-bottom: 10px; transition: border-color 0.2s; }
+    .download-btn:hover { border-color: var(--blue); }
+    .download-btn .btn-left { display: flex; align-items: center; gap: 12px; }
+    .download-btn .btn-icon { font-size: 1.8rem; }
+    .download-btn .btn-title { font-size: 0.95rem; font-weight: 700; }
+    .download-btn .btn-desc { font-size: 0.72rem; color: var(--gray); }
+    .download-btn .btn-arrow { color: var(--blue); font-size: 1.2rem; }
+
+    .app-btn { display: block; width: 100%; padding: 16px; background: var(--blue); color: var(--navy); border: none; border-radius: 10px; font-size: 1rem; font-weight: 900; text-align: center; text-decoration: none; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; cursor: pointer; }
+    .app-btn.green { background: var(--green); color: white; }
+
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.85rem; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--gray); }
+    .info-value { font-weight: 700; color: var(--white); }
+
+    .tip-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.85rem; }
+    .tip-item:last-child { border-bottom: none; }
+    .tip-icon { color: var(--blue); font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+
+    .logout-btn { background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--gray); padding: 8px 20px; border-radius: 8px; font-size: 0.8rem; cursor: pointer; margin-top: 16px; }
+
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; margin-left: 8px; }
+    .badge-blue { background: rgba(0,180,216,0.15); color: var(--blue); border: 1px solid var(--blue); }
+    .badge-green { background: rgba(40,167,69,0.2); color: #5cb85c; border: 1px solid #5cb85c; }
+  </style>
+</head>
+<body>
+
+<!-- LOCK SCREEN -->
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-logo">⚡ SUNNYDAZE</div>
+  <div class="lock-sub">Employee Training Portal</div>
+  <div class="lock-card">
+    <h2>🔒 Employee Access</h2>
+    <p>Enter your assigned PIN to access training materials</p>
+    <div class="pin-display" id="pinDisplay">_ _ _ _</div>
+    <div class="pin-pad">
+      <div class="pin-key" onclick="pinKey('1')">1</div>
+      <div class="pin-key" onclick="pinKey('2')">2</div>
+      <div class="pin-key" onclick="pinKey('3')">3</div>
+      <div class="pin-key" onclick="pinKey('4')">4</div>
+      <div class="pin-key" onclick="pinKey('5')">5</div>
+      <div class="pin-key" onclick="pinKey('6')">6</div>
+      <div class="pin-key" onclick="pinKey('7')">7</div>
+      <div class="pin-key" onclick="pinKey('8')">8</div>
+      <div class="pin-key" onclick="pinKey('9')">9</div>
+      <div class="pin-key clear" onclick="pinClear()">CLR</div>
+      <div class="pin-key" onclick="pinKey('0')">0</div>
+      <div class="pin-key back" onclick="pinBack()">⌫</div>
+    </div>
+    <div class="pin-error" id="pinError">❌ Incorrect PIN. Please try again.</div>
+  </div>
+</div>
+
+<!-- TRAINING PAGE -->
+<div class="training-page" id="trainingPage">
+  <div class="page-header">
+    <div class="logo">⚡ SUNNYDAZE PRESSURE WASHING</div>
+    <div class="sub">Employee Training Portal</div>
+    <div class="contact">(814) 853-0641 · sunnydazepressurewashing.com</div>
+  </div>
+
+  <!-- TRAINING GUIDE DOWNLOAD -->
+  <div class="section-card">
+    <h2>📚 Training Materials</h2>
+    <a class="download-btn" href="/SunnyDaze_App_Training_Guide_v2.pdf" target="_blank">
+      <div class="btn-left">
+        <div class="btn-icon">📄</div>
+        <div>
+          <div class="btn-title">Sales App Training Guide <span class="badge badge-blue">PDF</span></div>
+          <div class="btn-desc">Complete guide to using the SunnyDaze Sales & Job Tracker app</div>
+        </div>
+      </div>
+      <div class="btn-arrow">→</div>
+    </a>
+  </div>
+
+  <!-- QUICK ACCESS -->
+  <div class="section-card">
+    <h2>⚡ Quick Access</h2>
+    <a class="app-btn" href="/jobs">📊 OPEN SALES APP</a>
+    <a class="app-btn green" href="https://www.youtube.com/@SunnyDazePressureWashing" target="_blank">▶ YOUTUBE CHANNEL</a>
+  </div>
+
+  <!-- APP QUICK REFERENCE -->
+  <div class="section-card">
+    <h2>📋 App Quick Reference</h2>
+    <div class="info-row"><span class="info-label">App URL</span><span class="info-value">sunnydazepressurewashing.com/jobs</span></div>
+    <div class="info-row"><span class="info-label">Your PIN</span><span class="info-value">Assigned by your manager</span></div>
+    <div class="info-row"><span class="info-label">Session Timeout</span><span class="info-value">5 minutes of inactivity</span></div>
+    <div class="info-row"><span class="info-label">PA Sales Tax</span><span class="info-value">6%</span></div>
+    <div class="info-row"><span class="info-label">Edit a Customer</span><span class="info-value">Leads tab → ✏️ Edit button</span></div>
+    <div class="info-row"><span class="info-label">Mark Job Paid</span><span class="info-value">Jobs tab → Mark Paid button</span></div>
+    <div class="info-row"><span class="info-label">Follow Up Alert</span><span class="info-value">Dashboard shows today's follow ups</span></div>
+  </div>
+
+  <!-- SERVICE AREA -->
+  <div class="section-card">
+    <h2>📍 Service Area & Contact</h2>
+    <div class="info-row"><span class="info-label">Phone</span><span class="info-value">(814) 853-0641</span></div>
+    <div class="info-row"><span class="info-label">Service Area</span><span class="info-value">Erie, Crawford & Mercer Counties, PA</span></div>
+    <div class="info-row"><span class="info-label">Hours</span><span class="info-value">Mon–Sat 7am–6pm</span></div>
+    <div class="info-row"><span class="info-label">Website</span><span class="info-value">sunnydazepressurewashing.com</span></div>
+  </div>
+
+  <!-- TIPS -->
+  <div class="section-card">
+    <h2>💡 Key Tips for Success</h2>
+    <div class="tip-item"><div class="tip-icon">✅</div><div>Log EVERY customer you visit — even if they say no. This tracks your close rate.</div></div>
+    <div class="tip-item"><div class="tip-icon">📞</div><div>Always enter a phone number for Follow Up customers so you can call them back.</div></div>
+    <div class="tip-item"><div class="tip-icon">🔔</div><div>Set a Follow Up Date so the customer appears on your dashboard reminder.</div></div>
+    <div class="tip-item"><div class="tip-icon">💰</div><div>Mark jobs as Paid as soon as you receive payment.</div></div>
+    <div class="tip-item"><div class="tip-icon">✏️</div><div>Use the Edit button to fix any mistakes — it updates Google Sheets automatically.</div></div>
+    <div class="tip-item"><div class="tip-icon">📱</div><div>Add the Sales App to your home screen for quick access.</div></div>
+  </div>
+
+  <div style="text-align:center">
+    <button class="logout-btn" onclick="logout()">🔒 Lock Portal</button>
+  </div>
+</div>
+
+<script>
+  var pinValue = '';
+
+  // Valid PINs stored in localStorage (manager can update)
+  function getValidPins() {
+    try {
+      var reps = JSON.parse(localStorage.getItem('sd_reps') || 'null') || [
+        {pin:'1001'}, {pin:'1002'}, {pin:'1003'}
+      ];
+      var pins = reps.map(function(r){ return r.pin; });
+      pins.push(localStorage.getItem('sd_mgr_pin') || '1014');
+      return pins;
+    } catch(e) {
+      return ['1001','1002','1003','1014'];
+    }
+  }
+
+  function pinKey(k) {
+    if (pinValue.length < 4) { pinValue += k; updateDisplay(); }
+    if (pinValue.length === 4) setTimeout(checkPin, 150);
+  }
+  function pinBack() { if (pinValue.length > 0) { pinValue = pinValue.slice(0,-1); updateDisplay(); } }
+  function pinClear() { pinValue = ''; updateDisplay(); }
+
+  function updateDisplay() {
+    var s = '';
+    for (var i=0; i<4; i++) s += (i < pinValue.length ? '●' : '_') + (i < 3 ? ' ' : '');
+    document.getElementById('pinDisplay').textContent = s;
+  }
+
+  function checkPin() {
+    var valid = getValidPins();
+    if (valid.indexOf(pinValue) >= 0) {
+      document.getElementById('lockScreen').style.display = 'none';
+      document.getElementById('trainingPage').style.display = 'block';
+      document.getElementById('pinError').style.display = 'none';
+    } else {
+      document.getElementById('pinError').style.display = 'block';
+      pinValue = '';
+      updateDisplay();
+    }
+  }
+
+  function logout() {
+    document.getElementById('lockScreen').style.display = 'flex';
+    document.getElementById('trainingPage').style.display = 'none';
+    pinValue = '';
+    updateDisplay();
+  }
+</script>
+</body>
+</html>
