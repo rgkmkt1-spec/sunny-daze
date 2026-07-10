@@ -321,11 +321,7 @@ var sessionTimer = null;
 
 // DATA
 function getEmployees() {
-  try { return JSON.parse(localStorage.getItem('tc_employees') || 'null') || [
-    {name:'Employee 1', id:'E001', pin:'1001'},
-    {name:'Employee 2', id:'E002', pin:'1002'},
-    {name:'Employee 3', id:'E003', pin:'1003'}
-  ]; } catch(e) { return []; }
+  try { return JSON.parse(localStorage.getItem('tc_employees') || '[]'); } catch(e) { return []; }
 }
 function saveEmployees(e) { localStorage.setItem('tc_employees', JSON.stringify(e)); }
 function getMgrPin() { return localStorage.getItem('tc_mgr_pin') || '1014'; }
@@ -340,9 +336,13 @@ function saveCurrentSession(s) { if(s) localStorage.setItem('tc_session_'+curren
 // LOGIN
 function renderLoginButtons() {
   var emps = getEmployees();
-  document.getElementById('loginBtns').innerHTML = emps.map(function(e) {
-    return '<button class="emp-btn" onclick="selectEmp(\''+e.name+'\',\''+e.id+'\')">'+e.name+'</button>';
-  }).join('');
+  if (emps.length === 0) {
+    document.getElementById('loginBtns').innerHTML = '<div style="text-align:center;color:var(--gray);font-size:0.85rem;padding:16px 0;">No employees added yet.<br>Manager can add employees in Settings.</div>';
+  } else {
+    document.getElementById('loginBtns').innerHTML = emps.map(function(e) {
+      return '<button class="emp-btn" onclick="selectEmp(\''+e.name+'\',\''+e.id+'\')">'+e.name+'</button>';
+    }).join('');
+  }
 }
 
 function selectEmp(name, id) {
