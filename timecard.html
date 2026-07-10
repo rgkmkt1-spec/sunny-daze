@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SunnyDaze Time Clock</title>
+  <link rel="manifest" href="/manifest-time.json"/>
+  <meta name="theme-color" content="#00B4D8"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="SD Time"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0A1628; --mid: #0F1E38; --card: #1E293B;
+      --blue: #00B4D8; --cyan: #90E0EF; --white: #F8FAFC;
+      --gray: #94A3B8; --green: #28a745; --red: #dc3545;
+      --yellow: #ffc107; --orange: #fd7e14; --purple: #6f42c1;
+    }
+    body { font-family: Arial, sans-serif; background: var(--navy); color: var(--white); min-height: 100vh; }
+
+    /* LOGIN */
+    .login-screen { position: fixed; inset: 0; background: var(--navy); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 24px; }
+    .login-logo { font-size: 2rem; font-weight: 900; color: var(--blue); margin-bottom: 4px; text-align: center; }
+    .login-sub { color: var(--gray); font-size: 0.85rem; margin-bottom: 28px; text-align: center; }
+    .login-card { background: var(--card); border-radius: 14px; padding: 24px; width: 100%; max-width: 320px; border: 1px solid rgba(0,180,216,0.2); }
+    .login-card h3 { font-size: 1rem; color: var(--blue); margin-bottom: 16px; text-align: center; text-transform: uppercase; letter-spacing: 0.08em; }
+    .emp-btn { width: 100%; padding: 16px; margin-bottom: 10px; background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; color: var(--white); font-size: 1rem; font-weight: 700; cursor: pointer; text-align: center; }
+    .emp-btn:active { background: var(--navy); }
+    .manager-btn { width: 100%; padding: 12px; margin-top: 6px; background: transparent; border: 1px solid var(--blue); border-radius: 8px; color: var(--blue); font-size: 0.9rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
+
+    /* PIN */
+    .pin-screen { position: fixed; inset: 0; background: rgba(10,22,40,0.98); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 24px; }
+    .pin-screen.show { display: flex; }
+    .pin-title { font-size: 1.2rem; font-weight: 900; color: var(--blue); margin-bottom: 6px; }
+    .pin-sub { color: var(--gray); font-size: 0.8rem; margin-bottom: 20px; }
+    .pin-display { font-size: 2rem; letter-spacing: 0.5em; color: var(--white); margin-bottom: 20px; min-height: 44px; }
+    .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 240px; }
+    .pin-key { padding: 18px; background: var(--card); border: 1px solid rgba(0,180,216,0.2); border-radius: 10px; font-size: 1.3rem; font-weight: 700; cursor: pointer; text-align: center; color: var(--white); user-select: none; }
+    .pin-key:active { background: var(--mid); }
+    .pin-key.clear { color: var(--red); }
+    .pin-key.back { color: var(--gray); }
+    .pin-error { color: #e05a6a; font-size: 0.85rem; margin-top: 10px; display: none; }
+    .pin-cancel { color: var(--gray); font-size: 0.8rem; margin-top: 16px; cursor: pointer; text-decoration: underline; }
+
+    /* HEADER */
+    header { background: var(--mid); padding: 10px 16px; border-bottom: 3px solid var(--blue); position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; }
+    .header-logo { font-size: 1rem; font-weight: 900; color: var(--blue); }
+    .header-rep { font-size: 0.72rem; color: var(--gray); }
+    .header-right { display: flex; gap: 8px; align-items: center; }
+    .hdr-btn { background: none; border: 1px solid rgba(255,255,255,0.2); color: var(--gray); padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
+    .hdr-btn.blue { border-color: var(--blue); color: var(--blue); background: rgba(0,180,216,0.1); }
+
+    /* TABS */
+    .tabs { display: flex; background: var(--card); border-bottom: 2px solid var(--blue); }
+    .tab { flex: 1; padding: 11px 4px; text-align: center; font-size: 0.68rem; font-weight: 700; color: var(--gray); cursor: pointer; border: none; background: none; text-transform: uppercase; border-bottom: 3px solid transparent; }
+    .tab.active { color: var(--blue); border-bottom: 3px solid var(--blue); }
+
+    /* VIEWS */
+    .view { display: none; padding: 14px; }
+    .view.active { display: block; }
+
+    /* CLOCK */
+    .clock-display { background: var(--card); border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 14px; border: 1px solid rgba(0,180,216,0.2); }
+    .clock-time { font-size: 3rem; font-weight: 900; color: var(--blue); font-variant-numeric: tabular-nums; }
+    .clock-date { font-size: 0.85rem; color: var(--gray); margin-top: 4px; }
+    .clock-status { font-size: 0.85rem; font-weight: 700; margin-top: 12px; padding: 8px 16px; border-radius: 20px; display: inline-block; }
+    .clock-status.clocked-in { background: rgba(40,167,69,0.2); color: #5cb85c; border: 1px solid #5cb85c; }
+    .clock-status.on-break { background: rgba(255,193,7,0.2); color: var(--yellow); border: 1px solid var(--yellow); }
+    .clock-status.clocked-out { background: rgba(148,163,184,0.15); color: var(--gray); border: 1px solid var(--gray); }
+
+    /* PUNCH BUTTONS */
+    .punch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .punch-btn { padding: 20px 10px; border: none; border-radius: 12px; font-size: 0.9rem; font-weight: 900; cursor: pointer; text-align: center; text-transform: uppercase; letter-spacing: 0.05em; }
+    .punch-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .punch-btn.punch-in { background: var(--green); color: white; }
+    .punch-btn.punch-out { background: var(--red); color: white; }
+    .punch-btn.lunch-start { background: var(--yellow); color: var(--navy); }
+    .punch-btn.lunch-end { background: var(--orange); color: white; }
+
+    /* STATS */
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .stats.three { grid-template-columns: 1fr 1fr 1fr; }
+    .stat-card { background: var(--card); border-radius: 10px; padding: 12px; border: 1px solid rgba(0,180,216,0.2); text-align: center; }
+    .stat-card.green { border-color: var(--green); }
+    .stat-card.red { border-color: var(--red); }
+    .stat-card.yellow { border-color: var(--yellow); }
+    .stat-card.orange { border-color: var(--orange); }
+    .stat-card.purple { border-color: var(--purple); }
+    .stat-label { font-size: 0.62rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .stat-value { font-size: 1.3rem; font-weight: 900; color: var(--white); }
+    .stat-card.green .stat-value { color: #5cb85c; }
+    .stat-card.red .stat-value { color: #e05a6a; }
+    .stat-card.yellow .stat-value { color: var(--yellow); }
+    .stat-card.orange .stat-value { color: var(--orange); }
+    .stat-card.purple .stat-value { color: #a78bfa; }
+
+    /* TIME ENTRIES */
+    .entry-card { background: var(--card); border-radius: 10px; padding: 14px; margin-bottom: 10px; border-left: 4px solid var(--blue); }
+    .entry-card.overtime { border-left-color: var(--red); }
+    .entry-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .entry-date { font-size: 0.95rem; font-weight: 700; }
+    .entry-hours { font-size: 1rem; font-weight: 900; color: var(--blue); }
+    .entry-hours.overtime { color: #e05a6a; }
+    .entry-details { font-size: 0.75rem; color: var(--gray); line-height: 1.8; }
+    .entry-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .action-btn { padding: 5px 10px; border-radius: 6px; font-size: 0.68rem; font-weight: 700; cursor: pointer; border: 1px solid; text-transform: uppercase; background: transparent; }
+    .action-btn.blue { border-color: var(--blue); color: var(--blue); }
+    .action-btn.red { border-color: var(--red); color: #e05a6a; }
+
+    /* MANAGER */
+    .emp-section { background: var(--card); border-radius: 10px; padding: 14px; margin-bottom: 12px; border: 1px solid rgba(0,180,216,0.2); }
+    .emp-section h3 { font-size: 0.9rem; font-weight: 900; color: var(--blue); margin-bottom: 10px; }
+    .emp-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+    .emp-stat { text-align: center; }
+    .emp-stat-val { font-size: 1rem; font-weight: 900; }
+    .emp-stat-lbl { font-size: 0.58rem; color: var(--gray); text-transform: uppercase; }
+
+    /* EDIT MODAL */
+    .modal { position: fixed; inset: 0; background: rgba(10,22,40,0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9998; padding: 24px; }
+    .modal.show { display: flex; }
+    .modal-card { background: var(--card); border-radius: 14px; padding: 24px; width: 100%; max-width: 360px; border: 1px solid rgba(0,180,216,0.2); }
+    .modal-card h2 { font-size: 1rem; color: var(--blue); margin-bottom: 16px; font-weight: 900; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.68rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+    .form-group input, .form-group select { width: 100%; background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 11px 12px; color: var(--white); font-size: 0.95rem; outline: none; }
+    .modal-btns { display: flex; gap: 10px; margin-top: 16px; }
+    .btn-save { flex: 1; padding: 12px; background: var(--blue); color: var(--navy); border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 900; cursor: pointer; }
+    .btn-cancel { flex: 1; padding: 12px; background: transparent; color: var(--gray); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+
+    /* SETTINGS */
+    .settings-card { background: var(--card); border-radius: 12px; padding: 16px; border: 1px solid rgba(0,180,216,0.2); margin-bottom: 14px; }
+    .settings-card h2 { font-size: 1rem; color: var(--blue); margin-bottom: 14px; font-weight: 900; }
+    .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .settings-label { font-size: 0.85rem; font-weight: 600; }
+    .settings-val { font-size: 0.78rem; color: var(--gray); }
+    .btn-change { padding: 6px 14px; background: var(--blue); color: var(--navy); border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+    .btn-submit { width: 100%; padding: 14px; background: var(--blue); color: var(--navy); border: none; border-radius: 8px; font-size: 1rem; font-weight: 900; text-transform: uppercase; cursor: pointer; margin-top: 4px; }
+    .btn-green { width: 100%; padding: 14px; background: var(--green); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 900; cursor: pointer; margin-top: 4px; }
+
+    .empty-state { text-align: center; padding: 32px 20px; color: var(--gray); }
+    .empty-state span { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .section-title { font-size: 0.75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; margin-top: 4px; }
+    .overtime-badge { background: rgba(220,53,69,0.2); color: #e05a6a; border: 1px solid #e05a6a; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 6px; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--green); color: white; padding: 12px 24px; border-radius: 24px; font-weight: 700; font-size: 0.88rem; z-index: 9999; display: none; white-space: nowrap; }
+    .toast.show { display: block; }
+    .toast.error { background: var(--red); }
+    .filter-pills { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+    .pill { padding: 5px 12px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; cursor: pointer; border: 1px solid; white-space: nowrap; background: transparent; text-transform: uppercase; }
+    .pill.all { border-color: var(--blue); color: var(--blue); }
+    .pill.all.active { background: var(--blue); color: var(--navy); }
+    .pill.p-week { border-color: var(--green); color: var(--green); }
+    .pill.p-week.active { background: var(--green); color: white; }
+    .pill.p-month { border-color: var(--purple); color: #a78bfa; }
+    .pill.p-month.active { background: var(--purple); color: white; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-logo">⚡ SUNNYDAZE</div>
+  <div class="login-sub">Pressure Washing · Time Clock</div>
+  <div class="login-card">
+    <h3>Select Your Name</h3>
+    <div id="loginBtns"></div>
+    <button class="manager-btn" onclick="mgrAccess()">👔 MANAGER VIEW</button>
+  </div>
+</div>
+
+<!-- PIN -->
+<div class="pin-screen" id="pinScreen">
+  <div class="pin-title" id="pinTitle">Enter PIN</div>
+  <div class="pin-sub" id="pinSub">Enter your 4-digit PIN</div>
+  <div class="pin-display" id="pinDisplay">_ _ _ _</div>
+  <div class="pin-pad">
+    <div class="pin-key" onclick="pinKey('1')">1</div>
+    <div class="pin-key" onclick="pinKey('2')">2</div>
+    <div class="pin-key" onclick="pinKey('3')">3</div>
+    <div class="pin-key" onclick="pinKey('4')">4</div>
+    <div class="pin-key" onclick="pinKey('5')">5</div>
+    <div class="pin-key" onclick="pinKey('6')">6</div>
+    <div class="pin-key" onclick="pinKey('7')">7</div>
+    <div class="pin-key" onclick="pinKey('8')">8</div>
+    <div class="pin-key" onclick="pinKey('9')">9</div>
+    <div class="pin-key clear" onclick="pinClear()">CLR</div>
+    <div class="pin-key" onclick="pinKey('0')">0</div>
+    <div class="pin-key back" onclick="pinBack()">⌫</div>
+  </div>
+  <div class="pin-error" id="pinError">Incorrect PIN. Try again.</div>
+  <div class="pin-cancel" onclick="cancelPin()">Cancel</div>
+</div>
+
+<!-- EDIT TIME MODAL -->
+<div class="modal" id="editModal">
+  <div class="modal-card">
+    <h2>✏️ Edit Time Entry</h2>
+    <input type="hidden" id="edit-entry-id"/>
+    <div class="form-group"><label>Date</label><input type="date" id="edit-date"/></div>
+    <div class="form-group"><label>Clock In</label><input type="time" id="edit-in"/></div>
+    <div class="form-group"><label>Lunch Start</label><input type="time" id="edit-lunch-start"/></div>
+    <div class="form-group"><label>Lunch End</label><input type="time" id="edit-lunch-end"/></div>
+    <div class="form-group"><label>Clock Out</label><input type="time" id="edit-out"/></div>
+    <div class="form-group"><label>Employee</label><select id="edit-emp"></select></div>
+    <div class="form-group"><label>Notes</label><input type="text" id="edit-notes" placeholder="Reason for adjustment..."/></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEditEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header id="mainHeader" style="display:none">
+  <div>
+    <div class="header-logo">⚡ TIME CLOCK</div>
+    <div class="header-rep" id="headerRep"></div>
+  </div>
+  <div class="header-right">
+    <div style="font-size:0.7rem;color:var(--gray)" id="headerDate"></div>
+    <button class="hdr-btn blue" id="mgrHeaderBtn" onclick="mgrAccess()" style="display:none">👔 Mgr</button>
+    <button class="hdr-btn" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs" id="mainTabs" style="display:none">
+  <button class="tab active" id="tab-clock" onclick="switchTab('clock')">⏰ Clock</button>
+  <button class="tab" id="tab-history" onclick="switchTab('history')">📋 History</button>
+  <button class="tab" id="tab-manager" onclick="switchTab('manager')" style="display:none">👔 Mgr</button>
+  <button class="tab" id="tab-settings" onclick="switchTab('settings')" style="display:none">⚙️ Set</button>
+</div>
+
+<!-- CLOCK TAB -->
+<div class="view active" id="view-clock">
+  <div class="clock-display">
+    <div class="clock-time" id="liveClock">00:00:00</div>
+    <div class="clock-date" id="liveDate"></div>
+    <div class="clock-status clocked-out" id="clockStatus">⭕ NOT CLOCKED IN</div>
+  </div>
+
+  <div class="punch-grid">
+    <button class="punch-btn punch-in" id="btn-in" onclick="punchIn()">⬆️ CLOCK IN</button>
+    <button class="punch-btn punch-out" id="btn-out" onclick="punchOut()" disabled>⬇️ CLOCK OUT</button>
+    <button class="punch-btn lunch-start" id="btn-lunch-start" onclick="lunchStart()" disabled>🍽️ LUNCH START</button>
+    <button class="punch-btn lunch-end" id="btn-lunch-end" onclick="lunchEnd()" disabled>✅ LUNCH END</button>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card green"><div class="stat-label">⏱ Today</div><div class="stat-value" id="s-today">0h 0m</div></div>
+    <div class="stat-card yellow"><div class="stat-label">🍽️ Lunch</div><div class="stat-value" id="s-lunch">0m</div></div>
+    <div class="stat-card purple"><div class="stat-label">📅 This Week</div><div class="stat-value" id="s-week">0h 0m</div></div>
+    <div class="stat-card red"><div class="stat-label">⚠️ Overtime</div><div class="stat-value" id="s-overtime">0h 0m</div></div>
+  </div>
+
+  <div class="section-title">Today's Punch Log</div>
+  <div id="today-log"></div>
+</div>
+
+<!-- HISTORY TAB -->
+<div class="view" id="view-history">
+  <div class="filter-pills">
+    <button class="pill all active" onclick="filterHistory('all',this)">All</button>
+    <button class="pill p-week" onclick="filterHistory('week',this)">This Week</button>
+    <button class="pill p-month" onclick="filterHistory('month',this)">This Month</button>
+  </div>
+  <div class="stats three">
+    <div class="stat-card green"><div class="stat-label">Total Hours</div><div class="stat-value" id="h-total">0h</div></div>
+    <div class="stat-card red"><div class="stat-label">Overtime</div><div class="stat-value" id="h-ot">0h</div></div>
+    <div class="stat-card"><div class="stat-label">Days Worked</div><div class="stat-value" id="h-days">0</div></div>
+  </div>
+  <div id="history-list"></div>
+</div>
+
+<!-- MANAGER TAB -->
+<div class="view" id="view-manager">
+  <div class="section-title">📊 Team Overview — This Week</div>
+  <div class="stats three">
+    <div class="stat-card green"><div class="stat-label">Total Hours</div><div class="stat-value" id="m-total">0h</div></div>
+    <div class="stat-card red"><div class="stat-label">Overtime</div><div class="stat-value" id="m-ot">0h</div></div>
+    <div class="stat-card"><div class="stat-label">Active Today</div><div class="stat-value" id="m-active">0</div></div>
+  </div>
+  <div class="section-title">👤 Individual Hours</div>
+  <div id="emp-sections"></div>
+  <div class="section-title" style="margin-top:14px">All Time Entries</div>
+  <div class="filter-pills">
+    <button class="pill all active" onclick="filterMgr('all',this)">All</button>
+    <button class="pill p-week" onclick="filterMgr('week',this)">This Week</button>
+    <button class="pill p-month" onclick="filterMgr('month',this)">This Month</button>
+  </div>
+  <div id="mgr-entries"></div>
+</div>
+
+<!-- SETTINGS TAB -->
+<div class="view" id="view-settings">
+  <div class="settings-card">
+    <h2>⚙️ Employee Management</h2>
+    <div id="emp-pin-list"></div>
+    <button class="btn-submit" onclick="addEmployee()" style="margin-top:12px;background:var(--green);">➕ ADD EMPLOYEE</button>
+  </div>
+  <div class="settings-card">
+    <h2>📊 Export to Google Sheet</h2>
+    <p style="font-size:0.82rem;color:var(--gray);margin-bottom:14px">View all time records in Google Sheets</p>
+    <button class="btn-green" onclick="openSheet()">📊 OPEN GOOGLE SHEET</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbxNYUylSfxPrVY8Km0DVUillOMjfipIlSCDFsn0KEfnxymufJTWfKxZ9YTln89TZqIs/exec';
+var currentEmp = null;
+var isManager = false;
+var pinMode = '';
+var pendingEmp = null;
+var pinValue = '';
+var historyFilter = 'all';
+var mgrFilter = 'all';
+var clockInterval = null;
+var tickInterval = null;
+var sessionTimer = null;
+
+// DATA
+function getEmployees() {
+  try { return JSON.parse(localStorage.getItem('tc_employees') || 'null') || [
+    {name:'Employee 1', id:'E001', pin:'1001'},
+    {name:'Employee 2', id:'E002', pin:'1002'},
+    {name:'Employee 3', id:'E003', pin:'1003'}
+  ]; } catch(e) { return []; }
+}
+function saveEmployees(e) { localStorage.setItem('tc_employees', JSON.stringify(e)); }
+function getMgrPin() { return localStorage.getItem('tc_mgr_pin') || '1014'; }
+function saveMgrPin(p) { localStorage.setItem('tc_mgr_pin', p); }
+
+function getEntries() { try { return JSON.parse(localStorage.getItem('tc_entries') || '[]'); } catch(e) { return []; } }
+function saveEntries(e) { localStorage.setItem('tc_entries', JSON.stringify(e)); }
+
+function getCurrentSession() { try { return JSON.parse(localStorage.getItem('tc_session_' + (currentEmp?currentEmp.id:'')) || 'null'); } catch(e) { return null; } }
+function saveCurrentSession(s) { if(s) localStorage.setItem('tc_session_'+currentEmp.id, JSON.stringify(s)); else localStorage.removeItem('tc_session_'+currentEmp.id); }
+
+// LOGIN
+function renderLoginButtons() {
+  var emps = getEmployees();
+  document.getElementById('loginBtns').innerHTML = emps.map(function(e) {
+    return '<button class="emp-btn" onclick="selectEmp(\''+e.name+'\',\''+e.id+'\')">'+e.name+'</button>';
+  }).join('');
+}
+
+function selectEmp(name, id) {
+  pendingEmp = {name:name, id:id};
+  pinMode = 'emp';
+  document.getElementById('pinTitle').textContent = 'Welcome, ' + name;
+  document.getElementById('pinSub').textContent = 'Enter your 4-digit PIN';
+  showPinScreen();
+}
+
+function mgrAccess() {
+  pendingEmp = null;
+  pinMode = 'manager';
+  document.getElementById('pinTitle').textContent = 'Manager Access';
+  document.getElementById('pinSub').textContent = 'Enter Manager PIN';
+  showPinScreen();
+}
+
+function showPinScreen() {
+  pinValue = ''; updatePinDisplay();
+  document.getElementById('pinError').style.display = 'none';
+  document.getElementById('pinScreen').classList.add('show');
+}
+function cancelPin() { document.getElementById('pinScreen').classList.remove('show'); pinValue = ''; }
+
+function pinKey(k) {
+  if (pinValue.length < 4) { pinValue += k; updatePinDisplay(); }
+  if (pinValue.length === 4) setTimeout(checkPin, 150);
+}
+function pinBack() { if(pinValue.length>0){pinValue=pinValue.slice(0,-1); updatePinDisplay();} }
+function pinClear() { pinValue=''; updatePinDisplay(); }
+function updatePinDisplay() {
+  var s=''; for(var i=0;i<4;i++) s+=(i<pinValue.length?'●':'_')+(i<3?' ':'');
+  document.getElementById('pinDisplay').textContent=s;
+}
+
+function checkPin() {
+  var emps = getEmployees();
+  if (pinMode === 'manager') {
+    if (pinValue === getMgrPin()) {
+      document.getElementById('pinScreen').classList.remove('show');
+      if (!currentEmp) {
+        isManager = true; currentEmp = {name:'Manager',id:'MGR'};
+        loginSuccess();
+      } else {
+        isManager = true;
+        document.getElementById('headerRep').textContent = '👔 Manager View';
+        document.getElementById('tab-manager').style.display = 'block';
+        document.getElementById('tab-settings').style.display = 'block';
+        switchTab('manager');
+        showToast('👔 Manager access granted!');
+      }
+    } else { pinFail(); }
+  } else {
+    var emp = null;
+    for(var i=0;i<emps.length;i++){if(emps[i].id===pendingEmp.id&&emps[i].pin===pinValue){emp=emps[i];break;}}
+    if(emp){currentEmp=emp; isManager=false; document.getElementById('pinScreen').classList.remove('show'); loginSuccess();}
+    else { pinFail(); }
+  }
+}
+function pinFail() { document.getElementById('pinError').style.display='block'; pinValue=''; updatePinDisplay(); }
+
+function loginSuccess() {
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('mainHeader').style.display='flex';
+  document.getElementById('mainTabs').style.display='flex';
+  document.getElementById('headerRep').textContent = isManager ? '👔 Manager View' : currentEmp.name;
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('mgrHeaderBtn').style.display='block';
+  if(isManager){
+    document.getElementById('tab-manager').style.display='block';
+    document.getElementById('tab-settings').style.display='block';
+  }
+  startClock();
+  switchTab('clock');
+  resetSessionTimer();
+}
+
+function logout() {
+  clearInterval(tickInterval);
+  clearTimeout(sessionTimer);
+  currentEmp=null; isManager=false;
+  document.getElementById('mainHeader').style.display='none';
+  document.getElementById('mainTabs').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('tab-manager').style.display='none';
+  document.getElementById('tab-settings').style.display='none';
+  document.getElementById('mgrHeaderBtn').style.display='none';
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.getElementById('view-clock').classList.add('active');
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('tab-clock').classList.add('active');
+  renderLoginButtons();
+}
+
+// SESSION TIMER
+function resetSessionTimer() {
+  clearTimeout(sessionTimer);
+  sessionTimer = setTimeout(function(){
+    showToast('⏰ Session expired', true);
+    setTimeout(logout, 1500);
+  }, 5*60*1000);
+}
+document.addEventListener('touchstart', function(){ if(currentEmp) resetSessionTimer(); });
+document.addEventListener('click', function(){ if(currentEmp) resetSessionTimer(); });
+
+// LIVE CLOCK
+function startClock() {
+  clearInterval(tickInterval);
+  tickInterval = setInterval(function() {
+    var now = new Date();
+    document.getElementById('liveClock').textContent =
+      String(now.getHours()).padStart(2,'0')+':'+
+      String(now.getMinutes()).padStart(2,'0')+':'+
+      String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('liveDate').textContent = now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    updateClockStats();
+  }, 1000);
+}
+
+// PUNCH FUNCTIONS
+function punchIn() {
+  var session = getCurrentSession();
+  if (session && session.clockIn && !session.clockOut) { showToast('Already clocked in!', true); return; }
+  var now = new Date();
+  var session = { clockIn: now.toISOString(), lunchStart: null, lunchEnd: null, clockOut: null, date: now.toLocaleDateString() };
+  saveCurrentSession(session);
+  updatePunchButtons();
+  updateClockStats();
+  showToast('✅ Clocked in at ' + fmtTime(now));
+}
+
+function lunchStart() {
+  var session = getCurrentSession();
+  if (!session || !session.clockIn || session.lunchStart) { showToast('Cannot start lunch now', true); return; }
+  session.lunchStart = new Date().toISOString();
+  saveCurrentSession(session);
+  updatePunchButtons();
+  showToast('🍽️ Lunch started at ' + fmtTime(new Date()));
+}
+
+function lunchEnd() {
+  var session = getCurrentSession();
+  if (!session || !session.lunchStart || session.lunchEnd) { showToast('Cannot end lunch now', true); return; }
+  session.lunchEnd = new Date().toISOString();
+  saveCurrentSession(session);
+  updatePunchButtons();
+  showToast('✅ Back from lunch at ' + fmtTime(new Date()));
+}
+
+function punchOut() {
+  var session = getCurrentSession();
+  if (!session || !session.clockIn) { showToast('Not clocked in!', true); return; }
+  if (session.lunchStart && !session.lunchEnd) { showToast('Please end lunch first!', true); return; }
+  session.clockOut = new Date().toISOString();
+  saveCurrentSession(session);
+
+  // Calculate hours
+  var worked = calcWorked(session);
+  var entry = {
+    id: Date.now(),
+    empId: currentEmp.id, empName: currentEmp.name,
+    date: session.date,
+    clockIn: session.clockIn, clockOut: session.clockOut,
+    lunchStart: session.lunchStart, lunchEnd: session.lunchEnd,
+    totalMinutes: worked.totalMinutes,
+    lunchMinutes: worked.lunchMinutes,
+    overtimeMinutes: Math.max(0, worked.totalMinutes - 480) // 8hrs = 480min
+  };
+
+  var entries = getEntries();
+  entries.unshift(entry);
+  saveEntries(entries);
+  saveCurrentSession(null);
+
+  // Sync to sheet
+  fetch(SHEET_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(Object.assign({type:'timecard'}, entry))
+  });
+
+  updatePunchButtons();
+  updateClockStats();
+  showToast('✅ Clocked out! Worked ' + fmtHours(worked.totalMinutes));
+}
+
+function calcWorked(session) {
+  if (!session.clockIn || !session.clockOut) return {totalMinutes:0, lunchMinutes:0};
+  var total = (new Date(session.clockOut) - new Date(session.clockIn)) / 60000;
+  var lunch = 0;
+  if (session.lunchStart && session.lunchEnd) {
+    lunch = (new Date(session.lunchEnd) - new Date(session.lunchStart)) / 60000;
+  }
+  return { totalMinutes: Math.round(total - lunch), lunchMinutes: Math.round(lunch) };
+}
+
+function updatePunchButtons() {
+  var session = getCurrentSession();
+  var s = session || {};
+  var inBtn = document.getElementById('btn-in');
+  var outBtn = document.getElementById('btn-out');
+  var lsBtn = document.getElementById('btn-lunch-start');
+  var leBtn = document.getElementById('btn-lunch-end');
+  var status = document.getElementById('clockStatus');
+
+  if (!s.clockIn) {
+    inBtn.disabled=false; outBtn.disabled=true; lsBtn.disabled=true; leBtn.disabled=true;
+    status.className='clock-status clocked-out'; status.textContent='⭕ NOT CLOCKED IN';
+  } else if (s.lunchStart && !s.lunchEnd) {
+    inBtn.disabled=true; outBtn.disabled=true; lsBtn.disabled=true; leBtn.disabled=false;
+    status.className='clock-status on-break'; status.textContent='🍽️ ON LUNCH BREAK';
+  } else if (s.clockIn && !s.clockOut) {
+    inBtn.disabled=true; outBtn.disabled=false; lsBtn.disabled=!!s.lunchStart; leBtn.disabled=true;
+    status.className='clock-status clocked-in'; status.textContent='✅ CLOCKED IN — ' + fmtTime(new Date(s.clockIn));
+  } else {
+    inBtn.disabled=false; outBtn.disabled=true; lsBtn.disabled=true; leBtn.disabled=true;
+    status.className='clock-status clocked-out'; status.textContent='⭕ NOT CLOCKED IN';
+  }
+}
+
+function updateClockStats() {
+  var session = getCurrentSession();
+  var now = new Date();
+  var todayMin = 0; var lunchMin = 0;
+
+  if (session && session.clockIn) {
+    var end = session.clockOut ? new Date(session.clockOut) : now;
+    todayMin = (end - new Date(session.clockIn)) / 60000;
+    if (session.lunchStart) {
+      var le = session.lunchEnd ? new Date(session.lunchEnd) : (session.lunchStart ? now : null);
+      if (le) lunchMin = (le - new Date(session.lunchStart)) / 60000;
+      todayMin -= lunchMin;
+    }
+    todayMin = Math.max(0, todayMin);
+  }
+
+  // Add completed entries for today
+  var today = new Date().toLocaleDateString();
+  var entries = getEntries().filter(function(e){ return e.empId===currentEmp.id && e.date===today; });
+  var completedToday = entries.reduce(function(s,e){ return s+e.totalMinutes; }, 0);
+  todayMin += completedToday;
+
+  // This week
+  var weekStart = getWeekStart();
+  var weekEntries = getEntries().filter(function(e){
+    return e.empId===currentEmp.id && new Date(e.clockIn) >= weekStart;
+  });
+  var weekMin = weekEntries.reduce(function(s,e){ return s+e.totalMinutes; }, 0) + Math.round(todayMin);
+  var weekOT = Math.max(0, weekMin - 2400); // 40hrs = 2400min
+
+  document.getElementById('s-today').textContent = fmtHours(Math.round(todayMin));
+  document.getElementById('s-lunch').textContent = Math.round(lunchMin) + 'm';
+  document.getElementById('s-week').textContent = fmtHours(weekMin);
+  document.getElementById('s-overtime').textContent = fmtHours(weekOT);
+
+  // Today's log
+  var logEl = document.getElementById('today-log');
+  if (session && session.clockIn) {
+    var html = '<div class="entry-card">';
+    html += '<div class="entry-details">';
+    html += '⬆️ Clock In: <strong>' + fmtTime(new Date(session.clockIn)) + '</strong><br>';
+    if (session.lunchStart) html += '🍽️ Lunch Start: <strong>' + fmtTime(new Date(session.lunchStart)) + '</strong><br>';
+    if (session.lunchEnd) html += '✅ Lunch End: <strong>' + fmtTime(new Date(session.lunchEnd)) + '</strong><br>';
+    if (session.clockOut) html += '⬇️ Clock Out: <strong>' + fmtTime(new Date(session.clockOut)) + '</strong>';
+    else html += '⏱ <strong>Currently working...</strong>';
+    html += '</div></div>';
+    logEl.innerHTML = html;
+  } else {
+    logEl.innerHTML = '<div class="empty-state"><span>⏰</span>No punches yet today.</div>';
+  }
+
+  updatePunchButtons();
+}
+
+// HISTORY
+function renderHistory(filter) {
+  historyFilter = filter || historyFilter;
+  var entries = getEntries().filter(function(e){ return e.empId===currentEmp.id; });
+  entries = filterByDate(entries, historyFilter);
+  var totalMin = entries.reduce(function(s,e){return s+e.totalMinutes;},0);
+  var otMin = entries.reduce(function(s,e){return s+e.overtimeMinutes;},0);
+  document.getElementById('h-total').textContent = fmtHours(totalMin);
+  document.getElementById('h-ot').textContent = fmtHours(otMin);
+  document.getElementById('h-days').textContent = entries.length;
+  var list = document.getElementById('history-list');
+  list.innerHTML = entries.length ? entries.map(function(e){ return entryCardHTML(e, false); }).join('') :
+    '<div class="empty-state"><span>📋</span>No time entries found.</div>';
+}
+
+// MANAGER
+function updateManager() {
+  var emps = getEmployees();
+  var allEntries = getEntries();
+  var weekStart = getWeekStart();
+  var today = new Date().toLocaleDateString();
+
+  var weekEntries = filterByDate(allEntries, 'week');
+  var totalMin = weekEntries.reduce(function(s,e){return s+e.totalMinutes;},0);
+  var otMin = weekEntries.reduce(function(s,e){return s+e.overtimeMinutes;},0);
+  var activeToday = emps.filter(function(emp){
+    var s = JSON.parse(localStorage.getItem('tc_session_'+emp.id)||'null');
+    return s && s.clockIn && !s.clockOut;
+  }).length;
+
+  document.getElementById('m-total').textContent = fmtHours(totalMin);
+  document.getElementById('m-ot').textContent = fmtHours(otMin);
+  document.getElementById('m-active').textContent = activeToday;
+
+  document.getElementById('emp-sections').innerHTML = emps.map(function(emp){
+    var empEntries = filterByDate(allEntries.filter(function(e){return e.empId===emp.id;}), 'week');
+    var empMin = empEntries.reduce(function(s,e){return s+e.totalMinutes;},0);
+    var empOT = empEntries.reduce(function(s,e){return s+e.overtimeMinutes;},0);
+    var empDays = empEntries.length;
+    var session = JSON.parse(localStorage.getItem('tc_session_'+emp.id)||'null');
+    var status = session && session.clockIn && !session.clockOut ? '<span style="color:#5cb85c;font-size:0.7rem">● CLOCKED IN</span>' : '<span style="color:var(--gray);font-size:0.7rem">● OUT</span>';
+    return '<div class="emp-section">'+
+      '<h3>👤 '+emp.name+' '+status+'</h3>'+
+      '<div class="emp-stats">'+
+      '<div class="emp-stat"><div class="emp-stat-val" style="color:#5cb85c">'+fmtHours(empMin)+'</div><div class="emp-stat-lbl">This Week</div></div>'+
+      '<div class="emp-stat"><div class="emp-stat-val" style="color:#e05a6a">'+fmtHours(empOT)+'</div><div class="emp-stat-lbl">Overtime</div></div>'+
+      '<div class="emp-stat"><div class="emp-stat-val">'+empDays+'</div><div class="emp-stat-lbl">Days</div></div>'+
+      '</div></div>';
+  }).join('');
+
+  renderMgrEntries();
+}
+
+function renderMgrEntries() {
+  var entries = filterByDate(getEntries(), mgrFilter);
+  var list = document.getElementById('mgr-entries');
+  list.innerHTML = entries.length ? entries.map(function(e){ return entryCardHTML(e, true); }).join('') :
+    '<div class="empty-state"><span>📋</span>No entries found.</div>';
+}
+
+function entryCardHTML(e, showEmp) {
+  var ot = e.overtimeMinutes > 0;
+  return '<div class="entry-card'+(ot?' overtime':'')+'">'+
+    '<div class="entry-top">'+
+    '<div><div class="entry-date">'+e.date+(showEmp?' — <span style="color:var(--cyan)">'+e.empName+'</span>':'')+(ot?'<span class="overtime-badge">OT</span>':'')+'</div></div>'+
+    '<div class="entry-hours'+(ot?' overtime':'')+'">'+fmtHours(e.totalMinutes)+'</div>'+
+    '</div>'+
+    '<div class="entry-details">'+
+    '⬆️ In: '+fmtTime(new Date(e.clockIn))+'<br>'+
+    (e.lunchStart?'🍽️ Lunch: '+fmtTime(new Date(e.lunchStart))+' – '+(e.lunchEnd?fmtTime(new Date(e.lunchEnd)):'?')+'  ('+Math.round(e.lunchMinutes)+'m)<br>':'')+
+    '⬇️ Out: '+(e.clockOut?fmtTime(new Date(e.clockOut)):'Still working')+
+    (e.overtimeMinutes>0?'<br>⚠️ Overtime: '+fmtHours(e.overtimeMinutes):'')+'</div>'+
+    (isManager?'<div class="entry-actions"><button class="action-btn blue" onclick="openEditModal(\''+e.id+'\')">✏️ Adjust</button></div>':'')+
+    '</div>';
+}
+
+// EDIT MODAL
+function openEditModal(id) {
+  var entries = getEntries();
+  var e = entries.find(function(x){return x.id==id;});
+  if (!e) return;
+  document.getElementById('edit-entry-id').value = id;
+  document.getElementById('edit-date').value = new Date(e.clockIn).toISOString().split('T')[0];
+  document.getElementById('edit-in').value = fmtTimeInput(new Date(e.clockIn));
+  document.getElementById('edit-lunch-start').value = e.lunchStart ? fmtTimeInput(new Date(e.lunchStart)) : '';
+  document.getElementById('edit-lunch-end').value = e.lunchEnd ? fmtTimeInput(new Date(e.lunchEnd)) : '';
+  document.getElementById('edit-out').value = e.clockOut ? fmtTimeInput(new Date(e.clockOut)) : '';
+  document.getElementById('edit-notes').value = e.notes || '';
+  // Populate employee select
+  var emps = getEmployees();
+  document.getElementById('edit-emp').innerHTML = emps.map(function(emp){
+    return '<option value="'+emp.id+'"'+(emp.id===e.empId?' selected':'')+'>'+emp.name+'</option>';
+  }).join('');
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal() { document.getElementById('editModal').classList.remove('show'); }
+
+function saveEditEntry() {
+  var id = parseInt(document.getElementById('edit-entry-id').value);
+  var date = document.getElementById('edit-date').value;
+  var inTime = document.getElementById('edit-in').value;
+  var lsTime = document.getElementById('edit-lunch-start').value;
+  var leTime = document.getElementById('edit-lunch-end').value;
+  var outTime = document.getElementById('edit-out').value;
+  var notes = document.getElementById('edit-notes').value;
+  var empId = document.getElementById('edit-emp').value;
+  var emps = getEmployees();
+  var emp = emps.find(function(e){return e.id===empId;});
+
+  var entries = getEntries();
+  var idx = -1;
+  for(var i=0;i<entries.length;i++){if(entries[i].id==id){idx=i;break;}}
+  if(idx<0){showToast('Entry not found',true);return;}
+
+  var clockIn = new Date(date+'T'+inTime);
+  var clockOut = outTime ? new Date(date+'T'+outTime) : null;
+  var lunchStart = lsTime ? new Date(date+'T'+lsTime) : null;
+  var lunchEnd = leTime ? new Date(date+'T'+leTime) : null;
+
+  var totalMin = clockOut ? Math.round((clockOut-clockIn)/60000) : 0;
+  var lunchMin = (lunchStart && lunchEnd) ? Math.round((lunchEnd-lunchStart)/60000) : 0;
+  totalMin -= lunchMin;
+  totalMin = Math.max(0, totalMin);
+
+  entries[idx].clockIn = clockIn.toISOString();
+  entries[idx].clockOut = clockOut ? clockOut.toISOString() : null;
+  entries[idx].lunchStart = lunchStart ? lunchStart.toISOString() : null;
+  entries[idx].lunchEnd = lunchEnd ? lunchEnd.toISOString() : null;
+  entries[idx].totalMinutes = totalMin;
+  entries[idx].lunchMinutes = lunchMin;
+  entries[idx].overtimeMinutes = Math.max(0, totalMin - 480);
+  entries[idx].notes = notes;
+  entries[idx].empId = empId;
+  entries[idx].empName = emp ? emp.name : entries[idx].empName;
+  entries[idx].date = date;
+  entries[idx].adjustedBy = 'Manager';
+
+  saveEntries(entries);
+  closeEditModal();
+  showToast('✅ Time entry updated!');
+  if(isManager) updateManager();
+  renderHistory();
+}
+
+// SETTINGS
+function renderEmpList() {
+  var emps = getEmployees();
+  document.getElementById('emp-pin-list').innerHTML = emps.map(function(emp){
+    return '<div class="settings-row"><div><div class="settings-label">'+emp.name+'</div><div class="settings-val">ID: '+emp.id+'</div></div>'+
+      '<div style="display:flex;gap:6px">'+
+      '<button class="btn-change" onclick="changeEmpPin(\''+emp.id+'\')">PIN</button>'+
+      '<button class="btn-change" style="background:var(--red)" onclick="removeEmployee(\''+emp.id+'\')">✕</button>'+
+      '</div></div>';
+  }).join('')+
+  '<div class="settings-row"><div><div class="settings-label">Manager PIN</div></div>'+
+  '<button class="btn-change" onclick="changeMgrPin()">Change</button></div>';
+}
+
+function addEmployee() {
+  var name = prompt('Enter employee full name:');
+  if (!name||!name.trim()) return;
+  var pin = prompt('Enter 4-digit PIN for '+name+':');
+  if (!pin||pin.length!==4||isNaN(pin)){alert('PIN must be 4 digits.');return;}
+  var emps = getEmployees();
+  var maxNum = emps.reduce(function(m,e){return Math.max(m,parseInt(e.id.replace('E',''))||0);},0);
+  var newId = 'E' + String(maxNum+1).padStart(3,'0');
+  emps.push({name:name.trim(), id:newId, pin:pin});
+  saveEmployees(emps);
+  renderEmpList(); renderLoginButtons();
+  showToast('✅ '+name+' added!');
+}
+
+function removeEmployee(id) {
+  var emps = getEmployees();
+  var emp = emps.find(function(e){return e.id===id;});
+  if (!emp) return;
+  if (currentEmp && currentEmp.id===id){alert('Cannot remove yourself!');return;}
+  if (emps.length<=1){alert('Cannot remove the last employee!');return;}
+  if (!confirm('Remove '+emp.name+'?')) return;
+  if (!confirm('FINAL CONFIRMATION: Remove '+emp.name+' permanently?')) return;
+  saveEmployees(emps.filter(function(e){return e.id!==id;}));
+  renderEmpList(); renderLoginButtons();
+  showToast('🗑 Employee removed');
+}
+
+function changeEmpPin(id) {
+  var emps = getEmployees();
+  var emp = emps.find(function(e){return e.id===id;});
+  var p = prompt('New 4-digit PIN for '+emp.name+':');
+  if (!p||p.length!==4||isNaN(p)){alert('PIN must be 4 digits.');return;}
+  emp.pin = p; saveEmployees(emps); showToast('✅ PIN updated!');
+}
+
+function changeMgrPin() {
+  var p = prompt('New 4-digit Manager PIN:');
+  if (!p||p.length!==4||isNaN(p)){alert('PIN must be 4 digits.');return;}
+  saveMgrPin(p); showToast('✅ Manager PIN updated!');
+}
+
+function openSheet() { window.open('https://docs.google.com/spreadsheets/d/1L2ieCAX6EHKWncVMKV_hbuLjrALOHD4gGsKXD9BP_zQ/edit','_blank'); }
+
+// FILTERS
+function filterByDate(entries, filter) {
+  if (filter==='week') {
+    var ws = getWeekStart();
+    return entries.filter(function(e){return new Date(e.clockIn)>=ws;});
+  } else if (filter==='month') {
+    var now = new Date(); var ms = new Date(now.getFullYear(),now.getMonth(),1);
+    return entries.filter(function(e){return new Date(e.clockIn)>=ms;});
+  }
+  return entries;
+}
+
+function filterHistory(f, el) {
+  historyFilter = f;
+  document.querySelectorAll('#view-history .pill').forEach(function(p){p.classList.remove('active');});
+  el.classList.add('active');
+  renderHistory();
+}
+
+function filterMgr(f, el) {
+  mgrFilter = f;
+  document.querySelectorAll('#view-manager .pill').forEach(function(p){p.classList.remove('active');});
+  el.classList.add('active');
+  renderMgrEntries();
+}
+
+function getWeekStart() {
+  var now = new Date(); var day = now.getDay();
+  var diff = now.getDate() - day + (day===0?-6:1);
+  return new Date(now.getFullYear(), now.getMonth(), diff, 0,0,0,0);
+}
+
+// TABS
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('view-'+tab).classList.add('active');
+  if(tab==='clock') updateClockStats();
+  if(tab==='history') renderHistory();
+  if(tab==='manager') updateManager();
+  if(tab==='settings') renderEmpList();
+}
+
+// HELPERS
+function fmtTime(d) {
+  var h=d.getHours(), m=d.getMinutes(), ampm=h>=12?'PM':'AM';
+  h=h%12||12;
+  return h+':'+String(m).padStart(2,'0')+' '+ampm;
+}
+function fmtTimeInput(d) {
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function fmtHours(min) {
+  if(!min||min<0) return '0h 0m';
+  var h=Math.floor(min/60), m=Math.round(min%60);
+  return h+'h '+m+'m';
+}
+function showToast(msg,isError) {
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(isError?' error':'');
+  setTimeout(function(){t.classList.remove('show');},2500);
+}
+
+// INIT
+window.addEventListener('load', function(){
+  renderLoginButtons();
+});
+</script>
+</body>
+</html>

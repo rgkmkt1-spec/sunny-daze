@@ -9,6 +9,7 @@
   ],
   "rewrites": [
     { "source": "/jobs", "destination": "/jobs.html" },
-    { "source": "/training", "destination": "/training.html" }
+    { "source": "/training", "destination": "/training.html" },
+    { "source": "/timeclock", "destination": "/timecard.html" }
   ]
 }
