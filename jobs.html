@@ -183,9 +183,11 @@
   <div class="login-sub">Pressure Washing · Sales & Job Tracker</div>
   <div class="login-card">
     <h3>Select Your Profile</h3>
-    <button class="rep-btn" onclick="selectRep('Ringo Fry','1001')">Ringo Fry</button>
-    <button class="rep-btn" onclick="selectRep('Brian Lydic','1002')">Brian Lydic</button>
-    <button class="rep-btn" onclick="selectRep('Rob Keller','1003')">Rob Keller</button>
+    <div id="loginBtns">
+      <button class="rep-btn" onclick="selectRep('Ringo Fry','1001')">Ringo Fry</button>
+      <button class="rep-btn" onclick="selectRep('Brian Lydic','1002')">Brian Lydic</button>
+      <button class="rep-btn" onclick="selectRep('Rob Keller','1003')">Rob Keller</button>
+    </div>
     <button class="manager-btn" onclick="showPin('manager')">👔 MANAGER VIEW</button>
     <button class="manager-btn" id="fpBtn" onclick="doFingerprint()" style="display:none;margin-top:8px;border-color:#5cb85c;color:#5cb85c;">👆 FINGERPRINT LOGIN</button>
   </div>
@@ -366,22 +368,8 @@
 <div class="view" id="view-settings">
   <div class="settings-card">
     <h2>⚙️ Change PINs</h2>
-    <div class="settings-row">
-      <div><div class="settings-label">Ringo Fry</div><div class="settings-val">Rep #1001</div></div>
-      <button class="btn-change" onclick="changePin('Ringo Fry','1001')">Change PIN</button>
-    </div>
-    <div class="settings-row">
-      <div><div class="settings-label">Brian Lydic</div><div class="settings-val">Rep #1002</div></div>
-      <button class="btn-change" onclick="changePin('Brian Lydic','1002')">Change PIN</button>
-    </div>
-    <div class="settings-row">
-      <div><div class="settings-label">Rob Keller</div><div class="settings-val">Rep #1003</div></div>
-      <button class="btn-change" onclick="changePin('Rob Keller','1003')">Change PIN</button>
-    </div>
-    <div class="settings-row">
-      <div><div class="settings-label">Manager PIN</div><div class="settings-val">Current: ****</div></div>
-      <button class="btn-change" onclick="changeMgrPin()">Change PIN</button>
-    </div>
+    <div id="rep-pin-list"></div>
+    <button class="btn-submit" onclick="addNewRep()" style="margin-top:12px;background:var(--green);">➕ ADD NEW REP</button>
   </div>
   <div class="settings-card">
     <h2>📊 Google Sheet</h2>
@@ -714,11 +702,59 @@
     showToast('🗑 Deleted');
   }
 
-  function changePin(name, id) {
-    var p = prompt('Enter new 4-digit PIN for '+name+':');
-    if (!p || p.length!==4 || isNaN(p)) { alert('PIN must be 4 digits.'); return; }
+  function renderRepList() {
     var reps = getReps();
-    var rep = reps.find(function(r){return r.id===id;});
+    var html = reps.map(function(rep) {
+      return '<div class="settings-row">' +
+        '<div><div class="settings-label">' + rep.name + '</div><div class="settings-val">Rep #' + rep.id + '</div></div>' +
+        '<div style="display:flex;gap:6px">' +
+        '<button class="btn-change" onclick="changePin(\'' + rep.name + '\',\'' + rep.id + '\')">PIN</button>' +
+        '<button class="btn-change" style="background:var(--red)" onclick="removeRep(\'' + rep.id + '\')">✕</button>' +
+        '</div></div>';
+    }).join('');
+    html += '<div class="settings-row"><div><div class="settings-label">Manager PIN</div><div class="settings-val">Current: ****</div></div><button class="btn-change" onclick="changeMgrPin()">Change</button></div>';
+    document.getElementById('rep-pin-list').innerHTML = html;
+  }
+
+  function addNewRep() {
+    var name = prompt('Enter new rep full name:');
+    if (!name || !name.trim()) return;
+    var pin = prompt('Enter 4-digit PIN for ' + name + ':');
+    if (!pin || pin.length !== 4 || isNaN(pin)) { alert('PIN must be 4 digits.'); return; }
+    var reps = getReps();
+    var maxId = reps.reduce(function(m, r) { return Math.max(m, parseInt(r.id)); }, 1000);
+    var newId = String(maxId + 1);
+    reps.push({ name: name.trim(), id: newId, pin: pin });
+    saveReps(reps);
+    renderRepList();
+    renderLoginButtons();
+    showToast('✅ ' + name + ' added as Rep #' + newId + '!');
+  }
+
+  function removeRep(id) {
+    var reps = getReps();
+    var rep = reps.find(function(r) { return r.id === id; });
+    if (!rep) return;
+    if (!confirm('Remove ' + rep.name + ' from the app?')) return;
+    saveReps(reps.filter(function(r) { return r.id !== id; }));
+    renderRepList();
+    renderLoginButtons();
+    showToast('🗑 Rep removed');
+  }
+
+  function renderLoginButtons() {
+    var reps = getReps();
+    var container = document.getElementById('loginBtns');
+    container.innerHTML = reps.map(function(rep) {
+      return '<button class="rep-btn" onclick="selectRep(\'' + rep.name + '\',\'' + rep.id + '\')">' + rep.name + '</button>';
+    }).join('');
+  }
+
+  function changePin(name, id) {
+    var p = prompt('Enter new 4-digit PIN for ' + name + ':');
+    if (!p || p.length !== 4 || isNaN(p)) { alert('PIN must be 4 digits.'); return; }
+    var reps = getReps();
+    var rep = reps.find(function(r) { return r.id === id; });
     if (rep) rep.pin = p;
     saveReps(reps); showToast('✅ PIN updated!');
   }
@@ -738,7 +774,11 @@
     if (tab==='leads') renderLeads('');
     if (tab==='jobs') renderJobs('');
     if (tab==='manager') updateManager();
+    if (tab==='settings') renderRepList();
   }
+
+  // Init login buttons from localStorage
+  window.addEventListener('load', function() { renderLoginButtons(); });
 
   function formatDate(d) { if (!d) return ''; var p=d.split('-'); return p[1]+'/'+p[2]+'/'+p[0]; }
 
