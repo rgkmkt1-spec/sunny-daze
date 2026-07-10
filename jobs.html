@@ -126,7 +126,7 @@
     .pill.p-lost.active { background: var(--red); color: white; }
     .rep-section { background: var(--card); border-radius: 10px; padding: 14px; margin-bottom: 12px; border: 1px solid rgba(0,180,216,0.2); }
     .rep-section h3 { font-size: 0.9rem; font-weight: 900; color: var(--blue); margin-bottom: 10px; }
-    .rep-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+    .rep-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
     .rep-stat { text-align: center; }
     .rep-stat-val { font-size: 1rem; font-weight: 900; }
     .rep-stat-lbl { font-size: 0.58rem; color: var(--gray); text-transform: uppercase; }
@@ -305,6 +305,8 @@
     <div class="stat-card green"><div class="stat-label">💰 Total Revenue</div><div class="stat-value" id="m-revenue">$0</div></div>
     <div class="stat-card"><div class="stat-label">📋 Total Leads</div><div class="stat-value" id="m-leads">0</div></div>
     <div class="stat-card green"><div class="stat-label">🤝 Total Sold</div><div class="stat-value" id="m-sold">0</div></div>
+    <div class="stat-card yellow"><div class="stat-label">📋 Estimates</div><div class="stat-value" id="m-estimates">0</div></div>
+    <div class="stat-card orange"><div class="stat-label">🔔 Follow Ups</div><div class="stat-value" id="m-followups">0</div></div>
     <div class="stat-card"><div class="stat-label">✅ Close Rate</div><div class="stat-value" id="m-closerate">0%</div></div>
   </div>
   <div class="section-title">👤 Individual Performance</div>
@@ -724,12 +726,14 @@ function updateManager() {
   document.getElementById('m-revenue').textContent='$'+revenue.toFixed(0);
   document.getElementById('m-leads').textContent=data.length;
   document.getElementById('m-sold').textContent=sold.length;
+  document.getElementById('m-estimates').textContent=data.filter(function(d){return d.status==='Estimate';}).length;
+  document.getElementById('m-followups').textContent=data.filter(function(d){return d.status==='Follow Up';}).length;
   document.getElementById('m-closerate').textContent=(total?Math.round((sold.length/total)*100):0)+'%';
   document.getElementById('rep-sections').innerHTML=reps.map(function(rep){
     var rd=data.filter(function(d){return d.repId===rep.id;}),rs=rd.filter(function(d){return d.status==='Sold';});
     var rr=rs.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
     var rt=rd.filter(function(d){return ['Sold','Estimate','Lost'].indexOf(d.status)>=0;}).length;
-    return '<div class="rep-section"><h3>👤 '+rep.name+' <span style="font-size:0.75rem;color:var(--gray)">#'+rep.id+'</span></h3><div class="rep-stats"><div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">$'+rr.toFixed(0)+'</div><div class="rep-stat-lbl">Revenue</div></div><div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">'+rs.length+'</div><div class="rep-stat-lbl">Sold</div></div><div class="rep-stat"><div class="rep-stat-val">'+rd.filter(function(d){return d.status==="Estimate";}).length+'</div><div class="rep-stat-lbl">Estimates</div></div><div class="rep-stat"><div class="rep-stat-val">'+(rt?Math.round((rs.length/rt)*100):0)+'%</div><div class="rep-stat-lbl">Close Rate</div></div></div></div>';
+    return '<div class="rep-section"><h3>👤 '+rep.name+' <span style="font-size:0.75rem;color:var(--gray)">#'+rep.id+'</span></h3><div class="rep-stats"><div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">$'+rr.toFixed(0)+'</div><div class="rep-stat-lbl">Revenue</div></div><div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">'+rs.length+'</div><div class="rep-stat-lbl">Sold</div></div><div class="rep-stat"><div class="rep-stat-val" style="color:var(--yellow)">'+rd.filter(function(d){return d.status==="Estimate";}).length+'</div><div class="rep-stat-lbl">Estimates</div></div><div class="rep-stat"><div class="rep-stat-val" style="color:var(--orange)">'+rd.filter(function(d){return d.status==="Follow Up";}).length+'</div><div class="rep-stat-lbl">Follow Ups</div></div><div class="rep-stat"><div class="rep-stat-val">'+(rt?Math.round((rs.length/rt)*100):0)+'%</div><div class="rep-stat-lbl">Close Rate</div></div><div class="rep-stat"><div class="rep-stat-val" style="color:#e05a6a">'+rd.filter(function(d){return d.status==="Lost";}).length+'</div><div class="rep-stat-lbl">Lost</div></div></div></div>';
   }).join('');
   renderMgrLeads('');
 }
