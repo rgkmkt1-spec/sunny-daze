@@ -1141,30 +1141,69 @@ function updateCommercialStats() {
 
 function renderCommercial(search) {
   search = search || '';
-  var accounts = getCommercialData();
-  if (search) accounts = accounts.filter(function(a){ return a.business.toLowerCase().includes(search.toLowerCase())||(a.address||'').toLowerCase().includes(search.toLowerCase()); });
   var list = document.getElementById('commercial-list');
-  if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
-  list.innerHTML = accounts.map(function(a) {
-    return '<div class="customer-card" style="border-left-color:#00B4D8">'+
-      '<div class="customer-top"><div><div class="customer-name">'+a.business+'</div>'+
-      '<div class="customer-details">'+
-      (a.contact?'👤 '+a.contact+'<br>':'')+
-      (a.phone?'📞 '+a.phone+'<br>':'')+
-      (a.address?'📍 '+a.address+'<br>':'')+
-      (a.nextDate?'📅 Next: '+fmtDate(a.nextDate):'')+'</div></div>'+
-      '<div class="customer-amount">$'+parseFloat(a.amount||0).toFixed(2)+'</div></div>'+
-      '<div class="badges">'+
-      (a.schedule?'<span class="badge badge-blue">'+a.schedule+'</span>':'')+
-      (a.service?'<span class="badge badge-blue">'+a.service+'</span>':'')+
-      '<span class="badge '+(a.paid==='Yes'?'badge-sold':'badge-lost')+'">'+(a.paid==='Yes'?'✅ Paid':'⚠️ Unpaid')+'</span>'+
-      '</div>'+
-      (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
-      '<div class="card-actions">'+
-      '<button class="action-btn green" onclick="toggleCommercialPaid('+a.id+')">'+(a.paid==='Yes'?'Mark Unpaid':'Mark Paid')+'</button>'+
-      '<button class="action-btn red" onclick="deleteCommercial('+a.id+')">🗑</button>'+
-      '</div></div>';
-  }).join('');
+  list.innerHTML = '<div class="empty-state"><span>⏳</span>Loading from Google Sheets...</div>';
+  
+  fetch(SHEET_URL + '?action=commercial&t=' + Date.now(), { method: 'GET', mode: 'cors' })
+    .then(function(r) { return r.json(); })
+    .then(function(response) {
+      var accounts = response.data || [];
+      // Also merge local accounts not yet synced
+      var local = getCommercialData();
+      if (search) accounts = accounts.filter(function(a){ return a.business.toLowerCase().includes(search.toLowerCase())||(a.address||'').toLowerCase().includes(search.toLowerCase()); });
+      if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
+      // Update stats
+      var monthly = accounts.reduce(function(s,a){ return s+(a.amount||0); }, 0);
+      var unpaid = accounts.filter(function(a){ return a.paid !== 'Yes'; }).length;
+      document.getElementById('c-revenue').textContent = '$'+monthly.toFixed(0);
+      document.getElementById('c-count').textContent = accounts.length;
+      document.getElementById('c-unpaid').textContent = unpaid;
+      list.innerHTML = accounts.map(function(a) {
+        return '<div class="customer-card" style="border-left-color:#00B4D8">'+
+          '<div class="customer-top"><div><div class="customer-name">'+a.business+'</div>'+
+          '<div class="customer-details">'+
+          (a.contact?'👤 '+a.contact+'<br>':'')+
+          (a.phone?'📞 '+a.phone+'<br>':'')+
+          (a.address?'📍 '+a.address+'<br>':'')+
+          (a.nextDate?'📅 Next: '+fmtDate(a.nextDate):'')+'</div></div>'+
+          '<div class="customer-amount">$'+parseFloat(a.amount||0).toFixed(2)+'</div></div>'+
+          '<div class="badges">'+
+          (a.schedule?'<span class="badge badge-blue">'+a.schedule+'</span>':'')+
+          (a.service?'<span class="badge badge-blue">'+a.service+'</span>':'')+
+          '<span class="badge '+(a.paid==='Yes'?'badge-sold':'badge-lost')+'">'+(a.paid==='Yes'?'✅ Paid':'⚠️ Unpaid')+'</span>'+
+          '</div>'+
+          (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
+          '<div class="card-actions">'+
+          '<button class="action-btn green" onclick="toggleCommercialPaid('+a.id+')">'+(a.paid==='Yes'?'Mark Unpaid':'Mark Paid')+'</button>'+
+          '<button class="action-btn red" onclick="deleteCommercial('+a.id+')">🗑</button>'+
+          '</div></div>';
+      }).join('');
+    })
+    .catch(function() {
+      // Fallback to local
+      var accounts = getCommercialData();
+      if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
+      list.innerHTML = accounts.map(function(a) {
+        return '<div class="customer-card" style="border-left-color:#00B4D8">'+
+          '<div class="customer-top"><div><div class="customer-name">'+a.business+'</div>'+
+          '<div class="customer-details">'+
+          (a.contact?'👤 '+a.contact+'<br>':'')+
+          (a.phone?'📞 '+a.phone+'<br>':'')+
+          (a.address?'📍 '+a.address+'<br>':'')+
+          (a.nextDate?'📅 Next: '+fmtDate(a.nextDate):'')+'</div></div>'+
+          '<div class="customer-amount">$'+parseFloat(a.amount||0).toFixed(2)+'</div></div>'+
+          '<div class="badges">'+
+          (a.schedule?'<span class="badge badge-blue">'+a.schedule+'</span>':'')+
+          (a.service?'<span class="badge badge-blue">'+a.service+'</span>':'')+
+          '<span class="badge '+(a.paid==='Yes'?'badge-sold':'badge-lost')+'">'+(a.paid==='Yes'?'✅ Paid':'⚠️ Unpaid')+'</span>'+
+          '</div>'+
+          (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
+          '<div class="card-actions">'+
+          '<button class="action-btn green" onclick="toggleCommercialPaid('+a.id+')">'+(a.paid==='Yes'?'Mark Unpaid':'Mark Paid')+'</button>'+
+          '<button class="action-btn red" onclick="deleteCommercial('+a.id+')">🗑</button>'+
+          '</div></div>';
+      }).join('');
+    });
 }
 
 function toggleCommercialPaid(id) {
