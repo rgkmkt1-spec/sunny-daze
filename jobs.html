@@ -317,16 +317,18 @@
     <div class="form-group"><label>Address</label><input type="text" id="c-address" placeholder="123 Main St, Erie PA"/></div>
     <div class="form-group">
       <label>Service</label>
-      <select id="c-service">
-        <option value="">Select service...</option>
-        <option>Parking Lot Cleaning</option>
-        <option>Building Exterior Wash</option>
-        <option>Dumpster Area Cleaning</option>
-        <option>Sidewalk & Entrance</option>
-        <option>Grease Trap Area</option>
-        <option>Full Commercial Clean</option>
-        <option>Multiple Services</option>
-      </select>
+      <div style="background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:8px;padding:10px 12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Parking Lot Cleaning" style="width:16px;height:16px;"/> Parking Lot</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Building Exterior Wash" style="width:16px;height:16px;"/> Building Exterior</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Dumpster Area Cleaning" style="width:16px;height:16px;"/> Dumpster Area</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Sidewalk & Entrance" style="width:16px;height:16px;"/> Sidewalk & Entrance</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Grease Trap Area" style="width:16px;height:16px;"/> Grease Trap Area</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Full Commercial Clean" style="width:16px;height:16px;"/> Full Commercial</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="House Washing" style="width:16px;height:16px;"/> House Washing</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Driveway & Concrete" style="width:16px;height:16px;"/> Driveway & Concrete</label>
+        </div>
+      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -1082,13 +1084,15 @@ function switchTab(tab) {
 function saveCommercial() {
   var business = document.getElementById('c-business').value.trim();
   if (!business) { alert('Please enter a business name.'); return; }
+  var cChecked = document.querySelectorAll('.c-svc-check:checked');
+  var cServices = Array.prototype.map.call(cChecked, function(c){ return c.value; }).join(', ');
   var account = {
     id: Date.now(), type: 'commercial',
     business: business,
     contact: document.getElementById('c-contact').value.trim(),
     phone: document.getElementById('c-phone').value.trim(),
     address: document.getElementById('c-address').value.trim(),
-    service: document.getElementById('c-service').value,
+    service: cServices,
     schedule: document.getElementById('c-schedule').value,
     amount: parseFloat(document.getElementById('c-amount').value) || 0,
     nextDate: document.getElementById('c-nextdate').value,
@@ -1099,7 +1103,7 @@ function saveCommercial() {
   accounts.unshift(account);
   localStorage.setItem('sd_commercial', JSON.stringify(accounts));
   ['c-business','c-contact','c-phone','c-address','c-amount','c-notes','c-nextdate'].forEach(function(id){document.getElementById(id).value='';});
-  document.getElementById('c-service').value='';
+  document.querySelectorAll('.c-svc-check').forEach(function(c){c.checked=false;});
   document.getElementById('c-schedule').value='';
   showToast('✅ Account saved!');
   document.getElementById('c-savingInd').style.display='block';
