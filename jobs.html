@@ -346,6 +346,7 @@ var pendingRep = null;
 var pinValue = '';
 var activeFilter = 'All';
 var mgrFilter = 'All';
+var mgrAllData = [];
 
 function getReps() {
   try { return JSON.parse(localStorage.getItem('sd_reps') || 'null') || [{name:'Ringo Fry',id:'1001',pin:'1001'},{name:'Brian Lydic',id:'1002',pin:'1002'},{name:'Rob Keller',id:'1003',pin:'1003'}]; }
@@ -719,27 +720,77 @@ function renderJobs(search) {
 }
 
 function updateManager() {
-  var data=getData(), reps=getReps();
-  var sold=data.filter(function(d){return d.status==='Sold';});
-  var revenue=sold.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
-  var total=data.filter(function(d){return ['Sold','Estimate','Lost'].indexOf(d.status)>=0;}).length;
-  document.getElementById('m-revenue').textContent='$'+revenue.toFixed(0);
-  document.getElementById('m-leads').textContent=data.length;
-  document.getElementById('m-sold').textContent=sold.length;
-  document.getElementById('m-estimates').textContent=data.filter(function(d){return d.status==='Estimate';}).length;
-  document.getElementById('m-followups').textContent=data.filter(function(d){return d.status==='Follow Up';}).length;
-  document.getElementById('m-closerate').textContent=(total?Math.round((sold.length/total)*100):0)+'%';
-  document.getElementById('rep-sections').innerHTML=reps.map(function(rep){
-    var rd=data.filter(function(d){return d.repId===rep.id;}),rs=rd.filter(function(d){return d.status==='Sold';});
-    var rr=rs.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
-    var rt=rd.filter(function(d){return ['Sold','Estimate','Lost'].indexOf(d.status)>=0;}).length;
-    return '<div class="rep-section"><h3>👤 '+rep.name+' <span style="font-size:0.75rem;color:var(--gray)">#'+rep.id+'</span></h3><div class="rep-stats"><div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">$'+rr.toFixed(0)+'</div><div class="rep-stat-lbl">Revenue</div></div><div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">'+rs.length+'</div><div class="rep-stat-lbl">Sold</div></div><div class="rep-stat"><div class="rep-stat-val" style="color:var(--yellow)">'+rd.filter(function(d){return d.status==="Estimate";}).length+'</div><div class="rep-stat-lbl">Estimates</div></div><div class="rep-stat"><div class="rep-stat-val" style="color:var(--orange)">'+rd.filter(function(d){return d.status==="Follow Up";}).length+'</div><div class="rep-stat-lbl">Follow Ups</div></div><div class="rep-stat"><div class="rep-stat-val">'+(rt?Math.round((rs.length/rt)*100):0)+'%</div><div class="rep-stat-lbl">Close Rate</div></div><div class="rep-stat"><div class="rep-stat-val" style="color:#e05a6a">'+rd.filter(function(d){return d.status==="Lost";}).length+'</div><div class="rep-stat-lbl">Lost</div></div></div></div>';
-  }).join('');
-  renderMgrLeads('');
+  var data = getData();
+  var reps = getReps();
+  
+  // Show loading state
+  document.getElementById('mgr-leads-list').innerHTML = '<div class="empty-state"><span>⏳</span>Loading all leads from Google Sheets...</div>';
+
+  // Fetch all data from Google Sheets
+  fetch(SHEET_URL + '?t=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(response) {
+      var sheetData = response.data || [];
+      
+      // Merge sheet data with local data (avoid duplicates by repId+fname+date)
+      var allData = sheetData.length > 0 ? sheetData : data;
+      
+      var sold = allData.filter(function(d){return d.status==='Sold';});
+      var estimates = allData.filter(function(d){return d.status==='Estimate';});
+      var followups = allData.filter(function(d){return d.status==='Follow Up';});
+      var lost = allData.filter(function(d){return d.status==='Lost';});
+      var revenue = sold.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
+      var total = sold.length + estimates.length + lost.length;
+
+      document.getElementById('m-revenue').textContent = '$' + revenue.toFixed(0);
+      document.getElementById('m-leads').textContent = allData.length;
+      document.getElementById('m-sold').textContent = sold.length;
+      document.getElementById('m-estimates').textContent = estimates.length;
+      document.getElementById('m-followups').textContent = followups.length;
+      document.getElementById('m-closerate').textContent = (total ? Math.round((sold.length/total)*100) : 0) + '%';
+
+      // Per rep stats
+      document.getElementById('rep-sections').innerHTML = reps.map(function(rep) {
+        var rd = allData.filter(function(d){return d.repId===rep.id;});
+        var rs = rd.filter(function(d){return d.status==='Sold';});
+        var rr = rs.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
+        var rt = rd.filter(function(d){return ['Sold','Estimate','Lost'].indexOf(d.status)>=0;}).length;
+        return '<div class="rep-section"><h3>👤 '+rep.name+' <span style="font-size:0.75rem;color:var(--gray)">#'+rep.id+'</span></h3><div class="rep-stats">'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">$'+rr.toFixed(0)+'</div><div class="rep-stat-lbl">Revenue</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">'+rs.length+'</div><div class="rep-stat-lbl">Sold</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:var(--yellow)">'+rd.filter(function(d){return d.status==="Estimate";}).length+'</div><div class="rep-stat-lbl">Estimates</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:var(--orange)">'+rd.filter(function(d){return d.status==="Follow Up";}).length+'</div><div class="rep-stat-lbl">Follow Ups</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val">'+(rt?Math.round((rs.length/rt)*100):0)+'%</div><div class="rep-stat-lbl">Close Rate</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:#e05a6a">'+rd.filter(function(d){return d.status==="Lost";}).length+'</div><div class="rep-stat-lbl">Lost</div></div>'+
+          '</div></div>';
+      }).join('');
+
+      mgrAllData = allData;
+      renderMgrLeads('');
+    })
+    .catch(function() {
+      // Fallback to local data if fetch fails
+      var allData = data;
+      var sold = allData.filter(function(d){return d.status==='Sold';});
+      var estimates = allData.filter(function(d){return d.status==='Estimate';});
+      var followups = allData.filter(function(d){return d.status==='Follow Up';});
+      var lost = allData.filter(function(d){return d.status==='Lost';});
+      var revenue = sold.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
+      var total = sold.length + estimates.length + lost.length;
+      document.getElementById('m-revenue').textContent = '$' + revenue.toFixed(0);
+      document.getElementById('m-leads').textContent = allData.length;
+      document.getElementById('m-sold').textContent = sold.length;
+      document.getElementById('m-estimates').textContent = estimates.length;
+      document.getElementById('m-followups').textContent = followups.length;
+      document.getElementById('m-closerate').textContent = (total ? Math.round((sold.length/total)*100) : 0) + '%';
+      document.getElementById('rep-sections').innerHTML = '<div class="empty-state"><span>⚠️</span>Could not load sheet data. Showing local data only.</div>';
+      mgrAllData = allData;
+      renderMgrLeads('');
+    });
 }
 
 function renderMgrLeads(search) {
-  var data=getData();
+  var data = mgrAllData.length > 0 ? mgrAllData : getData();
   if(mgrFilter!=='All') data=data.filter(function(d){return d.status===mgrFilter;});
   if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase());});
   document.getElementById('mgr-leads-list').innerHTML=data.length?data.map(function(c){return cardHTML(c,false,true);}).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
