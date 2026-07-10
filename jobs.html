@@ -405,6 +405,7 @@ var pinValue = '';
 var activeFilter = 'All';
 var mgrFilter = 'All';
 var mgrAllData = [];
+var commercialSheetData = [];
 var sessionTimer = null;
 var SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
 
@@ -1047,6 +1048,10 @@ function editCustomer(id) {
   var data = getData();
   var c = null;
   for (var i=0; i<data.length; i++) { if (parseInt(data[i].id) === id) { c = data[i]; break; } }
+  // Also search mgrAllData if not found locally
+  if (!c && mgrAllData.length > 0) {
+    for (var j=0; j<mgrAllData.length; j++) { if (parseInt(mgrAllData[j].id) === id) { c = mgrAllData[j]; break; } }
+  }
   if (!c) { showToast('Customer not found', true); return; }
   // Switch to log tab and pre-fill form
   switchTab('log');
@@ -1080,6 +1085,10 @@ function editCommercial(id) {
   var accounts = getCommercialData();
   var a = null;
   for (var i=0; i<accounts.length; i++) { if (parseInt(accounts[i].id) === id) { a = accounts[i]; break; } }
+  // Also search commercialSheetData if not found locally
+  if (!a && commercialSheetData.length > 0) {
+    for (var j=0; j<commercialSheetData.length; j++) { if (parseInt(commercialSheetData[j].id) === id) { a = commercialSheetData[j]; break; } }
+  }
   if (!a) { showToast('Account not found', true); return; }
   switchTab('commercial');
   document.getElementById('c-business').value = a.business || '';
@@ -1276,6 +1285,7 @@ function renderCommercial(search) {
     .then(function(r) { return r.json(); })
     .then(function(response) {
       var accounts = response.data || [];
+      commercialSheetData = accounts;
       // Also merge local accounts not yet synced
       var local = getCommercialData();
       if (search) accounts = accounts.filter(function(a){ return a.business.toLowerCase().includes(search.toLowerCase())||(a.address||'').toLowerCase().includes(search.toLowerCase()); });
