@@ -368,10 +368,10 @@ window.addEventListener('load', function() {
   renderLoginButtons();
 });
 
-// REP FINGERPRINT
 function repFingerprint() {
   try {
-    var saved = localStorage.getItem('sd_rep_fp') ? JSON.parse(localStorage.getItem('sd_rep_fp')) : null;
+    var fpKey = 'sd_rep_fp_' + (pendingRep ? pendingRep.id : '');
+    var saved = localStorage.getItem(fpKey) ? JSON.parse(localStorage.getItem(fpKey)) : null;
     if (!saved) { showToast('No fingerprint registered. Log in with PIN first.', true); return; }
     var challenge = new Uint8Array(32);
     window.crypto.getRandomValues(challenge);
@@ -383,14 +383,11 @@ function repFingerprint() {
       if (rep) {
         document.getElementById('pinScreen').classList.remove('show');
         document.getElementById('loginScreen').style.display = 'none';
-        currentRep = rep;
-        isManager = false;
+        currentRep = rep; isManager = false;
         loginSuccess();
         showToast('👆 Welcome ' + rep.name + '!');
-      } else {
-        showToast('Rep not found — use PIN', true);
-      }
-    }).catch(function(e) { showToast('Fingerprint failed — use PIN', true); });
+      } else { showToast('Rep not found — use PIN', true); }
+    }).catch(function() { showToast('Fingerprint failed — use PIN', true); });
   } catch(e) { showToast('Fingerprint not available', true); }
 }
 
@@ -439,13 +436,13 @@ function showPinScreen() {
   updatePinDisplay();
   document.getElementById('pinError').style.display = 'none';
   document.getElementById('pinScreen').classList.add('show');
-  // Show fingerprint button if applicable
   var fpBtn = document.getElementById('fpPinBtn');
   fpBtn.style.display = 'none';
   try {
     if (window.PublicKeyCredential) {
-      var fpKey = pinMode === 'manager' ? 'sd_mgr_fp' : 'sd_rep_fp';
-      if (localStorage.getItem(fpKey)) fpBtn.style.display = 'block';
+      // Only show fingerprint button if this specific user has registered one
+      var fpKey = pinMode === 'manager' ? 'sd_mgr_fp' : (pendingRep ? 'sd_rep_fp_' + pendingRep.id : null);
+      if (fpKey && localStorage.getItem(fpKey)) fpBtn.style.display = 'block';
     }
   } catch(e) {}
 }
@@ -498,7 +495,7 @@ function checkPin() {
     if (rep) {
       document.getElementById('pinScreen').classList.remove('show');
       // Offer to register rep fingerprint if not done yet
-      var repFp = localStorage.getItem('sd_rep_fp');
+      var repFp = localStorage.getItem('sd_rep_fp_' + rep.id);
       if (!repFp && window.PublicKeyCredential) {
         if (confirm('Register your fingerprint for faster login next time?')) {
           registerRepFingerprint(rep);
@@ -552,7 +549,8 @@ function registerRepFingerprint(rep) {
         timeout: 60000
       }
     }).then(function(cred) {
-      localStorage.setItem('sd_rep_fp', JSON.stringify({ id: Array.from(new Uint8Array(cred.rawId)), repId: rep.id }));
+      var fpKey = 'sd_rep_fp_' + rep.id;
+      localStorage.setItem(fpKey, JSON.stringify({ id: Array.from(new Uint8Array(cred.rawId)), repId: rep.id }));
       document.getElementById('pinScreen').classList.remove('show');
       showToast('👆 Fingerprint registered!');
       currentRep = rep; isManager = false; loginSuccess();
