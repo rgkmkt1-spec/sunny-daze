@@ -187,6 +187,7 @@
     <button class="rep-btn" onclick="selectRep('Brian Lydic','1002')">Brian Lydic</button>
     <button class="rep-btn" onclick="selectRep('Rob Keller','1003')">Rob Keller</button>
     <button class="manager-btn" onclick="showPin('manager')">👔 MANAGER VIEW</button>
+    <button class="manager-btn" id="fpBtn" onclick="doFingerprint()" style="display:none;margin-top:8px;border-color:#5cb85c;color:#5cb85c;">👆 FINGERPRINT LOGIN</button>
   </div>
 </div>
 
@@ -210,6 +211,7 @@
     <div class="pin-key back" onclick="pinBack()">⌫</div>
   </div>
   <div class="pin-error" id="pinError">Incorrect PIN. Try again.</div>
+  <button id="fpPinBtn" onclick="doFingerprint()" style="display:none;margin-top:14px;background:none;border:1px solid #5cb85c;color:#5cb85c;padding:10px 24px;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;">👆 USE FINGERPRINT</button>
   <div class="pin-cancel" onclick="cancelPin()">Cancel</div>
 </div>
 
@@ -733,6 +735,75 @@
     t.textContent = msg;
     t.className = 'toast show' + (isError ? ' error' : '');
     setTimeout(function(){t.classList.remove('show');}, 2500);
+  }
+
+  // FINGERPRINT — optional, won't break anything if unavailable
+  window.addEventListener('load', function() {
+    try {
+      if (window.PublicKeyCredential) {
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(function(ok) {
+          if (ok) {
+            document.getElementById('fpBtn').style.display = 'block';
+            document.getElementById('fpPinBtn').style.display = 'block';
+          }
+        }).catch(function(){});
+      }
+    } catch(e) {}
+  });
+
+  function doFingerprint() {
+    try {
+      var stored = localStorage.getItem('sd_fp_cred');
+      var repName = pendingRep ? pendingRep.name : 'Manager';
+      var challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+
+      if (!stored) {
+        // Register fingerprint
+        navigator.credentials.create({
+          publicKey: {
+            challenge: challenge,
+            rp: { name: 'SunnyDaze Sales', id: location.hostname },
+            user: { id: new TextEncoder().encode(repName), name: repName, displayName: repName },
+            pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+            authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+            timeout: 60000
+          }
+        }).then(function(cred) {
+          localStorage.setItem('sd_fp_cred', JSON.stringify({
+            id: Array.from(new Uint8Array(cred.rawId)),
+            repId: pendingRep ? pendingRep.id : 'MGR',
+            repName: repName,
+            isMgr: !pendingRep
+          }));
+          showToast('👆 Fingerprint registered! Use next time.');
+        }).catch(function(e) { showToast('Fingerprint setup failed', true); });
+      } else {
+        // Verify fingerprint
+        var saved = JSON.parse(stored);
+        navigator.credentials.get({
+          publicKey: {
+            challenge: challenge,
+            allowCredentials: [{ type: 'public-key', id: new Uint8Array(saved.id) }],
+            userVerification: 'required',
+            timeout: 60000
+          }
+        }).then(function() {
+          if (saved.isMgr) {
+            isManager = true;
+            currentRep = { name: 'Manager', id: 'MGR' };
+          } else {
+            var reps = getReps();
+            var rep = reps.find(function(r){ return r.id === saved.repId; });
+            currentRep = rep || { name: saved.repName, id: saved.repId };
+            isManager = false;
+          }
+          document.getElementById('pinScreen').classList.remove('show');
+          loginSuccess();
+          showToast('👆 Fingerprint login successful!');
+        }).catch(function() { showToast('Fingerprint failed — use PIN', true); });
+      }
+    } catch(e) { showToast('Fingerprint not available', true); }
   }
 </script>
 </body>
