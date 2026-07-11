@@ -1248,6 +1248,8 @@ function calcCommission(repId, amount) {
   var rate = getRepCommission(repId);
   return (amount * rate) / 100;
 }
+
+function renderRepList() {
   var reps=getReps();
   document.getElementById('rep-pin-list').innerHTML=reps.map(function(rep){
     return '<div class="settings-row"><div><div class="settings-label">'+rep.name+'</div>'+
