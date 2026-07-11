@@ -15,7 +15,7 @@
       --navy: #0A1628; --mid: #0F1E38; --card: #1E293B;
       --blue: #00B4D8; --cyan: #90E0EF; --white: #F8FAFC;
       --gray: #94A3B8; --green: #28a745; --red: #dc3545;
-      --yellow: #ffc107; --orange: #fd7e14;
+      --yellow: #ffc107; --orange: #fd7e14; --purple: #6f42c1;
     }
     body { font-family: Arial, sans-serif; background: var(--navy); color: var(--white); min-height: 100vh; }
     .login-screen { position: fixed; inset: 0; background: var(--navy); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 24px; }
@@ -296,6 +296,10 @@
     <div class="stat-card green"><div class="stat-label">💰 Collected</div><div class="stat-value" id="j-collected">$0</div></div>
     <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="j-unpaid">$0</div></div>
     <div class="stat-card"><div class="stat-label">📋 Jobs</div><div class="stat-value" id="j-count">0</div></div>
+  </div>
+  <div id="return-visits-due" style="display:none;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+    <div style="font-size:0.8rem;font-weight:700;color:#a78bfa;margin-bottom:8px;">📅 Return Visits Due Soon</div>
+    <div id="return-visits-list"></div>
   </div>
   <input class="search-bar" type="text" placeholder="🔍 Search jobs..." oninput="renderJobs(this.value)"/>
   <div class="customer-list" id="jobs-list"></div>
@@ -952,6 +956,32 @@ function renderJobs(search) {
   document.getElementById('j-unpaid').textContent='$'+unpaid.toFixed(0);
   document.getElementById('j-count').textContent=jobs.length;
   document.getElementById('jobs-list').innerHTML=jobs.length?jobs.map(function(c){return cardHTML(c,true);}).join(''):'<div class="empty-state"><span>🔧</span>No sold jobs yet.</div>';
+
+  // Show return visits due within 30 days
+  var now = new Date(); now.setHours(0,0,0,0);
+  var soon = new Date(now); soon.setDate(now.getDate()+30);
+  var returnDue = jobs.filter(function(j){
+    if(!j.returnVisit) return false;
+    var d = new Date(j.returnVisit+'T12:00:00');
+    return d >= now && d <= soon;
+  }).sort(function(a,b){ return new Date(a.returnVisit)-new Date(b.returnVisit); });
+
+  var rvDiv = document.getElementById('return-visits-due');
+  var rvList = document.getElementById('return-visits-list');
+  if(returnDue.length > 0){
+    rvDiv.style.display='block';
+    rvList.innerHTML = returnDue.map(function(j){
+      var d = new Date(j.returnVisit+'T12:00:00');
+      var daysAway = Math.ceil((d-now)/(1000*60*60*24));
+      var label = daysAway===0?'TODAY':daysAway===1?'Tomorrow':'In '+daysAway+' days';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(111,66,193,0.2);font-size:0.8rem;">'+
+        '<div><span style="font-weight:700;color:var(--white);">'+j.fname+' '+(j.lname||'')+'</span>'+(j.phone?'<br><span style="color:var(--gray);">📞 '+j.phone+'</span>':'')+'</div>'+
+        '<div style="text-align:right;"><span style="color:#a78bfa;font-weight:700;">'+label+'</span><br><span style="color:var(--gray);font-size:0.7rem;">'+fmtDate(j.returnVisit)+'</span></div>'+
+        '</div>';
+    }).join('');
+  } else {
+    rvDiv.style.display='none';
+  }
 }
 
 function updateManager() {
@@ -1150,10 +1180,12 @@ function cardHTML(c,showPay,showRep) {
     '</div>'+
     paymentInfo+
     (c.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+c.notes+'</div>':'')+
+    (c.returnVisit?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
     '<div class="card-actions">'+
     (showPay?'<button class="action-btn '+(isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
     '<button class="action-btn" style="'+statusColor+';padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="changeStatus('+c.id+')">'+statusIcon+' '+c.status+'</button>'+
+    (c.status==='Sold'?'<button class="action-btn" style="background:var(--purple);color:white;border-color:var(--purple);padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="scheduleReturn('+c.id+')">📅 Return Visit</button>':'')+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
 }
@@ -1310,6 +1342,62 @@ function changeStatus(id) {
     '<button onclick="document.getElementById(\'statusPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Cancel</button>'+
     '</div>';
   document.body.appendChild(picker);
+}
+
+function scheduleReturn(id) {
+  id = parseInt(id);
+
+  // Build picker overlay
+  var existing = document.getElementById('returnPicker');
+  if (existing) { existing.remove(); return; }
+
+  var now = new Date();
+  var y1 = new Date(now); y1.setFullYear(now.getFullYear()+1);
+  var y15 = new Date(now); y15.setMonth(now.getMonth()+18);
+  var y2 = new Date(now); y2.setFullYear(now.getFullYear()+2);
+
+  function fmtISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function fmtDisplay(d){ return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear(); }
+
+  var picker = document.createElement('div');
+  picker.id = 'returnPicker';
+  picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.95);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+  picker.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:320px;border:1px solid rgba(111,66,193,0.4);">'+
+    '<div style="font-size:1rem;font-weight:900;color:#a78bfa;margin-bottom:4px;">📅 Schedule Return Visit</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:18px;">Set a reminder to follow up with this customer for repeat service</div>'+
+    '<button onclick="applyReturn('+id+',\''+fmtISO(y1)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);color:var(--white);border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 1 Year — '+fmtDisplay(y1)+'</button>'+
+    '<button onclick="applyReturn('+id+',\''+fmtISO(y15)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);color:var(--white);border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 18 Months — '+fmtDisplay(y15)+'</button>'+
+    '<button onclick="applyReturn('+id+',\''+fmtISO(y2)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);color:var(--white);border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 2 Years — '+fmtDisplay(y2)+'</button>'+
+    '<div style="font-size:0.75rem;color:var(--gray);margin:10px 0 6px;">Or pick a custom date:</div>'+
+    '<input type="date" id="returnCustomDate" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:10px 12px;color:var(--white);font-size:0.9rem;margin-bottom:10px;" value="'+fmtISO(y1)+'"/>'+
+    '<button onclick="applyReturn('+id+',document.getElementById(\'returnCustomDate\').value)" style="width:100%;padding:12px;background:#6f42c1;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:8px;">Set Custom Date</button>'+
+    '<button onclick="document.getElementById(\'returnPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(picker);
+}
+
+function applyReturn(id, dateStr) {
+  document.getElementById('returnPicker').remove();
+  if (!dateStr) return;
+  id = parseInt(id);
+
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length > 0) {
+    var sheetC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sheetC) { c = JSON.parse(JSON.stringify(sheetC)); data.unshift(c); }
+  }
+  if (!c) { showToast('Customer not found', true); return; }
+
+  c.returnVisit = dateStr;
+  saveData(data);
+
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) mgrC.returnVisit = dateStr;
+
+  renderJobs('');
+  var d = new Date(dateStr+'T12:00:00');
+  showToast('📅 Return visit set for '+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
 }
 
 function applyStatus(id, newStatus) {
