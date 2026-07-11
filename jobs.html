@@ -1180,14 +1180,15 @@ function togglePaid(id) {
 }
 
 function changeStatus(id) {
+  id = parseInt(id);
   var statuses=['Sold','Estimate','Follow Up','Lost'];
   var s=prompt('New status:\n1. Sold\n2. Estimate\n3. Follow Up\n4. Lost\n\nEnter number:');
   if(!s||!statuses[parseInt(s)-1]) return;
   var newStatus = statuses[parseInt(s)-1];
   var data=getData();
-  var c=data.find(function(d){return d.id===id;});
+  var c=data.find(function(d){return parseInt(d.id)===id;});
   // Also check mgrAllData for sheet-only leads
-  if(!c && mgrAllData.length>0) c=mgrAllData.find(function(d){return d.id===id;});
+  if(!c && mgrAllData.length>0) c=mgrAllData.find(function(d){return parseInt(d.id)===id;});
   if(c){
     c.status=newStatus;
     if(c.status==='Sold') c.paid=c.paid||'No';
@@ -1199,12 +1200,12 @@ function changeStatus(id) {
         body:JSON.stringify(c)
       });
     });
-    // Update in localStorage if it exists there
+    // Update in localStorage
     var localData=getData();
-    var localC=localData.find(function(d){return d.id===id;});
+    var localC=localData.find(function(d){return parseInt(d.id)===id;});
     if(localC){ localC.status=newStatus; if(newStatus==='Sold') localC.paid=localC.paid||'No'; saveData(localData); }
     // Update mgrAllData
-    var mgrC=mgrAllData.find(function(d){return d.id===id;});
+    var mgrC=mgrAllData.find(function(d){return parseInt(d.id)===id;});
     if(mgrC){ mgrC.status=newStatus; if(newStatus==='Sold') mgrC.paid=mgrC.paid||'No'; }
   }
   renderLeads(''); renderJobs(''); updateDashboard();
