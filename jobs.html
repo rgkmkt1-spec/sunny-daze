@@ -1190,13 +1190,15 @@ function deleteCustomer(id) {
 function renderRepList() {
   var reps=getReps();
   document.getElementById('rep-pin-list').innerHTML=reps.map(function(rep){
-    return '<div class="settings-row"><div><div class="settings-label">'+rep.name+'</div><div class="settings-val">Rep #'+rep.id+'</div></div>'+
+    return '<div class="settings-row"><div><div class="settings-label">'+rep.name+'</div>'+
+      '<div class="settings-val">Rep #'+rep.id+' &nbsp;|&nbsp; PIN: <span style="color:var(--blue);font-weight:700;letter-spacing:0.1em;">'+rep.pin+'</span></div></div>'+
       '<div style="display:flex;gap:6px">'+
-      '<button class="btn-change" onclick="changePin(\''+rep.name+'\',\''+rep.id+'\')">PIN</button>'+
+      '<button class="btn-change" onclick="changePin(\''+rep.name+'\',\''+rep.id+'\')">Change</button>'+
       '<button class="btn-change" style="background:var(--red)" onclick="removeRep(\''+rep.id+'\')">✕</button>'+
       '</div></div>';
   }).join('')+
-  '<div class="settings-row"><div><div class="settings-label">Manager PIN</div><div class="settings-val">Current: ****</div></div>'+
+  '<div class="settings-row"><div><div class="settings-label">Manager PIN</div>'+
+  '<div class="settings-val">PIN: <span style="color:var(--blue);font-weight:700;letter-spacing:0.1em;">'+getMgrPin()+'</span></div></div>'+
   '<button class="btn-change" onclick="changeMgrPin()">Change</button></div>';
 }
 
