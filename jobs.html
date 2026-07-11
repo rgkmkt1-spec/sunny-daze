@@ -1185,32 +1185,39 @@ function changeStatus(id) {
   var s=prompt('New status:\n1. Sold\n2. Estimate\n3. Follow Up\n4. Lost\n\nEnter number:');
   if(!s||!statuses[parseInt(s)-1]) return;
   var newStatus = statuses[parseInt(s)-1];
-  var data=getData();
-  var c=data.find(function(d){return parseInt(d.id)===id;});
-  // Also check mgrAllData for sheet-only leads
-  if(!c && mgrAllData.length>0) c=mgrAllData.find(function(d){return parseInt(d.id)===id;});
+
+  // Update localStorage FIRST
+  var localData = getData();
+  var localC = localData.find(function(d){return parseInt(d.id)===id;});
+  if(localC){
+    localC.status = newStatus;
+    if(newStatus==='Sold') localC.paid = localC.paid||'No';
+    saveData(localData);
+  }
+
+  // Update mgrAllData
+  var mgrC = mgrAllData.find(function(d){return parseInt(d.id)===id;});
+  if(mgrC){
+    mgrC.status = newStatus;
+    if(newStatus==='Sold') mgrC.paid = mgrC.paid||'No';
+  }
+
+  // Re-render immediately so user sees the change
+  renderLeads(''); renderJobs(''); updateDashboard();
+  if(isManager) updateManager();
+  showToast('✅ Status updated!');
+
+  // Update Google Sheet in background — delete old, add new
+  var c = localC || mgrC;
   if(c){
-    c.status=newStatus;
-    if(c.status==='Sold') c.paid=c.paid||'No';
-    // Delete old row from sheet and re-save with new status
     fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({type:'delete',repId:c.repId,fname:c.fname,lname:c.lname||''})
     }).then(function(){
       fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
         body:JSON.stringify(c)
       });
-    });
-    // Update in localStorage
-    var localData=getData();
-    var localC=localData.find(function(d){return parseInt(d.id)===id;});
-    if(localC){ localC.status=newStatus; if(newStatus==='Sold') localC.paid=localC.paid||'No'; saveData(localData); }
-    // Update mgrAllData
-    var mgrC=mgrAllData.find(function(d){return parseInt(d.id)===id;});
-    if(mgrC){ mgrC.status=newStatus; if(newStatus==='Sold') mgrC.paid=mgrC.paid||'No'; }
+    }).catch(function(){ showToast('⚠️ Sheet update failed — saved locally', true); });
   }
-  renderLeads(''); renderJobs(''); updateDashboard();
-  if(isManager) updateManager();
-  showToast('✅ Status updated!');
 }
 
 function deleteCustomer(id) {
