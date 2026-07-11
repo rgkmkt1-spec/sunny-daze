@@ -703,11 +703,12 @@
   let mediaItems = [];
 
   function renderGrid() {
+    if (!mediaGrid) return;
     mediaGrid.querySelectorAll('.media-item.dynamic').forEach(el => el.remove());
     if (mediaItems.length === 0) {
-      emptyGallery.style.display = 'none';
+      if (emptyGallery) emptyGallery.style.display = 'none';
     } else {
-      emptyGallery.style.display = 'none';
+      if (emptyGallery) emptyGallery.style.display = 'none';
       mediaItems.forEach((item, idx) => {
         const div = document.createElement('div');
         div.className = 'media-item dynamic';
@@ -733,6 +734,7 @@
   }
 
   function handleFiles(files) {
+    if (!files) return;
     Array.from(files).forEach(file => {
       const url = URL.createObjectURL(file);
       const type = file.type.startsWith('video') ? 'video' : 'image';
@@ -744,21 +746,45 @@
   // EMAILJS
   async function sendEmail() {
     const first = document.getElementById('first_name').value.trim();
+    const last = document.getElementById('last_name').value.trim();
     const email = document.getElementById('email').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const service = document.getElementById('service').value;
+    const message = document.getElementById('message').value.trim();
+
     if (!first || !email) { alert('Please enter at least your name and email.'); return; }
-    
+
     const btn = document.getElementById('submitBtn');
     btn.innerHTML = '<span class="spinner"></span>Sending...';
     btn.disabled = true;
 
     const params = {
       title: 'New Estimate Request',
-      name: first + ' ' + document.getElementById('last_name').value.trim(),
+      name: first + ' ' + last,
       email: email,
-      message: 'Phone: ' + document.getElementById('phone').value.trim() +
-               '\nService: ' + document.getElementById('service').value +
-               '\n\n' + document.getElementById('message').value.trim()
+      message: 'Phone: ' + phone + '\nService: ' + service + '\n\n' + message
     };
+
+    // Submit to Apps Script — saves to sheet + sends push notification email
+    const SHEET_URL = 'https://script.google.com/macros/s/AKfycbxNYUylSfxPrVY8Km0DVUillOMjfipIlSCDFsn0KEfnxymufJTWfKxZ9YTln89TZqIs/exec';
+    try {
+      fetch(SHEET_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          type: 'website_lead',
+          fname: first, lname: last,
+          email: email, phone: phone,
+          service: service, notes: message,
+          status: 'Estimate',
+          repId: 'WEB', repName: 'Website',
+          amount: 0, tax: 0, total: 0,
+          paid: 'No',
+          date: new Date().toLocaleDateString(),
+          source: 'Website Contact Form'
+        })
+      });
+    } catch(e) {}
 
     try {
       await emailjs.send('service_1v7he2g', 'template_9p7pa8p', params);
@@ -830,7 +856,8 @@
 
   // NAV scroll
   window.addEventListener('scroll', () => {
-    document.querySelector('nav').style.background = window.scrollY > 50
+    var nav = document.querySelector('nav');
+    if (nav) nav.style.background = window.scrollY > 50
       ? 'rgba(10,22,40,0.98)' : 'rgba(10,22,40,0.92)';
   });
 
