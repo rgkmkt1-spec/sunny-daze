@@ -915,6 +915,12 @@ function filterBy(f,el) {
 function renderJobs(search) {
   search=search||'';
   var all=getData();
+  // Managers: merge local + sheet data, deduplicate by id
+  if(isManager && mgrAllData.length>0){
+    var localIds = all.map(function(d){return parseInt(d.id);});
+    var sheetOnly = mgrAllData.filter(function(d){return localIds.indexOf(parseInt(d.id))<0;});
+    all = all.concat(sheetOnly);
+  }
   var jobs=(isManager?all:all.filter(function(d){return d.repId===currentRep.id;})).filter(function(d){return d.status==='Sold';});
   if(search) jobs=jobs.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase());});
   var collected=jobs.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
