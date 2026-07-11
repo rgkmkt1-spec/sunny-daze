@@ -1,0 +1,37 @@
+{
+  "name": "SunnyDaze Time Clock",
+  "short_name": "SD Time",
+  "description": "SunnyDaze Pressure Washing Employee Time Clock",
+  "start_url": "/timeclock",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0A1628",
+  "theme_color": "#00B4D8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/tc-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/tc-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/tc-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/tc-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
