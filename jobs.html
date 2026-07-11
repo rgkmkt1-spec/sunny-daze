@@ -382,6 +382,10 @@
   </div>
   <div class="section-title">👤 Individual Performance</div>
   <div id="rep-sections"></div>
+
+  <div class="section-title" style="margin-top:14px">💵 Commission Report</div>
+  <div id="commission-report"></div>
+
   <div class="section-title" style="margin-top:14px">All Leads</div>
   <div class="filter-pills">
     <button class="pill all active" onclick="filterMgr('All',this)">All</button>
@@ -987,6 +991,7 @@ function updateManager() {
       }).join('');
 
       mgrAllData = allData;
+      renderCommissionReport(allData);
       renderMgrLeads('');
     })
     .catch(function() {
@@ -1216,6 +1221,59 @@ function getCommissionRates() {
 }
 function saveCommissionRates(r) { localStorage.setItem('sd_commission', JSON.stringify(r)); }
 function getRepCommission(repId) { return getCommissionRates()[repId] || 0; }
+
+function renderCommissionReport(allData) {
+  var reps = getReps();
+  var rates = getCommissionRates();
+  var totalOwed = 0;
+
+  var html = reps.map(function(rep) {
+    var rate = rates[rep.id] || 0;
+    var sold = allData.filter(function(d){ return d.repId===rep.id && d.status==='Sold'; });
+    var paidJobs = sold.filter(function(d){ return d.paid==='Yes'; });
+    var unpaidJobs = sold.filter(function(d){ return d.paid!=='Yes'; });
+    var paidRevenue = paidJobs.reduce(function(s,d){ return s+(d.total||d.amount||0); }, 0);
+    var unpaidRevenue = unpaidJobs.reduce(function(s,d){ return s+(d.total||d.amount||0); }, 0);
+    var commEarned = (paidRevenue * rate) / 100;
+    var commPending = (unpaidRevenue * rate) / 100;
+    totalOwed += commEarned;
+
+    return '<div style="background:var(--card);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid rgba(0,180,216,0.2);">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'+
+      '<div>'+
+      '<div style="font-size:0.95rem;font-weight:700;">'+rep.name+'</div>'+
+      '<div style="font-size:0.72rem;color:var(--gray);">Commission Rate: <span style="color:var(--blue);font-weight:700;">'+rate+'%</span></div>'+
+      '</div>'+
+      '<div style="text-align:right;">'+
+      '<div style="font-size:1.2rem;font-weight:900;color:#5cb85c;">$'+commEarned.toFixed(2)+'</div>'+
+      '<div style="font-size:0.68rem;color:var(--gray);">OWED NOW</div>'+
+      '</div></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'+
+      '<div style="background:var(--mid);border-radius:8px;padding:8px;text-align:center;">'+
+      '<div style="font-size:0.9rem;font-weight:700;color:#5cb85c;">$'+paidRevenue.toFixed(0)+'</div>'+
+      '<div style="font-size:0.6rem;color:var(--gray);text-transform:uppercase;">Paid Revenue</div></div>'+
+      '<div style="background:var(--mid);border-radius:8px;padding:8px;text-align:center;">'+
+      '<div style="font-size:0.9rem;font-weight:700;color:var(--yellow);">$'+commPending.toFixed(2)+'</div>'+
+      '<div style="font-size:0.6rem;color:var(--gray);text-transform:uppercase;">Pending (Unpaid Jobs)</div></div>'+
+      '<div style="background:var(--mid);border-radius:8px;padding:8px;text-align:center;">'+
+      '<div style="font-size:0.9rem;font-weight:700;">'+paidJobs.length+' / '+sold.length+'</div>'+
+      '<div style="font-size:0.6rem;color:var(--gray);text-transform:uppercase;">Paid / Total Jobs</div></div>'+
+      '</div>'+
+      (rate === 0 ? '<div style="font-size:0.75rem;color:var(--gray);font-style:italic;">No commission rate set — go to ⚙️ Settings to set rate</div>' : '')+
+      '</div>';
+  }).join('');
+
+  // Total owed banner
+  html = '<div style="background:linear-gradient(135deg,#1a4731,#28a745);border-radius:10px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">'+
+    '<div>'+
+    '<div style="font-size:0.75rem;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.08em;">Total Commission Owed</div>'+
+    '<div style="font-size:1.8rem;font-weight:900;color:white;">$'+totalOwed.toFixed(2)+'</div>'+
+    '</div>'+
+    '<div style="font-size:2rem;">💵</div>'+
+    '</div>' + html;
+
+  document.getElementById('commission-report').innerHTML = html;
+}
 
 function renderCommissionList() {
   var reps = getReps();
