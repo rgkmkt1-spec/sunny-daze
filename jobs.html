@@ -894,16 +894,27 @@ function renderLeads(search) {
 
   if (isManager) {
     var list = document.getElementById('leads-list');
-    if (mgrAllData.length > 0) {
-      var data = mgrAllData;
-      // Exclude sold unless specifically filtering for sold
-      if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold';});
-      else data=data.filter(function(d){return d.status===activeFilter;});
-      if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
-      list.innerHTML=data.length?data.map(function(c){return cardHTML(c,false,true);}).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
-    } else {
-      list.innerHTML='<div class="empty-state"><span>⏳</span>Loading... please open Manager tab first.</div>';
+    // If mgrAllData not loaded yet, fetch from sheet first
+    if (mgrAllData.length === 0) {
+      list.innerHTML='<div class="empty-state"><span>⏳</span>Loading leads...</div>';
+      fetch(SHEET_URL + '?t=' + Date.now(), {method:'GET', mode:'cors'})
+        .then(function(r){return r.json();})
+        .then(function(response){
+          mgrAllData = response.data || [];
+          renderLeads(search);
+        })
+        .catch(function(){
+          // Fall back to local data
+          mgrAllData = getData();
+          renderLeads(search);
+        });
+      return;
     }
+    var data = mgrAllData;
+    if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold';});
+    else data=data.filter(function(d){return d.status===activeFilter;});
+    if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
+    list.innerHTML=data.length?data.map(function(c){return cardHTML(c,false,true);}).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
     return;
   }
 
