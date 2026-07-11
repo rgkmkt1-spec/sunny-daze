@@ -857,6 +857,8 @@ function updateDashboard() {
       followups=data.filter(function(d){return d.status==='Follow Up';}),
       lost=data.filter(function(d){return d.status==='Lost';});
   var revenue=sold.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
+  // Add partial payments to revenue
+  revenue += sold.filter(function(d){return d.paid==='Partial';}).reduce(function(s,d){return s+parseFloat(d.amountPaid||0);},0);
   var total=sold.length+estimates.length+lost.length;
   document.getElementById('d-revenue').textContent='$'+revenue.toFixed(0);
   document.getElementById('d-estimates').textContent=estimates.length;
@@ -924,7 +926,8 @@ function renderJobs(search) {
   var jobs=(isManager?all:all.filter(function(d){return d.repId===currentRep.id;})).filter(function(d){return d.status==='Sold';});
   if(search) jobs=jobs.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase());});
   var collected=jobs.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
-  var unpaid=jobs.filter(function(d){return d.paid!=='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
+  collected += jobs.filter(function(d){return d.paid==='Partial';}).reduce(function(s,d){return s+parseFloat(d.amountPaid||0);},0);
+  var unpaid=jobs.filter(function(d){return d.paid!=='Yes';}).reduce(function(s,d){return s+parseFloat(d.balance!=null?d.balance:(d.total||d.amount||0));},0);
   document.getElementById('j-collected').textContent='$'+collected.toFixed(0);
   document.getElementById('j-unpaid').textContent='$'+unpaid.toFixed(0);
   document.getElementById('j-count').textContent=jobs.length;
@@ -1092,8 +1095,29 @@ function filterMgr(f,el) {
 function cardHTML(c,showPay,showRep) {
   var sc={Sold:'sold',Estimate:'estimate','Follow Up':'followup',Lost:'lost'}[c.status]||'';
   var bc={Sold:'badge-sold',Estimate:'badge-estimate','Follow Up':'badge-followup',Lost:'badge-lost'}[c.status]||'';
+  var statusColor={Sold:'background:var(--green);color:white;border-color:var(--green)',Estimate:'background:var(--yellow);color:var(--navy);border-color:var(--yellow)','Follow Up':'background:var(--orange);color:white;border-color:var(--orange)',Lost:'background:var(--red);color:white;border-color:var(--red)'}[c.status]||'';
+  var statusIcon={Sold:'✅',Estimate:'📋','Follow Up':'🔔',Lost:'❌'}[c.status]||'🔄';
   var name=c.fname+(c.lname?' '+c.lname:'');
   var amount=c.total||c.amount||0;
+  var amountPaid=parseFloat(c.amountPaid||0);
+  var balance=parseFloat(c.balance!=null?c.balance:amount);
+  var isPartial=c.paid==='Partial';
+  var isPaid=c.paid==='Yes';
+
+  // Payment breakdown for partial payments
+  var paymentInfo='';
+  if(showPay && amount>0 && (isPartial||isPaid)){
+    paymentInfo='<div style="background:var(--mid);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:0.78rem;">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:var(--gray);">Total</span><span style="font-weight:700;">$'+parseFloat(amount).toFixed(2)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:#5cb85c;">Paid</span><span style="color:#5cb85c;font-weight:700;">$'+amountPaid.toFixed(2)+'</span></div>'+
+      (isPartial?'<div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.1);padding-top:3px;"><span style="color:var(--orange);">Balance</span><span style="color:var(--orange);font-weight:700;">$'+balance.toFixed(2)+'</span></div>':'')+
+      '</div>';
+  }
+
+  var paidBadge=isPaid?'badge-sold':isPartial?'':'badge-lost';
+  var paidLabel=isPaid?'✅ Paid in Full':isPartial?'💰 Partial — $'+balance.toFixed(2)+' due':'⚠️ Unpaid';
+  var paidBtnLabel=isPaid?'Mark Unpaid':isPartial?'💰 Add Payment':'💰 Mark Paid';
+
   return '<div class="customer-card '+sc+'">'+
     '<div class="customer-top"><div><div class="customer-name">'+name+'</div><div class="customer-details">'+
     (c.phone?'📞 '+c.phone+'<br>':'')+(c.address?'📍 '+c.address+'<br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+
@@ -1102,12 +1126,14 @@ function cardHTML(c,showPay,showRep) {
     (c.service?'<span class="badge badge-blue">'+c.service+'</span>':'')+
     (c.payment?'<span class="badge badge-blue">'+c.payment+'</span>':'')+
     (showRep?'<span class="badge badge-rep">'+c.repName+'</span>':'')+
-    (showPay?'<span class="badge '+(c.paid==='Yes'?'badge-sold':'badge-lost')+'">'+(c.paid==='Yes'?'✅ Paid':'⚠️ Unpaid')+'</span>':'')+
-    '</div>'+(c.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+c.notes+'</div>':'')+
+    (showPay?'<span class="badge '+(isPaid?'badge-sold':isPartial?'badge-followup':'badge-lost')+'">'+paidLabel+'</span>':'')+
+    '</div>'+
+    paymentInfo+
+    (c.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+c.notes+'</div>':'')+
     '<div class="card-actions">'+
-    (showPay?'<button class="action-btn green" onclick="togglePaid('+c.id+')">'+(c.paid==='Yes'?'Mark Unpaid':'Mark Paid')+'</button>':'')+
+    (showPay?'<button class="action-btn '+(isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
-    '<button class="action-btn orange" onclick="changeStatus('+c.id+')">🔄 Status</button>'+
+    '<button class="action-btn" style="'+statusColor+';padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="changeStatus('+c.id+')">'+statusIcon+' '+c.status+'</button>'+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
 }
@@ -1180,9 +1206,49 @@ function editCommercial(id) {
 }
 
 function togglePaid(id) {
-  var data=getData(), c=data.find(function(d){return d.id===id;});
-  if(c) c.paid=c.paid==='Yes'?'No':'Yes';
-  saveData(data); renderJobs(''); updateDashboard(); showToast('✅ Payment updated!');
+  id = parseInt(id);
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c) { showToast('Customer not found', true); return; }
+
+  var total = parseFloat(c.total||c.amount||0);
+
+  if (c.paid === 'Yes') {
+    // Mark unpaid
+    c.paid = 'No';
+    c.amountPaid = 0;
+    c.balance = total;
+    saveData(data);
+    renderJobs(''); updateDashboard();
+    showToast('⚠️ Marked unpaid');
+  } else {
+    // Ask about partial or full payment
+    var input = prompt(
+      'Payment received for ' + c.fname + ' ' + (c.lname||'') + '\n' +
+      'Total Owed: $' + total.toFixed(2) + '\n' +
+      'Already Paid: $' + parseFloat(c.amountPaid||0).toFixed(2) + '\n\n' +
+      'Enter amount received\n(or leave blank for full payment):'
+    );
+    if (input === null) return; // cancelled
+
+    var amountReceived = input.trim() === '' ? total : parseFloat(input);
+    if (isNaN(amountReceived) || amountReceived < 0) { showToast('Invalid amount', true); return; }
+
+    c.amountPaid = parseFloat((c.amountPaid||0)) + amountReceived;
+    c.balance = Math.max(0, total - c.amountPaid);
+
+    if (c.balance <= 0) {
+      c.paid = 'Yes';
+      c.amountPaid = total;
+      c.balance = 0;
+      showToast('✅ Paid in full! $' + total.toFixed(2));
+    } else {
+      c.paid = 'Partial';
+      showToast('💰 $' + amountReceived.toFixed(2) + ' received — $' + c.balance.toFixed(2) + ' remaining');
+    }
+    saveData(data);
+    renderJobs(''); updateDashboard();
+  }
 }
 
 function changeStatus(id) {
