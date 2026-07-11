@@ -694,8 +694,35 @@ function entryCardHTML(e, showEmp) {
     (e.lunchStart?'🍽️ Lunch: '+fmtTime(new Date(e.lunchStart))+' – '+(e.lunchEnd?fmtTime(new Date(e.lunchEnd)):'?')+'  ('+Math.round(e.lunchMinutes)+'m)<br>':'')+
     '⬇️ Out: '+(e.clockOut?fmtTime(new Date(e.clockOut)):'Still working')+
     (e.overtimeMinutes>0?'<br>⚠️ Overtime: '+fmtHours(e.overtimeMinutes):'')+'</div>'+
-    (isManager?'<div class="entry-actions"><button class="action-btn blue" onclick="openEditModal(\''+e.id+'\')">✏️ Adjust</button></div>':'')+
+    (isManager?'<div class="entry-actions">'+
+      '<button class="action-btn blue" onclick="openEditModal(\''+e.id+'\')">✏️ Adjust</button>'+
+      '<button class="action-btn red" onclick="deleteEntry(\''+e.id+'\')">🗑 Delete</button>'+
+      '</div>':'')+
     '</div>';
+}
+
+function deleteEntry(id) {
+  if (!confirm('Delete this time entry?')) return;
+  if (!confirm('FINAL CONFIRMATION: Permanently delete this shift record from the app and Google Sheets?')) return;
+  var entries = getEntries();
+  var entry = entries.find(function(e){ return e.id == id; });
+  var remaining = entries.filter(function(e){ return e.id != id; });
+  saveEntries(remaining);
+  // Delete from Google Sheets
+  if (entry) {
+    fetch(SHEET_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        type: 'delete_timecard',
+        empId: entry.empId,
+        date: entry.date
+      })
+    }).then(function(){ showToast('🗑 Entry deleted from app and sheet!'); })
+      .catch(function(){ showToast('🗑 Deleted from app only', true); });
+  }
+  updateManager();
+  showToast('🗑 Time entry deleted');
 }
 
 // EDIT MODAL
