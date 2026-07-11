@@ -282,8 +282,7 @@
 <div class="view" id="view-leads">
   <input class="search-bar" type="text" placeholder="🔍 Search..." oninput="renderLeads(this.value)"/>
   <div class="filter-pills">
-    <button class="pill all active" onclick="filterBy('All',this)">All</button>
-    <button class="pill p-sold" onclick="filterBy('Sold',this)">✅ Sold</button>
+    <button class="pill all active" onclick="filterBy('All',this)">All Active</button>
     <button class="pill p-estimate" onclick="filterBy('Estimate',this)">📋 Estimate</button>
     <button class="pill p-followup" onclick="filterBy('Follow Up',this)">🔔 Follow Up</button>
     <button class="pill p-lost" onclick="filterBy('Lost',this)">❌ Lost</button>
@@ -892,13 +891,14 @@ function updateDashboard() {
 var currentLeadSearch='';
 function renderLeads(search) {
   search=search||''; currentLeadSearch=search;
-  
+
   if (isManager) {
-    // Manager sees all leads from Google Sheets
     var list = document.getElementById('leads-list');
     if (mgrAllData.length > 0) {
       var data = mgrAllData;
-      if(activeFilter!=='All') data=data.filter(function(d){return d.status===activeFilter;});
+      // Exclude sold unless specifically filtering for sold
+      if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold';});
+      else data=data.filter(function(d){return d.status===activeFilter;});
       if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
       list.innerHTML=data.length?data.map(function(c){return cardHTML(c,false,true);}).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
     } else {
@@ -906,11 +906,12 @@ function renderLeads(search) {
     }
     return;
   }
-  
-  // Rep sees only their own leads
+
+  // Rep sees only their own leads — exclude sold
   var all=getData();
   var data=all.filter(function(d){return d.repId===currentRep.id;});
-  if(activeFilter!=='All') data=data.filter(function(d){return d.status===activeFilter;});
+  if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold';});
+  else data=data.filter(function(d){return d.status===activeFilter;});
   if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
   document.getElementById('leads-list').innerHTML=data.length?data.map(cardHTML).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
 }
