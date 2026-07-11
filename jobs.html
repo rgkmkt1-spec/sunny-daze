@@ -777,11 +777,19 @@ function saveCustomer() {
   var tax = taxable ? amt*0.06 : 0;
 
   if (editId) {
+    editId = parseInt(editId);
     var data = getData();
     var idx = -1;
-    for (var i=0; i<data.length; i++) { if (data[i].id === parseInt(editId)) { idx = i; break; } }
+    for (var i=0; i<data.length; i++) { if (parseInt(data[i].id) === editId) { idx = i; break; } }
+
+    // If not in localStorage, pull from mgrAllData and add to localStorage
+    if (idx < 0 && mgrAllData.length > 0) {
+      var sheetC = mgrAllData.find(function(d){ return parseInt(d.id)===editId; });
+      if (sheetC) { data.unshift(JSON.parse(JSON.stringify(sheetC))); idx = 0; }
+    }
+
     if (idx >= 0) {
-      var oldCustomer = data[idx];
+      var oldCustomer = JSON.parse(JSON.stringify(data[idx]));
       data[idx].fname = fname;
       data[idx].lname = document.getElementById('l-lname').value.trim();
       data[idx].phone = document.getElementById('l-phone').value.trim();
@@ -794,20 +802,18 @@ function saveCustomer() {
       data[idx].payment = document.getElementById('l-payment').value;
       data[idx].notes = document.getElementById('l-notes').value.trim();
       saveData(data);
-      
-      // Delete old row from sheet then add updated row
+
+      // Also update mgrAllData
+      var mgrIdx = mgrAllData.findIndex(function(d){ return parseInt(d.id)===editId; });
+      if (mgrIdx >= 0) { mgrAllData[mgrIdx] = JSON.parse(JSON.stringify(data[idx])); }
+
+      // Delete old row from sheet then resave updated
       var updatedCustomer = data[idx];
       fetch(SHEET_URL, {
         method: 'POST', mode: 'no-cors',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-          type: 'delete',
-          repId: oldCustomer.repId,
-          fname: oldCustomer.fname,
-          lname: oldCustomer.lname || ''
-        })
+        body: JSON.stringify({ type: 'delete', repId: oldCustomer.repId, fname: oldCustomer.fname, lname: oldCustomer.lname || '' })
       }).then(function() {
-        // Add updated row
         fetch(SHEET_URL, {
           method: 'POST', mode: 'no-cors',
           headers: {'Content-Type':'application/json'},
@@ -817,6 +823,7 @@ function saveCustomer() {
     }
     delete document.getElementById('l-fname').dataset.editId;
     showToast('✅ Customer updated!');
+    renderLeads(''); renderJobs(''); updateDashboard();
   } else {
     var customer = {
       id: Date.now(), repId: currentRep.id, repName: currentRep.name,
@@ -1209,12 +1216,24 @@ function togglePaid(id) {
   id = parseInt(id);
   var data = getData();
   var c = data.find(function(d){ return parseInt(d.id)===id; });
+  var isSheetOnly = false;
+
+  // If not in localStorage check mgrAllData (sheet-only leads like website leads)
+  if (!c && mgrAllData.length > 0) {
+    c = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (c) {
+      // Copy to localStorage so we can track payments locally
+      c = JSON.parse(JSON.stringify(c)); // clone
+      data.unshift(c);
+      isSheetOnly = true;
+    }
+  }
+
   if (!c) { showToast('Customer not found', true); return; }
 
   var total = parseFloat(c.total||c.amount||0);
 
   if (c.paid === 'Yes') {
-    // Mark unpaid
     c.paid = 'No';
     c.amountPaid = 0;
     c.balance = total;
@@ -1222,14 +1241,13 @@ function togglePaid(id) {
     renderJobs(''); updateDashboard();
     showToast('⚠️ Marked unpaid');
   } else {
-    // Ask about partial or full payment
     var input = prompt(
       'Payment received for ' + c.fname + ' ' + (c.lname||'') + '\n' +
       'Total Owed: $' + total.toFixed(2) + '\n' +
       'Already Paid: $' + parseFloat(c.amountPaid||0).toFixed(2) + '\n\n' +
       'Enter amount received\n(or leave blank for full payment):'
     );
-    if (input === null) return; // cancelled
+    if (input === null) return;
 
     var amountReceived = input.trim() === '' ? total : parseFloat(input);
     if (isNaN(amountReceived) || amountReceived < 0) { showToast('Invalid amount', true); return; }
@@ -1247,6 +1265,9 @@ function togglePaid(id) {
       showToast('💰 $' + amountReceived.toFixed(2) + ' received — $' + c.balance.toFixed(2) + ' remaining');
     }
     saveData(data);
+    // Update mgrAllData too
+    var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (mgrC) { mgrC.paid = c.paid; mgrC.amountPaid = c.amountPaid; mgrC.balance = c.balance; }
     renderJobs(''); updateDashboard();
   }
 }
