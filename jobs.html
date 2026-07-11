@@ -1195,6 +1195,10 @@ function deleteCustomer(id) {
   if (!confirm('FINAL CONFIRMATION: Delete permanently from Google Sheets?')) return;
   var data = getData();
   var customer = data.find(function(d){return d.id===id;});
+  // Also check mgrAllData for sheet-only leads (e.g. website leads)
+  if (!customer && mgrAllData.length > 0) {
+    customer = mgrAllData.find(function(d){return d.id===id;});
+  }
   saveData(data.filter(function(d){return d.id!==id;}));
   mgrAllData = mgrAllData.filter(function(d){return d.id!==id;});
   if (customer) {
