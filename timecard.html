@@ -188,6 +188,7 @@
     <div class="pin-key back" onclick="pinBack()">⌫</div>
   </div>
   <div class="pin-error" id="pinError">Incorrect PIN. Try again.</div>
+  <button id="fpBtn" onclick="tryFingerprint()" style="display:none;margin-top:14px;background:none;border:1px solid #5cb85c;color:#5cb85c;padding:10px 24px;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;">👆 USE FINGERPRINT</button>
   <div class="pin-cancel" onclick="cancelPin()">Cancel</div>
 </div>
 
@@ -355,7 +356,25 @@ function selectEmp(name, id) {
   pinMode = 'emp';
   document.getElementById('pinTitle').textContent = 'Welcome, ' + name;
   document.getElementById('pinSub').textContent = 'Enter your 4-digit PIN';
-  showPinScreen();
+  // Try fingerprint first if registered
+  var fpKey = 'tc_emp_fp_' + id;
+  var empFp = localStorage.getItem(fpKey);
+  if (empFp) {
+    try {
+      var saved = JSON.parse(empFp);
+      var challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      navigator.credentials.get({
+        publicKey: { challenge: challenge, allowCredentials: [{ type: 'public-key', id: new Uint8Array(saved.id) }], userVerification: 'required', timeout: 60000 }
+      }).then(function() {
+        var emps = getEmployees();
+        var emp = emps.find(function(e){ return e.id === id; });
+        if (emp) { currentEmp = emp; isManager = false; loginSuccess(); showToast('👆 Welcome ' + name + '!'); }
+      }).catch(function() { showPinScreen(); });
+    } catch(e) { showPinScreen(); }
+  } else {
+    showPinScreen();
+  }
 }
 
 function mgrAccess() {
@@ -363,13 +382,56 @@ function mgrAccess() {
   pinMode = 'manager';
   document.getElementById('pinTitle').textContent = 'Manager Access';
   document.getElementById('pinSub').textContent = 'Enter Manager PIN';
-  showPinScreen();
+  // Try fingerprint first if registered
+  var mgrFp = localStorage.getItem('tc_mgr_fp');
+  if (mgrFp) {
+    try {
+      var saved = JSON.parse(mgrFp);
+      var challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      navigator.credentials.get({
+        publicKey: { challenge: challenge, allowCredentials: [{ type: 'public-key', id: new Uint8Array(saved.id) }], userVerification: 'required', timeout: 60000 }
+      }).then(function() {
+        unlockManager();
+        showToast('👆 Manager access granted!');
+      }).catch(function() {
+        showPinScreen();
+      });
+    } catch(e) { showPinScreen(); }
+  } else {
+    showPinScreen();
+  }
+}
+
+function unlockManager() {
+  if (!currentEmp) {
+    isManager = true; currentEmp = {name:'Manager', id:'MGR'};
+    loginSuccess();
+  } else {
+    isManager = true;
+    document.getElementById('headerRep').textContent = '👔 Manager View';
+    document.getElementById('tab-manager').style.display = 'block';
+    document.getElementById('tab-settings').style.display = 'block';
+    switchTab('manager');
+    showToast('👔 Manager access granted!');
+  }
 }
 
 function showPinScreen() {
   pinValue = ''; updatePinDisplay();
   document.getElementById('pinError').style.display = 'none';
   document.getElementById('pinScreen').classList.add('show');
+  var fpBtn = document.getElementById('fpBtn');
+  fpBtn.style.display = 'none';
+  try {
+    if (window.PublicKeyCredential) {
+      if (pinMode === 'manager' && localStorage.getItem('tc_mgr_fp')) {
+        fpBtn.style.display = 'block';
+      } else if (pinMode === 'emp' && pendingEmp && localStorage.getItem('tc_emp_fp_' + pendingEmp.id)) {
+        fpBtn.style.display = 'block';
+      }
+    }
+  } catch(e) {}
 }
 function cancelPin() { document.getElementById('pinScreen').classList.remove('show'); pinValue = ''; }
 
@@ -389,25 +451,112 @@ function checkPin() {
   if (pinMode === 'manager') {
     if (pinValue === getMgrPin()) {
       document.getElementById('pinScreen').classList.remove('show');
-      if (!currentEmp) {
-        isManager = true; currentEmp = {name:'Manager',id:'MGR'};
-        loginSuccess();
-      } else {
-        isManager = true;
-        document.getElementById('headerRep').textContent = '👔 Manager View';
-        document.getElementById('tab-manager').style.display = 'block';
-        document.getElementById('tab-settings').style.display = 'block';
-        switchTab('manager');
-        showToast('👔 Manager access granted!');
+      var mgrFp = localStorage.getItem('tc_mgr_fp');
+      if (!mgrFp && window.PublicKeyCredential) {
+        if (confirm('Register your fingerprint for faster manager access next time?')) {
+          registerMgrFingerprint(); return;
+        }
       }
+      unlockManager();
     } else { pinFail(); }
   } else {
     var emp = null;
     for(var i=0;i<emps.length;i++){if(emps[i].id===pendingEmp.id&&emps[i].pin===pinValue){emp=emps[i];break;}}
-    if(emp){currentEmp=emp; isManager=false; document.getElementById('pinScreen').classList.remove('show'); loginSuccess();}
+    if(emp){
+      document.getElementById('pinScreen').classList.remove('show');
+      var fpKey = 'tc_emp_fp_' + emp.id;
+      var empFp = localStorage.getItem(fpKey);
+      if (!empFp && window.PublicKeyCredential) {
+        if (confirm('Register your fingerprint for faster clock-in next time?')) {
+          registerEmpFingerprint(emp); return;
+        }
+      }
+      currentEmp = emp; isManager = false; loginSuccess();
+    }
     else { pinFail(); }
   }
 }
+
+function registerMgrFingerprint() {
+  try {
+    var challenge = new Uint8Array(32);
+    window.crypto.getRandomValues(challenge);
+    navigator.credentials.create({
+      publicKey: {
+        challenge: challenge,
+        rp: { name: 'Time Clock Manager', id: location.hostname },
+        user: { id: new TextEncoder().encode('tc_manager'), name: 'manager', displayName: 'Manager' },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        timeout: 60000
+      }
+    }).then(function(cred) {
+      localStorage.setItem('tc_mgr_fp', JSON.stringify({ id: Array.from(new Uint8Array(cred.rawId)) }));
+      showToast('👆 Fingerprint registered!');
+      unlockManager();
+    }).catch(function() { unlockManager(); });
+  } catch(e) { unlockManager(); }
+}
+
+function registerEmpFingerprint(emp) {
+  try {
+    var challenge = new Uint8Array(32);
+    window.crypto.getRandomValues(challenge);
+    navigator.credentials.create({
+      publicKey: {
+        challenge: challenge,
+        rp: { name: 'Time Clock', id: location.hostname },
+        user: { id: new TextEncoder().encode('tc_emp_' + emp.id), name: emp.name, displayName: emp.name },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        timeout: 60000
+      }
+    }).then(function(cred) {
+      localStorage.setItem('tc_emp_fp_' + emp.id, JSON.stringify({ id: Array.from(new Uint8Array(cred.rawId)) }));
+      showToast('👆 Fingerprint registered!');
+      currentEmp = emp; isManager = false; loginSuccess();
+    }).catch(function() { currentEmp = emp; isManager = false; loginSuccess(); });
+  } catch(e) { currentEmp = emp; isManager = false; loginSuccess(); }
+}
+
+function tryFingerprint() {
+  if (pinMode === 'manager') {
+    var mgrFp = localStorage.getItem('tc_mgr_fp');
+    if (!mgrFp) return;
+    try {
+      var saved = JSON.parse(mgrFp);
+      var challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      navigator.credentials.get({
+        publicKey: { challenge: challenge, allowCredentials: [{ type: 'public-key', id: new Uint8Array(saved.id) }], userVerification: 'required', timeout: 60000 }
+      }).then(function() {
+        document.getElementById('pinScreen').classList.remove('show');
+        unlockManager(); showToast('👆 Manager access granted!');
+      }).catch(function() { showToast('Fingerprint failed — use PIN', true); });
+    } catch(e) { showToast('Fingerprint not available', true); }
+  } else if (pinMode === 'emp' && pendingEmp) {
+    var fpKey = 'tc_emp_fp_' + pendingEmp.id;
+    var empFp = localStorage.getItem(fpKey);
+    if (!empFp) return;
+    try {
+      var saved = JSON.parse(empFp);
+      var challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      navigator.credentials.get({
+        publicKey: { challenge: challenge, allowCredentials: [{ type: 'public-key', id: new Uint8Array(saved.id) }], userVerification: 'required', timeout: 60000 }
+      }).then(function() {
+        var emps = getEmployees();
+        var emp = emps.find(function(e){ return e.id === pendingEmp.id; });
+        if (emp) {
+          document.getElementById('pinScreen').classList.remove('show');
+          currentEmp = emp; isManager = false; loginSuccess();
+          showToast('👆 Welcome ' + emp.name + '!');
+        }
+      }).catch(function() { showToast('Fingerprint failed — use PIN', true); });
+    } catch(e) { showToast('Fingerprint not available', true); }
+  }
+}
+
 function pinFail() { document.getElementById('pinError').style.display='block'; pinValue=''; updatePinDisplay(); }
 
 function loginSuccess() {
