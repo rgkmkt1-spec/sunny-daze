@@ -286,6 +286,7 @@
     <button class="pill p-estimate" onclick="filterBy('Estimate',this)">📋 Estimate</button>
     <button class="pill p-followup" onclick="filterBy('Follow Up',this)">🔔 Follow Up</button>
     <button class="pill p-lost" onclick="filterBy('Lost',this)">❌ Lost</button>
+    <button class="pill" style="border-color:#6c757d;color:#6c757d" onclick="filterBy('Cancelled',this)">🚫 Cancelled</button>
   </div>
   <div class="customer-list" id="leads-list"></div>
 </div>
@@ -911,7 +912,7 @@ function renderLeads(search) {
       return;
     }
     var data = mgrAllData;
-    if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold';});
+    if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold' && d.status!=='Cancelled';});
     else data=data.filter(function(d){return d.status===activeFilter;});
     if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
     list.innerHTML=data.length?data.map(function(c){return cardHTML(c,false,true);}).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
@@ -921,7 +922,7 @@ function renderLeads(search) {
   // Rep sees only their own leads — exclude sold
   var all=getData();
   var data=all.filter(function(d){return d.repId===currentRep.id;});
-  if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold';});
+  if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold' && d.status!=='Cancelled';});
   else data=data.filter(function(d){return d.status===activeFilter;});
   if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
   document.getElementById('leads-list').innerHTML=data.length?data.map(cardHTML).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
@@ -1113,9 +1114,9 @@ function filterMgr(f,el) {
 
 function cardHTML(c,showPay,showRep) {
   var sc={Sold:'sold',Estimate:'estimate','Follow Up':'followup',Lost:'lost'}[c.status]||'';
-  var bc={Sold:'badge-sold',Estimate:'badge-estimate','Follow Up':'badge-followup',Lost:'badge-lost'}[c.status]||'';
-  var statusColor={Sold:'background:var(--green);color:white;border-color:var(--green)',Estimate:'background:var(--yellow);color:var(--navy);border-color:var(--yellow)','Follow Up':'background:var(--orange);color:white;border-color:var(--orange)',Lost:'background:var(--red);color:white;border-color:var(--red)'}[c.status]||'';
-  var statusIcon={Sold:'✅',Estimate:'📋','Follow Up':'🔔',Lost:'❌'}[c.status]||'🔄';
+  var bc={Sold:'badge-sold',Estimate:'badge-estimate','Follow Up':'badge-followup',Lost:'badge-lost',Cancelled:'badge-lost'}[c.status]||'';
+  var statusColor={Sold:'background:var(--green);color:white;border-color:var(--green)',Estimate:'background:var(--yellow);color:var(--navy);border-color:var(--yellow)','Follow Up':'background:var(--orange);color:white;border-color:var(--orange)',Lost:'background:var(--red);color:white;border-color:var(--red)',Cancelled:'background:#6c757d;color:white;border-color:#6c757d'}[c.status]||'';
+  var statusIcon={Sold:'✅',Estimate:'📋','Follow Up':'🔔',Lost:'❌',Cancelled:'🚫'}[c.status]||'🔄';
   var name=c.fname+(c.lname?' '+c.lname:'');
   var amount=c.total||c.amount||0;
   var amountPaid=parseFloat(c.amountPaid||0);
@@ -1286,42 +1287,65 @@ function togglePaid(id) {
 
 function changeStatus(id) {
   id = parseInt(id);
-  var statuses=['Sold','Estimate','Follow Up','Lost'];
-  var s=prompt('New status:\n1. Sold\n2. Estimate\n3. Follow Up\n4. Lost\n\nEnter number:');
-  if(!s||!statuses[parseInt(s)-1]) return;
-  var newStatus = statuses[parseInt(s)-1];
+  // Remove any existing status picker
+  var existing = document.getElementById('statusPicker');
+  if (existing) { existing.remove(); return; }
 
-  // Update localStorage FIRST
+  var statuses = [
+    {val:'Sold', label:'✅ Sold', color:'var(--green)', text:'white'},
+    {val:'Estimate', label:'📋 Estimate', color:'var(--yellow)', text:'var(--navy)'},
+    {val:'Follow Up', label:'🔔 Follow Up', color:'var(--orange)', text:'white'},
+    {val:'Lost', label:'❌ Lost', color:'var(--red)', text:'white'},
+    {val:'Cancelled', label:'🚫 Cancelled', color:'#6c757d', text:'white'}
+  ];
+
+  var picker = document.createElement('div');
+  picker.id = 'statusPicker';
+  picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.92);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+  picker.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:300px;border:1px solid rgba(0,180,216,0.3);">'+
+    '<div style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;text-align:center;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Change Status</div>'+
+    statuses.map(function(s){
+      return '<button onclick="applyStatus('+id+',\''+s.val+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:'+s.color+';color:'+s.text+';border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;text-align:left;">'+s.label+'</button>';
+    }).join('')+
+    '<button onclick="document.getElementById(\'statusPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(picker);
+}
+
+function applyStatus(id, newStatus) {
+  document.getElementById('statusPicker').remove();
+  id = parseInt(id);
+
+  // Update localStorage first
   var localData = getData();
-  var localC = localData.find(function(d){return parseInt(d.id)===id;});
-  if(localC){
+  var localC = localData.find(function(d){ return parseInt(d.id)===id; });
+  if (!localC && mgrAllData.length > 0) {
+    var sheetC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sheetC) { localC = JSON.parse(JSON.stringify(sheetC)); localData.unshift(localC); }
+  }
+  if (localC) {
     localC.status = newStatus;
-    if(newStatus==='Sold') localC.paid = localC.paid||'No';
+    if (newStatus==='Sold') localC.paid = localC.paid||'No';
     saveData(localData);
   }
 
   // Update mgrAllData
-  var mgrC = mgrAllData.find(function(d){return parseInt(d.id)===id;});
-  if(mgrC){
-    mgrC.status = newStatus;
-    if(newStatus==='Sold') mgrC.paid = mgrC.paid||'No';
-  }
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) { mgrC.status = newStatus; if(newStatus==='Sold') mgrC.paid = mgrC.paid||'No'; }
 
-  // Re-render immediately so user sees the change
+  // Re-render immediately
   renderLeads(''); renderJobs(''); updateDashboard();
-  if(isManager) updateManager();
-  showToast('✅ Status updated!');
+  if(isManager) { var c = localC||mgrC; if(mgrAllData.length>0) renderMgrLeads(''); }
+  showToast('✅ Status → ' + newStatus);
 
-  // Update Google Sheet in background — delete old, add new
+  // Sync to sheet in background
   var c = localC || mgrC;
-  if(c){
+  if (c) {
     fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({type:'delete',repId:c.repId,fname:c.fname,lname:c.lname||''})
     }).then(function(){
-      fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(c)
-      });
-    }).catch(function(){ showToast('⚠️ Sheet update failed — saved locally', true); });
+      fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'}, body:JSON.stringify(c)});
+    });
   }
 }
 
