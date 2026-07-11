@@ -845,6 +845,7 @@ function saveCustomer() {
 }
 
 function updateDashboard() {
+  if (!currentRep) return;
   var all = getData();
   var data = isManager ? all : all.filter(function(d){return d.repId===currentRep.id;});
   var sold=data.filter(function(d){return d.status==='Sold';}),
@@ -861,11 +862,13 @@ function updateDashboard() {
   document.getElementById('d-lost').textContent=lost.length;
   // Commission for current rep
   var commission = 0;
-  if (!isManager && currentRep) {
-    commission = sold.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){
-      return s + calcCommission(currentRep.id, d.total||d.amount||0);
-    }, 0);
-  }
+  try {
+    if (!isManager && currentRep && currentRep.id) {
+      commission = sold.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){
+        return s + calcCommission(currentRep.id, d.total||d.amount||0);
+      }, 0);
+    }
+  } catch(e) { commission = 0; }
   document.getElementById('d-commission').textContent='$'+commission.toFixed(2);
   var today=new Date().toISOString().split('T')[0];
   var todayFU=data.filter(function(d){return d.followup===today;});
