@@ -282,6 +282,10 @@
   </div>
   <div class="section-title">👤 Individual Hours</div>
   <div id="emp-sections"></div>
+
+  <div class="section-title" style="margin-top:14px">💵 Wage Report</div>
+  <div id="wage-report"></div>
+
   <div class="section-title" style="margin-top:14px">All Time Entries</div>
   <div class="filter-pills">
     <button class="pill all active" onclick="filterMgr('all',this)">All</button>
@@ -667,6 +671,7 @@ function updateManager() {
       '</div></div>';
   }).join('');
 
+  renderWageReport();
   renderMgrEntries();
 }
 
@@ -763,17 +768,134 @@ function saveEditEntry() {
 }
 
 // SETTINGS
+function getWages() {
+  try { return JSON.parse(localStorage.getItem('tc_wages') || '{}'); } catch(e) { return {}; }
+}
+function saveWages(w) { localStorage.setItem('tc_wages', JSON.stringify(w)); }
+function getEmpWage(empId) { return parseFloat(getWages()[empId]) || 0; }
+
 function renderEmpList() {
   var emps = getEmployees();
+  var wages = getWages();
+  if (emps.length === 0) {
+    document.getElementById('emp-pin-list').innerHTML = '<div style="text-align:center;color:var(--gray);font-size:0.85rem;padding:16px 0;">No employees added yet.</div>';
+    return;
+  }
   document.getElementById('emp-pin-list').innerHTML = emps.map(function(emp){
-    return '<div class="settings-row"><div><div class="settings-label">'+emp.name+'</div><div class="settings-val">ID: '+emp.id+'</div></div>'+
-      '<div style="display:flex;gap:6px">'+
+    var wage = wages[emp.id] || 0;
+    return '<div class="settings-row">'+
+      '<div><div class="settings-label">'+emp.name+'</div>'+
+      '<div class="settings-val">ID: '+emp.id+' &nbsp;|&nbsp; PIN: <span style="color:var(--blue);font-weight:700;">'+emp.pin+'</span> &nbsp;|&nbsp; <span style="color:#5cb85c;font-weight:700;">$'+parseFloat(wage).toFixed(2)+'/hr</span></div></div>'+
+      '<div style="display:flex;gap:6px;align-items:center;">'+
+      '<input type="number" id="wage-'+emp.id+'" value="'+wage+'" min="0" step="0.25" style="width:65px;background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:6px;padding:5px 6px;color:var(--white);font-size:0.85rem;text-align:center;" placeholder="0.00"/>'+
+      '<span style="color:var(--gray);font-size:0.8rem;">/hr</span>'+
+      '<button class="btn-change" onclick="saveWage(\''+emp.id+'\')">💾</button>'+
       '<button class="btn-change" onclick="changeEmpPin(\''+emp.id+'\')">PIN</button>'+
       '<button class="btn-change" style="background:var(--red)" onclick="removeEmployee(\''+emp.id+'\')">✕</button>'+
       '</div></div>';
   }).join('')+
   '<div class="settings-row"><div><div class="settings-label">Manager PIN</div></div>'+
   '<button class="btn-change" onclick="changeMgrPin()">Change</button></div>';
+}
+
+function saveWage(empId) {
+  var input = document.getElementById('wage-'+empId);
+  var wage = parseFloat(input.value) || 0;
+  if (wage < 0) { alert('Wage cannot be negative'); return; }
+  var wages = getWages();
+  wages[empId] = wage;
+  saveWages(wages);
+  renderEmpList();
+  showToast('✅ Wage updated to $'+wage.toFixed(2)+'/hr!');
+}
+
+function renderWageReport() {
+  var emps = getEmployees();
+  var allEntries = getEntries();
+  var wages = getWages();
+  var today = new Date();
+  var weekStart = getWeekStart();
+  var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  var totalWeekly = 0; var totalMonthly = 0;
+
+  var html = emps.map(function(emp) {
+    var wage = parseFloat(wages[emp.id]) || 0;
+    var empEntries = allEntries.filter(function(e){ return e.empId === emp.id; });
+
+    // Daily — today
+    var todayStr = today.toLocaleDateString();
+    var dailyMin = empEntries.filter(function(e){ return e.date === todayStr; })
+      .reduce(function(s,e){ return s+e.totalMinutes; }, 0);
+
+    // Weekly
+    var weeklyMin = empEntries.filter(function(e){ return new Date(e.clockIn) >= weekStart; })
+      .reduce(function(s,e){ return s+e.totalMinutes; }, 0);
+
+    // Monthly
+    var monthlyMin = empEntries.filter(function(e){ return new Date(e.clockIn) >= monthStart; })
+      .reduce(function(s,e){ return s+e.totalMinutes; }, 0);
+
+    var dailyHrs = dailyMin / 60;
+    var weeklyHrs = weeklyMin / 60;
+    var monthlyHrs = monthlyMin / 60;
+
+    // OT calc — time and a half over 8hrs/day and 40hrs/week
+    var weekEntries = empEntries.filter(function(e){ return new Date(e.clockIn) >= weekStart; });
+    var regularHrs = Math.min(weeklyHrs, 40);
+    var otHrs = Math.max(0, weeklyHrs - 40);
+    var weeklyWage = (regularHrs * wage) + (otHrs * wage * 1.5);
+    var monthlyWage = monthlyHrs * wage; // simplified for monthly
+    var dailyWage = dailyHrs * wage;
+
+    totalWeekly += weeklyWage;
+    totalMonthly += monthlyWage;
+
+    if (wage === 0) {
+      return '<div style="background:var(--card);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid rgba(0,180,216,0.2);">'+
+        '<div style="font-size:0.95rem;font-weight:700;">'+emp.name+'</div>'+
+        '<div style="font-size:0.75rem;color:var(--gray);margin-top:4px;">No hourly wage set — go to ⚙️ Settings to set wage</div>'+
+        '</div>';
+    }
+
+    return '<div style="background:var(--card);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid rgba(0,180,216,0.2);">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'+
+      '<div>'+
+      '<div style="font-size:0.95rem;font-weight:700;">'+emp.name+'</div>'+
+      '<div style="font-size:0.72rem;color:var(--gray);">Hourly Rate: <span style="color:#5cb85c;font-weight:700;">$'+wage.toFixed(2)+'/hr</span>'+(otHrs>0?' &nbsp;|&nbsp; <span style="color:#e05a6a;font-weight:700;">OT: $'+(wage*1.5).toFixed(2)+'/hr</span>':'')+'</div>'+
+      '</div></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">'+
+      '<div style="background:var(--mid);border-radius:8px;padding:10px;text-align:center;">'+
+      '<div style="font-size:0.6rem;color:var(--gray);text-transform:uppercase;margin-bottom:4px;">Today</div>'+
+      '<div style="font-size:0.85rem;font-weight:700;">'+dailyHrs.toFixed(1)+'h</div>'+
+      '<div style="font-size:1rem;font-weight:900;color:#5cb85c;">$'+dailyWage.toFixed(2)+'</div>'+
+      '</div>'+
+      '<div style="background:var(--mid);border-radius:8px;padding:10px;text-align:center;border:1px solid rgba(0,180,216,0.3);">'+
+      '<div style="font-size:0.6rem;color:var(--gray);text-transform:uppercase;margin-bottom:4px;">This Week</div>'+
+      '<div style="font-size:0.85rem;font-weight:700;">'+weeklyHrs.toFixed(1)+'h'+(otHrs>0?' <span style="color:#e05a6a;font-size:0.7rem;">+'+otHrs.toFixed(1)+'OT</span>':'')+'</div>'+
+      '<div style="font-size:1rem;font-weight:900;color:#5cb85c;">$'+weeklyWage.toFixed(2)+'</div>'+
+      '</div>'+
+      '<div style="background:var(--mid);border-radius:8px;padding:10px;text-align:center;">'+
+      '<div style="font-size:0.6rem;color:var(--gray);text-transform:uppercase;margin-bottom:4px;">This Month</div>'+
+      '<div style="font-size:0.85rem;font-weight:700;">'+monthlyHrs.toFixed(1)+'h</div>'+
+      '<div style="font-size:1rem;font-weight:900;color:#5cb85c;">$'+monthlyWage.toFixed(2)+'</div>'+
+      '</div>'+
+      '</div></div>';
+  }).join('');
+
+  // Total banner
+  html = '<div style="background:linear-gradient(135deg,#1a4731,#28a745);border-radius:10px;padding:16px;margin-bottom:12px;">'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'+
+    '<div>'+
+    '<div style="font-size:0.68rem;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.08em;">Weekly Payroll</div>'+
+    '<div style="font-size:1.6rem;font-weight:900;color:white;">$'+totalWeekly.toFixed(2)+'</div>'+
+    '</div>'+
+    '<div>'+
+    '<div style="font-size:0.68rem;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.08em;">Monthly Payroll</div>'+
+    '<div style="font-size:1.6rem;font-weight:900;color:white;">$'+totalMonthly.toFixed(2)+'</div>'+
+    '</div>'+
+    '</div></div>' + html;
+
+  document.getElementById('wage-report').innerHTML = html || '<div class="empty-state"><span>👷</span>No employees added yet.</div>';
 }
 
 function addEmployee() {
