@@ -1615,13 +1615,13 @@ function changePin(name,id) {
   if(!p||p.length!==4||isNaN(p)){alert('PIN must be 4 digits.'); return;}
   var reps=getReps(), rep=reps.find(function(r){return r.id===id;});
   if(rep) rep.pin=p;
-  saveReps(reps); showToast('✅ PIN updated!');
+  saveReps(reps); renderRepList(); showToast('✅ PIN updated to '+p+'!');
 }
 
 function changeMgrPin() {
   var p=prompt('Enter new 4-digit Manager PIN:');
   if(!p||p.length!==4||isNaN(p)){alert('PIN must be 4 digits.'); return;}
-  saveMgrPin(p); showToast('✅ Manager PIN updated!');
+  saveMgrPin(p); renderRepList(); showToast('✅ Manager PIN updated to '+p+'!');
 }
 
 function switchTab(tab) {
