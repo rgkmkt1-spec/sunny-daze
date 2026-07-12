@@ -751,9 +751,13 @@ function updateClockStats() {
   document.getElementById('s-week').textContent = fmtHours(weekMin);
   document.getElementById('s-overtime').textContent = fmtHours(weekOT);
 
-  // Today's log
+  // Today's log — show active session OR today's completed entries
   var logEl = document.getElementById('today-log');
+  var todayStr = new Date().toLocaleDateString();
+  var todayEntries = getEntries().filter(function(e){ return e.empId===currentEmp.id && e.date===todayStr; });
+
   if (session && session.clockIn) {
+    // Active session
     var html = '<div class="entry-card">';
     html += '<div class="entry-details">';
     html += '⬆️ Clock In: <strong>' + fmtTime(new Date(session.clockIn)) + '</strong><br>';
@@ -763,6 +767,21 @@ function updateClockStats() {
     else html += '⏱ <strong>Currently working...</strong>';
     html += '</div></div>';
     logEl.innerHTML = html;
+  } else if (todayEntries.length > 0) {
+    // Show completed entries from today
+    logEl.innerHTML = todayEntries.map(function(e){
+      var html = '<div class="entry-card">';
+      html += '<div style="font-size:0.72rem;color:#5cb85c;font-weight:700;margin-bottom:6px;">✅ SHIFT COMPLETE — ' + fmtHours(e.totalMinutes) + '</div>';
+      html += '<div class="entry-details">';
+      html += '⬆️ Clock In: <strong>' + fmtTime(new Date(e.clockIn)) + '</strong><br>';
+      if (e.lunchStart) html += '🍽️ Lunch Start: <strong>' + fmtTime(new Date(e.lunchStart)) + '</strong><br>';
+      if (e.lunchEnd) html += '✅ Lunch End: <strong>' + fmtTime(new Date(e.lunchEnd)) + '</strong><br>';
+      html += '⬇️ Clock Out: <strong>' + fmtTime(new Date(e.clockOut)) + '</strong>';
+      if (e.lunchMinutes > 0) html += '<br>🍽️ Lunch: <strong>' + Math.round(e.lunchMinutes) + ' min</strong>';
+      if (e.overtimeMinutes > 0) html += '<br>⚠️ Overtime: <strong style="color:#e05a6a;">' + fmtHours(e.overtimeMinutes) + '</strong>';
+      html += '</div></div>';
+      return html;
+    }).join('');
   } else {
     logEl.innerHTML = '<div class="empty-state"><span>⏰</span>No punches yet today.</div>';
   }
