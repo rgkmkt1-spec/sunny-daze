@@ -867,6 +867,11 @@
   });
 
   renderGrid();
+
+  // Register service worker for PWA home screen install
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
+  }
 </script>
 </body>
 </html>
