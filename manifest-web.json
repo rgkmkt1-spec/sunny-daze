@@ -1,0 +1,15 @@
+{
+  "name": "SunnyDaze Pressure Washing",
+  "short_name": "SunnyDaze",
+  "description": "Professional pressure washing serving Erie, Crawford & Mercer Counties PA",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0A1628",
+  "theme_color": "#00B4D8",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/sd-web-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/sd-web-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
