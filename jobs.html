@@ -1514,33 +1514,66 @@ function applyStatus(id, newStatus) {
 function deleteCustomer(id) {
   if (!confirm('Are you sure you want to delete this customer?')) return;
 
-  // Require manager PIN before deleting
-  var pin = prompt('⚠️ MANAGER PIN REQUIRED TO DELETE\n\nEnter Manager PIN to confirm permanent deletion:');
-  if (pin === null) return; // cancelled
-  if (pin !== getMgrPin()) {
+  // Show secure PIN overlay instead of prompt
+  var existing = document.getElementById('deletePinOverlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'deletePinOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:28px;width:100%;max-width:300px;border:2px solid var(--red);text-align:center;">' +
+    '<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>' +
+    '<div style="font-size:1rem;font-weight:900;color:var(--red);margin-bottom:6px;">DELETE CUSTOMER</div>' +
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:18px;">Enter Manager PIN to permanently delete this customer from the app and Google Sheets.</div>' +
+    '<div id="delPinDisplay" style="font-size:2rem;letter-spacing:0.4em;color:var(--blue);margin-bottom:16px;font-weight:900;">_ _ _ _</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">' +
+    ['1','2','3','4','5','6','7','8','9','','0','⌫'].map(function(k){
+      return k===''?'<div></div>':'<button onclick="delPinKey(\''+k+'\')" style="padding:16px;background:var(--mid);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--white);font-size:1.2rem;font-weight:700;cursor:pointer;">'+k+'</button>';
+    }).join('') +
+    '</div>' +
+    '<button onclick="confirmDeletePin('+id+')" style="width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">🗑 Confirm Delete</button>' +
+    '<button onclick="document.getElementById(\'deletePinOverlay\').remove();delPinVal=\'\';" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+var delPinVal = '';
+function delPinKey(k) {
+  if (k === '⌫') { delPinVal = delPinVal.slice(0,-1); }
+  else if (delPinVal.length < 4) { delPinVal += k; }
+  var display = delPinVal.replace(/./g,'●').padEnd(4,'_').split('').join(' ');
+  document.getElementById('delPinDisplay').textContent = display;
+}
+
+function confirmDeletePin(id) {
+  if (delPinVal !== getMgrPin()) {
+    document.getElementById('delPinDisplay').textContent = '✗ ✗ ✗ ✗';
+    document.getElementById('delPinDisplay').style.color = 'var(--red)';
+    delPinVal = '';
+    setTimeout(function(){
+      document.getElementById('delPinDisplay').textContent = '_ _ _ _';
+      document.getElementById('delPinDisplay').style.color = 'var(--blue)';
+    }, 1000);
     showToast('❌ Incorrect PIN — deletion cancelled', true);
     return;
   }
+  document.getElementById('deletePinOverlay').remove();
+  delPinVal = '';
 
+  id = parseInt(id);
   var data = getData();
-  var customer = data.find(function(d){return parseInt(d.id)===parseInt(id);});
+  var customer = data.find(function(d){return parseInt(d.id)===id;});
   if (!customer && mgrAllData.length > 0) {
-    customer = mgrAllData.find(function(d){return parseInt(d.id)===parseInt(id);});
+    customer = mgrAllData.find(function(d){return parseInt(d.id)===id;});
   }
-  saveData(data.filter(function(d){return parseInt(d.id)!==parseInt(id);}));
-  mgrAllData = mgrAllData.filter(function(d){return parseInt(d.id)!==parseInt(id);});
+  saveData(data.filter(function(d){return parseInt(d.id)!==id;}));
+  mgrAllData = mgrAllData.filter(function(d){return parseInt(d.id)!==id;});
   if (customer) {
     fetch(SHEET_URL, {
-      method: 'POST',
-      mode: 'no-cors',
+      method: 'POST', mode: 'no-cors',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        type: 'delete',
-        repId: customer.repId,
-        fname: customer.fname,
-        lname: customer.lname || '',
-        date: customer.date || ''
-      })
+      body: JSON.stringify({type:'delete', repId:customer.repId, fname:customer.fname, lname:customer.lname||'', date:customer.date||''})
     }).then(function(){ showToast('🗑 Customer deleted!'); })
       .catch(function(){ showToast('🗑 Deleted locally', true); });
   }
