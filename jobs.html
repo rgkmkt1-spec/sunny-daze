@@ -1485,8 +1485,15 @@ function applyStatus(id, newStatus) {
 
   // Re-render immediately
   renderLeads(''); renderJobs(''); updateDashboard();
-  if(isManager) { var c = localC||mgrC; if(mgrAllData.length>0) renderMgrLeads(''); }
+  if(isManager && mgrAllData.length>0) renderMgrLeads('');
   showToast('✅ Status → ' + newStatus);
+
+  // Auto switch to correct tab
+  if (newStatus === 'Sold') {
+    setTimeout(function(){ switchTab('jobs'); }, 600);
+  } else if (newStatus === 'Estimate' || newStatus === 'Follow Up' || newStatus === 'Lost' || newStatus === 'Cancelled') {
+    setTimeout(function(){ switchTab('leads'); }, 600);
+  }
 
   // Safe update in place — no delete, just update the existing row
   var c = localC || mgrC;
