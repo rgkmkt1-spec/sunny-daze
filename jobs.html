@@ -1513,15 +1513,22 @@ function applyStatus(id, newStatus) {
 
 function deleteCustomer(id) {
   if (!confirm('Are you sure you want to delete this customer?')) return;
-  if (!confirm('FINAL CONFIRMATION: Delete permanently from Google Sheets?')) return;
-  var data = getData();
-  var customer = data.find(function(d){return d.id===id;});
-  // Also check mgrAllData for sheet-only leads (e.g. website leads)
-  if (!customer && mgrAllData.length > 0) {
-    customer = mgrAllData.find(function(d){return d.id===id;});
+
+  // Require manager PIN before deleting
+  var pin = prompt('⚠️ MANAGER PIN REQUIRED TO DELETE\n\nEnter Manager PIN to confirm permanent deletion:');
+  if (pin === null) return; // cancelled
+  if (pin !== getMgrPin()) {
+    showToast('❌ Incorrect PIN — deletion cancelled', true);
+    return;
   }
-  saveData(data.filter(function(d){return d.id!==id;}));
-  mgrAllData = mgrAllData.filter(function(d){return d.id!==id;});
+
+  var data = getData();
+  var customer = data.find(function(d){return parseInt(d.id)===parseInt(id);});
+  if (!customer && mgrAllData.length > 0) {
+    customer = mgrAllData.find(function(d){return parseInt(d.id)===parseInt(id);});
+  }
+  saveData(data.filter(function(d){return parseInt(d.id)!==parseInt(id);}));
+  mgrAllData = mgrAllData.filter(function(d){return parseInt(d.id)!==parseInt(id);});
   if (customer) {
     fetch(SHEET_URL, {
       method: 'POST',
