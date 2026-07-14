@@ -898,7 +898,13 @@ function saveCustomer() {
   document.getElementById('l-date').value=new Date().toISOString().split('T')[0];
   document.querySelectorAll('.status-btn').forEach(function(b){b.classList.remove('active');});
   document.getElementById('l-status').value=''; document.getElementById('taxBox').style.display='none'; calcTax();
-  updateDashboard();
+  updateDashboard(); renderLeads(''); renderJobs();
+  // Auto switch to correct tab after save
+  if (status === 'Sold') {
+    setTimeout(function(){ switchTab('jobs'); }, 600);
+  } else if (status === 'Estimate' || status === 'Follow Up' || status === 'Lost') {
+    setTimeout(function(){ switchTab('leads'); }, 600);
+  }
 }
 
 function updateDashboard() {
@@ -1203,8 +1209,9 @@ function filterMgr(f,el) {
 function cardHTML(c,showPay,showRep) {
   var sc={Sold:'sold',Estimate:'estimate','Follow Up':'followup',Lost:'lost'}[c.status]||'';
   var bc={Sold:'badge-sold',Estimate:'badge-estimate','Follow Up':'badge-followup',Lost:'badge-lost',Cancelled:'badge-lost'}[c.status]||'';
-  var statusColor={Sold:'background:var(--green);color:white;border-color:var(--green)',Estimate:'background:var(--yellow);color:var(--navy);border-color:var(--yellow)','Follow Up':'background:var(--orange);color:white;border-color:var(--orange)',Lost:'background:var(--red);color:white;border-color:var(--red)',Cancelled:'background:#6c757d;color:white;border-color:#6c757d'}[c.status]||'';
-  var statusIcon={Sold:'✅',Estimate:'📋','Follow Up':'🔔',Lost:'❌',Cancelled:'🚫'}[c.status]||'🔄';
+  var statusColor={Sold:'background:var(--green);color:white;border-color:var(--green)',Estimate:'background:var(--yellow);color:var(--navy);border-color:var(--yellow)','Follow Up':'background:var(--orange);color:white;border-color:var(--orange)',Lost:'background:var(--red);color:white;border-color:var(--red)',Cancelled:'background:#6c757d;color:white;border-color:#6c757d',Completed:'background:var(--green);color:white;border-color:var(--green)'}[c.status]||'background:var(--mid);color:var(--white);border-color:var(--blue)';
+  var statusIcon={Sold:'✅',Estimate:'📋','Follow Up':'🔔',Lost:'❌',Cancelled:'🚫',Completed:'✅'}[c.status]||'🔄';
+  var statusLabel = c.status || 'Set Status';
   var name=c.fname+(c.lname?' '+c.lname:'');
   var amount=c.total||c.amount||0;
   var amountPaid=parseFloat(c.amountPaid||0);
@@ -1243,7 +1250,7 @@ function cardHTML(c,showPay,showRep) {
     '<div class="card-actions">'+
     (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
-    '<button class="action-btn" style="'+statusColor+';padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="changeStatus('+c.id+')">'+statusIcon+' '+c.status+'</button>'+
+    '<button class="action-btn" style="'+statusColor+';padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="changeStatus('+c.id+')">'+statusIcon+' '+statusLabel+'</button>'+
     (c.status==='Sold'?'<button class="action-btn" style="background:var(--purple);color:white;border-color:var(--purple);padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="scheduleReturn('+c.id+')">📅 Return Visit</button>':'')+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
