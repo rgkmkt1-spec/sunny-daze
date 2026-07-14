@@ -1678,6 +1678,8 @@ function setAddressFields(address, email) {
     if (zipEl) zipEl.value = stateZip[1] || '';
   }
 }
+
+function renderRepList() {
   var reps=getReps();
   document.getElementById('rep-pin-list').innerHTML=reps.map(function(rep){
     return '<div class="settings-row"><div><div class="settings-label">'+rep.name+'</div>'+
