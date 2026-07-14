@@ -105,7 +105,7 @@
     .badge-lost { background: rgba(220,53,69,0.2); color: #e05a6a; border: 1px solid #e05a6a; }
     .badge-blue { background: rgba(0,180,216,0.15); color: var(--blue); border: 1px solid var(--blue); }
     .badge-rep { background: rgba(144,224,239,0.1); color: var(--cyan); border: 1px solid var(--cyan); }
-    .card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+    .card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
     .action-btn { padding: 5px 10px; border-radius: 6px; font-size: 0.68rem; font-weight: 700; cursor: pointer; border: 1px solid; text-transform: uppercase; background: transparent; }
     .action-btn.green { border-color: var(--green); color: var(--green); }
     .action-btn.red { border-color: var(--red); color: #e05a6a; }
@@ -1250,7 +1250,7 @@ function cardHTML(c,showPay,showRep) {
     '<div class="card-actions">'+
     (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
-    '<button class="action-btn" style="'+statusColor+';padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="changeStatus('+c.id+')">'+statusIcon+' '+statusLabel+'</button>'+
+    '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
     (c.status==='Sold'?'<button class="action-btn" style="background:var(--purple);color:white;border-color:var(--purple);padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="scheduleReturn('+c.id+')">📅 Return Visit</button>':'')+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
