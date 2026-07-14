@@ -237,7 +237,13 @@
     </div>
     <div class="form-row">
       <div class="form-group"><label>Phone Number *</label><input type="tel" id="l-phone" placeholder="(814) 555-0000"/></div>
-      <div class="form-group"><label>Email *</label><input type="email" id="l-email" placeholder="john@email.com"/></div>
+      <div class="form-group"><label>Email *</label>
+        <input type="email" id="l-email" placeholder="john@email.com" oninput="document.getElementById('l-email-na').value='';"/>
+        <select id="l-email-na" onchange="if(this.value){document.getElementById('l-email').value=this.value;}" style="margin-top:4px;background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:8px;padding:8px 12px;color:var(--gray);font-size:0.8rem;width:100%;outline:none;">
+          <option value="">-- No email? Select below --</option>
+          <option value="no-email@noemail.com">No Email Available</option>
+        </select>
+      </div>
     </div>
     <div class="form-group"><label>Street Address *</label><input type="text" id="l-address" placeholder="123 Main St"/></div>
     <div class="form-row" style="grid-template-columns:1fr 80px 120px;gap:8px;">
@@ -267,19 +273,8 @@
       <div class="tax-row total"><span>TOTAL</span><span id="t-total">$0.00</span></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Job Date</label><input type="date" id="l-date"/></div>
-      <div class="form-group"><label>Follow Up Date</label><input type="date" id="l-followup"/></div>
-    </div>
-    <div class="form-group">
-      <label>Payment Method</label>
-      <select id="l-payment">
-        <option value="">N/A</option>
-        <option>Credit Card</option>
-        <option>Cash</option>
-        <option>Check</option>
-        <option>PayPal</option>
-        <option>Venmo</option>
-      </select>
+      <div class="form-group"><label>Job Date *</label><input type="date" id="l-date" oninput="autoFollowUp(this.value)"/></div>
+      <div class="form-group"><label>Follow Up Date</label><input type="date" id="l-followup"/><span class="form-hint" style="font-size:0.68rem;color:var(--gray);">Auto-set to 2 years from job date</span></div>
     </div>
     <div class="form-group"><label>Notes</label><textarea id="l-notes" rows="2" placeholder="Notes..."></textarea></div>
     <button class="btn-submit" onclick="saveCustomer()">💾 SAVE</button>
@@ -744,6 +739,7 @@ function loginSuccess() {
   document.getElementById('headerRep').textContent = isManager ? '👔 Manager View' : 'Rep #' + currentRep.id + ' — ' + currentRep.name;
   document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
   document.getElementById('l-date').value = new Date().toISOString().split('T')[0];
+  autoFollowUp(new Date().toISOString().split('T')[0]);
   document.getElementById('mgrHeaderBtn').style.display = 'block';
   if (isManager) {
     document.getElementById('tab-commercial').style.display = 'block';
@@ -792,7 +788,7 @@ function saveCustomer() {
   var fname = document.getElementById('l-fname').value.trim();
   var lname = document.getElementById('l-lname').value.trim();
   var phone = document.getElementById('l-phone').value.trim();
-  var email = document.getElementById('l-email').value.trim();
+  var email = document.getElementById('l-email').value.trim() || document.getElementById('l-email-na').value;
   var address = document.getElementById('l-address').value.trim();
   var city = document.getElementById('l-city').value.trim();
   var state = document.getElementById('l-state').value.trim();
@@ -808,7 +804,7 @@ function saveCustomer() {
   if (!fname) errors.push('First Name');
   if (!lname) errors.push('Last Name');
   if (!phone) errors.push('Phone Number');
-  if (!email) errors.push('Email');
+  if (!email && document.getElementById('l-email-na').value === '') errors.push('Email (or select "No Email Available")');
   if (!address) errors.push('Street Address');
   if (!city) errors.push('City');
   if (!state) errors.push('State');
@@ -851,7 +847,7 @@ function saveCustomer() {
       data[idx].status = status;
       data[idx].date = document.getElementById('l-date').value;
       data[idx].followup = document.getElementById('l-followup').value;
-      data[idx].payment = document.getElementById('l-payment').value;
+      data[idx].payment = data[idx].payment || ''; // keep existing payment method
       data[idx].notes = document.getElementById('l-notes').value.trim();
       saveData(data);
 
@@ -881,7 +877,7 @@ function saveCustomer() {
       taxable: taxable, status: status,
       date: document.getElementById('l-date').value,
       followup: document.getElementById('l-followup').value,
-      payment: document.getElementById('l-payment').value,
+      payment: '',
       notes: document.getElementById('l-notes').value.trim(), paid: 'No'
     };
     var data = getData(); data.unshift(customer); saveData(data);
@@ -892,9 +888,12 @@ function saveCustomer() {
       .catch(function(){document.getElementById('savingInd').style.display='none';});
   }
 
-  ['l-fname','l-lname','l-phone','l-email','l-address','l-city','l-state','l-zip','l-amount','l-notes','l-followup'].forEach(function(id){document.getElementById(id).value='';});
+  ['l-fname','l-lname','l-phone','l-email','l-address','l-city','l-state','l-zip','l-amount','l-notes','l-followup'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value='';
+  });
+  var naEl = document.getElementById('l-email-na'); if(naEl) naEl.value='';
   document.querySelectorAll('.svc-check').forEach(function(c){c.checked=false;});
-  document.getElementById('l-payment').value='';
+  // payment set via picker
   document.getElementById('l-taxable').checked=false;
   document.getElementById('l-date').value=new Date().toISOString().split('T')[0];
   document.querySelectorAll('.status-btn').forEach(function(b){b.classList.remove('active');});
@@ -1212,7 +1211,7 @@ function cardHTML(c,showPay,showRep) {
   var balance=parseFloat(c.balance!=null?c.balance:amount);
   var isCompleted = c.status==='Completed';
   var isPartial=c.paid==='Partial';
-  var isPaid=c.paid==='Yes'||isCompleted;
+  var isPaid=c.paid==='Yes' && !isCompleted ? true : isCompleted ? true : false;
 
   // Payment breakdown for partial payments
   var paymentInfo='';
@@ -1269,7 +1268,7 @@ function editCustomer(id) {
   document.getElementById('l-amount').value = c.amount || '';
   document.getElementById('l-date').value = c.date || '';
   document.getElementById('l-followup').value = c.followup || '';
-  document.getElementById('l-payment').value = c.payment || '';
+  // payment shown on card only
   document.getElementById('l-notes').value = c.notes || '';
   // Set status
   if (c.status) setStatus(c.status);
@@ -1343,16 +1342,24 @@ function togglePaid(id) {
     c.paid = 'No';
     c.amountPaid = 0;
     c.balance = total;
-    c.status = 'Sold'; // move back to active
+    c.status = 'Sold';
     c.completedDate = null;
+    // Force update the data array entry
+    for (var i=0; i<data.length; i++) {
+      if (parseInt(data[i].id)===id) {
+        data[i] = c; break;
+      }
+    }
     saveData(data);
-    // Update mgrAllData too
     var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
-    if(mgrC){ mgrC.paid='No'; mgrC.amountPaid=0; mgrC.balance=total; mgrC.status='Sold'; }
-    // Sync update to sheet
+    if(mgrC){ mgrC.paid='No'; mgrC.amountPaid=0; mgrC.balance=total; mgrC.status='Sold'; mgrC.completedDate=null; }
     fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
     });
+    jobsFilter = 'active';
+    document.querySelectorAll('#view-jobs .pill').forEach(function(p){p.classList.remove('active');});
+    var ap = document.getElementById('jobs-pill-active');
+    if(ap) ap.classList.add('active');
     renderJobs(''); updateDashboard();
     showToast('⚠️ Moved back to Active — marked unpaid');
   } else {
@@ -1367,25 +1374,8 @@ function togglePaid(id) {
     var amountReceived = input.trim() === '' ? total : parseFloat(input);
     if (isNaN(amountReceived) || amountReceived < 0) { showToast('Invalid amount', true); return; }
 
-    c.amountPaid = parseFloat((c.amountPaid||0)) + amountReceived;
-    c.balance = Math.max(0, total - c.amountPaid);
-
-    if (c.balance <= 0) {
-      c.paid = 'Yes';
-      c.amountPaid = total;
-      c.balance = 0;
-      c.status = 'Completed';
-      c.completedDate = new Date().toLocaleDateString();
-      showToast('✅ Paid in full! Job marked Complete!');
-    } else {
-      c.paid = 'Partial';
-      showToast('💰 $' + amountReceived.toFixed(2) + ' received — $' + c.balance.toFixed(2) + ' remaining');
-    }
-    saveData(data);
-    // Update mgrAllData too
-    var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
-    if (mgrC) { mgrC.paid = c.paid; mgrC.amountPaid = c.amountPaid; mgrC.balance = c.balance; }
-    renderJobs(''); updateDashboard();
+    // Show payment method picker — it handles the rest
+    showPaymentPicker(id, total, amountReceived);
   }
 }
 
@@ -1626,6 +1616,72 @@ function saveCommission(repId) {
 function calcCommission(repId, amount) {
   var rate = getRepCommission(repId);
   return (amount * rate) / 100;
+}
+
+function autoFollowUp(dateVal) {
+  if (!dateVal) return;
+  var d = new Date(dateVal + 'T12:00:00');
+  d.setFullYear(d.getFullYear() + 2);
+  var iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  document.getElementById('l-followup').value = iso;
+}
+
+function showPaymentPicker(id, total, amountReceived) {
+  var existing = document.getElementById('paymentPicker');
+  if (existing) existing.remove();
+  var methods = ['Credit Card','Cash','Check','PayPal','Venmo','Zelle','Other'];
+  var picker = document.createElement('div');
+  picker.id = 'paymentPicker';
+  picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.95);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+  picker.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:320px;border:1px solid rgba(0,180,216,0.3);">'+
+    '<div style="font-size:1rem;font-weight:900;color:var(--blue);margin-bottom:6px;">💳 Payment Method</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:16px;">How did they pay? Amount: $'+parseFloat(amountReceived).toFixed(2)+'</div>'+
+    methods.map(function(m){
+      return '<button onclick="applyPayment('+id+',\''+m+'\','+total+','+amountReceived+')" style="width:100%;padding:13px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:8px;color:var(--white);font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">'+m+'</button>';
+    }).join('')+
+    '<button onclick="document.getElementById(\'paymentPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(picker);
+}
+
+function applyPayment(id, method, total, amountReceived) {
+  document.getElementById('paymentPicker').remove();
+  id = parseInt(id);
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length > 0) {
+    var sheetC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sheetC) { c = JSON.parse(JSON.stringify(sheetC)); data.unshift(c); }
+  }
+  if (!c) { showToast('Customer not found', true); return; }
+
+  c.amountPaid = parseFloat((c.amountPaid||0)) + amountReceived;
+  c.balance = Math.max(0, total - c.amountPaid);
+  c.payment = method;
+
+  if (c.balance <= 0) {
+    c.paid = 'Yes';
+    c.amountPaid = total;
+    c.balance = 0;
+    c.status = 'Completed';
+    c.completedDate = new Date().toLocaleDateString();
+    showToast('✅ Paid in full via ' + method + '! Job Complete!');
+  } else {
+    c.paid = 'Partial';
+    showToast('💰 $' + amountReceived.toFixed(2) + ' via ' + method + ' — $' + c.balance.toFixed(2) + ' remaining');
+  }
+
+  for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
+  saveData(data);
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; mgrC.status=c.status; mgrC.payment=method; }
+
+  // Sync to sheet
+  fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
+  });
+
+  renderJobs(''); updateDashboard();
 }
 
 function lookupZip(zip) {
