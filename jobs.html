@@ -233,10 +233,18 @@
     </div>
     <div class="form-row">
       <div class="form-group"><label>First Name *</label><input type="text" id="l-fname" placeholder="John"/></div>
-      <div class="form-group"><label>Last Name</label><input type="text" id="l-lname" placeholder="Smith"/></div>
+      <div class="form-group"><label>Last Name *</label><input type="text" id="l-lname" placeholder="Smith"/></div>
     </div>
-    <div class="form-group"><label>Phone Number</label><input type="tel" id="l-phone" placeholder="(814) 555-0000"/></div>
-    <div class="form-group"><label>Address</label><input type="text" id="l-address" placeholder="123 Main St, Erie PA"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone Number *</label><input type="tel" id="l-phone" placeholder="(814) 555-0000"/></div>
+      <div class="form-group"><label>Email *</label><input type="email" id="l-email" placeholder="john@email.com"/></div>
+    </div>
+    <div class="form-group"><label>Street Address *</label><input type="text" id="l-address" placeholder="123 Main St"/></div>
+    <div class="form-row" style="grid-template-columns:1fr 80px 120px;gap:8px;">
+      <div class="form-group"><label>City *</label><input type="text" id="l-city" placeholder="Erie"/></div>
+      <div class="form-group"><label>State *</label><input type="text" id="l-state" placeholder="PA" maxlength="2" style="text-transform:uppercase;"/></div>
+      <div class="form-group"><label>Zip *</label><input type="text" id="l-zip" placeholder="16501" maxlength="5" oninput="lookupZip(this.value)"/></div>
+    </div>
     <div class="form-group">
       <label>Service</label>
       <div style="background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:8px;padding:10px 12px;">
@@ -782,15 +790,42 @@ function calcTax() {
 
 function saveCustomer() {
   var fname = document.getElementById('l-fname').value.trim();
+  var lname = document.getElementById('l-lname').value.trim();
+  var phone = document.getElementById('l-phone').value.trim();
+  var email = document.getElementById('l-email').value.trim();
+  var address = document.getElementById('l-address').value.trim();
+  var city = document.getElementById('l-city').value.trim();
+  var state = document.getElementById('l-state').value.trim();
+  var zip = document.getElementById('l-zip').value.trim();
   var status = document.getElementById('l-status').value;
-  if (!fname) { alert('Please enter a customer name.'); return; }
-  if (!status) { alert('Please select an outcome.'); return; }
-  var editId = document.getElementById('l-fname').dataset.editId;
+  var amt = parseFloat(document.getElementById('l-amount').value) || 0;
+  var date = document.getElementById('l-date').value;
   var checked = document.querySelectorAll('.svc-check:checked');
   var services = Array.prototype.map.call(checked, function(c){ return c.value; }).join(', ');
-  var amt = parseFloat(document.getElementById('l-amount').value) || 0;
+
+  // Validate all required fields
+  var errors = [];
+  if (!fname) errors.push('First Name');
+  if (!lname) errors.push('Last Name');
+  if (!phone) errors.push('Phone Number');
+  if (!email) errors.push('Email');
+  if (!address) errors.push('Street Address');
+  if (!city) errors.push('City');
+  if (!state) errors.push('State');
+  if (!zip) errors.push('Zip Code');
+  if (!status) errors.push('Outcome (Sold/Estimate/Follow Up/Not Interested)');
+  if (!services) errors.push('Service (select at least one)');
+  if (!amt) errors.push('Amount');
+  if (!date) errors.push('Job Date');
+
+  if (errors.length > 0) {
+    showToast('⚠️ Please fill in: ' + errors.join(', '), true);
+    return;
+  }
+
   var taxable = document.getElementById('l-taxable').checked;
   var tax = taxable ? amt*0.06 : 0;
+  var editId = document.getElementById('l-fname').dataset.editId;
 
   if (editId) {
     editId = parseInt(editId);
@@ -809,7 +844,8 @@ function saveCustomer() {
       data[idx].fname = fname;
       data[idx].lname = document.getElementById('l-lname').value.trim();
       data[idx].phone = document.getElementById('l-phone').value.trim();
-      data[idx].address = document.getElementById('l-address').value.trim();
+      data[idx].email = document.getElementById('l-email').value.trim();
+      data[idx].address = getFullAddress();
       data[idx].service = services;
       data[idx].amount = amt; data[idx].tax = tax; data[idx].total = amt+tax;
       data[idx].status = status;
@@ -839,7 +875,8 @@ function saveCustomer() {
       id: Date.now(), repId: currentRep.id, repName: currentRep.name,
       fname: fname, lname: document.getElementById('l-lname').value.trim(),
       phone: document.getElementById('l-phone').value.trim(),
-      address: document.getElementById('l-address').value.trim(),
+      email: document.getElementById('l-email').value.trim(),
+      address: getFullAddress(),
       service: services, amount: amt, tax: tax, total: amt+tax,
       taxable: taxable, status: status,
       date: document.getElementById('l-date').value,
@@ -855,7 +892,7 @@ function saveCustomer() {
       .catch(function(){document.getElementById('savingInd').style.display='none';});
   }
 
-  ['l-fname','l-lname','l-phone','l-address','l-amount','l-notes','l-followup'].forEach(function(id){document.getElementById(id).value='';});
+  ['l-fname','l-lname','l-phone','l-email','l-address','l-city','l-state','l-zip','l-amount','l-notes','l-followup'].forEach(function(id){document.getElementById(id).value='';});
   document.querySelectorAll('.svc-check').forEach(function(c){c.checked=false;});
   document.getElementById('l-payment').value='';
   document.getElementById('l-taxable').checked=false;
@@ -1173,8 +1210,9 @@ function cardHTML(c,showPay,showRep) {
   var amount=c.total||c.amount||0;
   var amountPaid=parseFloat(c.amountPaid||0);
   var balance=parseFloat(c.balance!=null?c.balance:amount);
+  var isCompleted = c.status==='Completed';
   var isPartial=c.paid==='Partial';
-  var isPaid=c.paid==='Yes';
+  var isPaid=c.paid==='Yes'||isCompleted;
 
   // Payment breakdown for partial payments
   var paymentInfo='';
@@ -1188,11 +1226,11 @@ function cardHTML(c,showPay,showRep) {
 
   var paidBadge=isPaid?'badge-sold':isPartial?'':'badge-lost';
   var paidLabel=isPaid?'✅ Paid in Full':isPartial?'💰 Partial — $'+balance.toFixed(2)+' due':'⚠️ Unpaid';
-  var paidBtnLabel=isPaid?'Mark Unpaid':isPartial?'💰 Add Payment':'💰 Mark Paid';
+  var paidBtnLabel = isCompleted ? '↩️ Mark Unpaid' : isPaid?'Mark Unpaid':isPartial?'💰 Add Payment':'💰 Mark Paid';
 
   return '<div class="customer-card '+sc+'">'+
     '<div class="customer-top"><div><div class="customer-name">'+name+'</div><div class="customer-details">'+
-    (c.phone?'📞 '+c.phone+'<br>':'')+(c.address?'📍 '+c.address+'<br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+
+    (c.phone?'📞 '+c.phone+'<br>':'')+(c.email?'✉️ '+c.email+'<br>':'')+(c.address?'📍 '+c.address+'<br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+
     '</div></div>'+(amount>0?'<div class="customer-amount">$'+parseFloat(amount).toFixed(2)+'</div>':'')+'</div>'+
     '<div class="badges"><span class="badge '+bc+'">'+c.status+'</span>'+
     (c.service?'<span class="badge badge-blue">'+c.service+'</span>':'')+
@@ -1204,7 +1242,7 @@ function cardHTML(c,showPay,showRep) {
     (c.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+c.notes+'</div>':'')+
     (c.returnVisit?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
     '<div class="card-actions">'+
-    (showPay?'<button class="action-btn '+(isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
+    (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
     '<button class="action-btn" style="'+statusColor+';padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="changeStatus('+c.id+')">'+statusIcon+' '+c.status+'</button>'+
     (c.status==='Sold'?'<button class="action-btn" style="background:var(--purple);color:white;border-color:var(--purple);padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="scheduleReturn('+c.id+')">📅 Return Visit</button>':'')+
@@ -1227,7 +1265,7 @@ function editCustomer(id) {
   document.getElementById('l-fname').value = c.fname || '';
   document.getElementById('l-lname').value = c.lname || '';
   document.getElementById('l-phone').value = c.phone || '';
-  document.getElementById('l-address').value = c.address || '';
+  setAddressFields(c.address, c.email);
   document.getElementById('l-amount').value = c.amount || '';
   document.getElementById('l-date').value = c.date || '';
   document.getElementById('l-followup').value = c.followup || '';
@@ -1300,13 +1338,23 @@ function togglePaid(id) {
 
   var total = parseFloat(c.total||c.amount||0);
 
-  if (c.paid === 'Yes') {
+  if (c.paid === 'Yes' || c.status === 'Completed') {
+    if (!confirm('Mark this job as unpaid and move it back to Active?')) return;
     c.paid = 'No';
     c.amountPaid = 0;
     c.balance = total;
+    c.status = 'Sold'; // move back to active
+    c.completedDate = null;
     saveData(data);
+    // Update mgrAllData too
+    var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if(mgrC){ mgrC.paid='No'; mgrC.amountPaid=0; mgrC.balance=total; mgrC.status='Sold'; }
+    // Sync update to sheet
+    fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
+    });
     renderJobs(''); updateDashboard();
-    showToast('⚠️ Marked unpaid');
+    showToast('⚠️ Moved back to Active — marked unpaid');
   } else {
     var input = prompt(
       'Payment received for ' + c.fname + ' ' + (c.lname||'') + '\n' +
@@ -1580,7 +1628,56 @@ function calcCommission(repId, amount) {
   return (amount * rate) / 100;
 }
 
-function renderRepList() {
+function lookupZip(zip) {
+  if (zip.length !== 5 || isNaN(zip)) return;
+  fetch('https://api.zippopotam.us/us/' + zip)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.places && data.places.length > 0) {
+        document.getElementById('l-city').value = data.places[0]['place name'];
+        document.getElementById('l-state').value = data.places[0]['state abbreviation'];
+      }
+    }).catch(function(){});
+}
+
+function getFullAddress() {
+  var street = document.getElementById('l-address').value.trim();
+  var city = document.getElementById('l-city').value.trim();
+  var state = document.getElementById('l-state').value.trim();
+  var zip = document.getElementById('l-zip').value.trim();
+  var parts = [street];
+  if (city) parts.push(city);
+  if (state) parts.push(state);
+  if (zip) parts.push(zip);
+  return parts.join(', ');
+}
+
+function clearAddressFields() {
+  ['l-address','l-city','l-state','l-zip','l-email'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+}
+
+function setAddressFields(address, email) {
+  // Parse stored address back into fields
+  var el = document.getElementById('l-address');
+  var cityEl = document.getElementById('l-city');
+  var stateEl = document.getElementById('l-state');
+  var zipEl = document.getElementById('l-zip');
+  var emailEl = document.getElementById('l-email');
+  if (emailEl) emailEl.value = email || '';
+  if (!address) return;
+  // Try to parse "Street, City, State Zip" format
+  var parts = address.split(',').map(function(p){ return p.trim(); });
+  if (el) el.value = parts[0] || '';
+  if (parts.length >= 2 && cityEl) cityEl.value = parts[1] || '';
+  if (parts.length >= 3) {
+    var stateZip = parts[2].trim().split(' ');
+    if (stateEl) stateEl.value = stateZip[0] || '';
+    if (zipEl) zipEl.value = stateZip[1] || '';
+  }
+}
   var reps=getReps();
   document.getElementById('rep-pin-list').innerHTML=reps.map(function(rep){
     return '<div class="settings-row"><div><div class="settings-label">'+rep.name+'</div>'+
