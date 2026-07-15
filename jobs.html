@@ -964,8 +964,8 @@ function renderLeads(search) {
       return;
     }
     var data = mgrAllData;
-    if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold' && d.status!=='Cancelled';});
-    else data=data.filter(function(d){return d.status===activeFilter;});
+    if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold' && d.status!=='Cancelled' && d.status!=='Completed';});
+    else data=data.filter(function(d){return d.status===activeFilter && d.status!=='Completed';});
     if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
     list.innerHTML=data.length?data.map(function(c){return cardHTML(c,false,true);}).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
     return;
@@ -974,8 +974,8 @@ function renderLeads(search) {
   // Rep sees only their own leads — exclude sold
   var all=getData();
   var data=all.filter(function(d){return d.repId===currentRep.id;});
-  if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold' && d.status!=='Cancelled';});
-  else data=data.filter(function(d){return d.status===activeFilter;});
+  if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold' && d.status!=='Cancelled' && d.status!=='Completed';});
+  else data=data.filter(function(d){return d.status===activeFilter && d.status!=='Completed';});
   if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
   document.getElementById('leads-list').innerHTML=data.length?data.map(cardHTML).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
 }
