@@ -1239,6 +1239,7 @@ function cardHTML(c,showPay,showRep) {
     (c.phone?'📞 '+c.phone+'<br>':'')+(c.email?'✉️ '+c.email+'<br>':'')+(c.address?'📍 '+c.address+'<br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+
     '</div></div>'+(amount>0?'<div class="customer-amount">$'+parseFloat(amount).toFixed(2)+'</div>':'')+'</div>'+
     '<div class="badges"><span class="badge '+bc+'">'+c.status+'</span>'+
+    (c.paymentPlan?'<span class="badge" style="background:rgba(111,66,193,0.3);color:#a78bfa;border:1px solid rgba(111,66,193,0.5);">💳 Payment Plan</span>':'')+
     (c.service?'<span class="badge badge-blue">'+c.service+'</span>':'')+
     (c.payment?'<span class="badge badge-blue">'+c.payment+'</span>':'')+
     (showRep?'<span class="badge badge-rep">'+c.repName+'</span>':'')+
@@ -1246,13 +1247,18 @@ function cardHTML(c,showPay,showRep) {
     '</div>'+
     paymentInfo+
     (c.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+c.notes+'</div>':'')+
-    (c.nextPaymentDate&&c.paid==='Partial'?'<div style="font-size:0.75rem;background:rgba(253,126,20,0.15);border:1px solid rgba(253,126,20,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:var(--orange);font-weight:700;">📅 Next Payment Due: '+c.nextPaymentDate+'</div>':'')+
+    (c.nextPaymentDate&&c.paid==='Partial'?'<div style="font-size:0.75rem;background:rgba(253,126,20,0.15);border:1px solid rgba(253,126,20,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:var(--orange);font-weight:700;">'+
+    (c.paymentPlan?'📅 Payment Plan: $'+c.paymentPlan.monthlyAmount+'/mo · ':'📅 ')+
+    'Next Due: '+c.nextPaymentDate+
+    (c.paymentPlan?' · '+c.paymentPlan.dueDates.indexOf(c.nextPaymentDate)+1+' of '+c.paymentPlan.months+' payments':'')+
+    '</div>':'')+
     (c.returnVisit?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
     '<div class="card-actions">'+
     (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
     '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
-    (c.status==='Sold'?'<button class="action-btn" style="background:var(--purple);color:white;border-color:var(--purple);padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;border:1px solid;" onclick="scheduleReturn('+c.id+')">📅 Return Visit</button>':'')+
+    (showPay&&!isCompleted?'<button class="action-btn" style="background:#6f42c1;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="showPaymentPlan('+c.id+')">📅 Plan</button>':'')+
+    (c.status==='Sold'||c.status==='Completed'?'<button class="action-btn" style="background:#5b21b6;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="scheduleReturn('+c.id+')">🔁 Return</button>':'')+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
 }
@@ -1681,8 +1687,142 @@ function autoFollowUp(dateVal) {
   document.getElementById('l-followup').value = iso;
 }
 
+function showPaymentPlan(id) {
+  id = parseInt(id);
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length>0) c = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (!c) return;
+
+  var total = parseFloat(c.total||c.amount||0);
+  var remaining = parseFloat(c.balance!=null ? c.balance : total);
+
+  var existing = document.getElementById('paymentPlanOverlay');
+  if (existing) existing.remove();
+
+  var today = new Date().toISOString().split('T')[0];
+
+  var overlay = document.createElement('div');
+  overlay.id = 'paymentPlanOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:340px;border:1px solid rgba(111,66,193,0.4);">'+
+    '<div style="font-size:1rem;font-weight:900;color:#a78bfa;margin-bottom:4px;">📅 Payment Plan Setup</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:16px;">'+c.fname+' '+(c.lname||'')+' · Balance: <strong style="color:var(--white);">$'+remaining.toFixed(2)+'</strong></div>'+
+
+    '<div style="font-size:0.7rem;color:var(--gray);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;">Monthly Payment Amount</div>'+
+    '<input id="planAmount" type="number" placeholder="e.g. 100" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:10px 12px;color:var(--white);font-size:1rem;margin-bottom:12px;outline:none;"/>'+
+
+    '<div style="font-size:0.7rem;color:var(--gray);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;">Number of Months</div>'+
+    '<input id="planMonths" type="number" placeholder="e.g. 5" min="1" max="60" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:10px 12px;color:var(--white);font-size:1rem;margin-bottom:12px;outline:none;" oninput="previewPlan()"/>'+
+
+    '<div style="font-size:0.7rem;color:var(--gray);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;">First Payment Date</div>'+
+    '<input id="planStartDate" type="date" value="'+today+'" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:10px 12px;color:var(--white);font-size:1rem;margin-bottom:12px;outline:none;" oninput="previewPlan()"/>'+
+
+    '<div style="font-size:0.7rem;color:var(--gray);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;">Payment Method</div>'+
+    '<select id="planMethod" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:10px 12px;color:var(--white);font-size:0.9rem;margin-bottom:14px;outline:none;">'+
+    '<option>Credit Card</option><option>Cash</option><option>Check</option><option>PayPal</option><option>Venmo</option><option>Zelle</option><option>Other</option>'+
+    '</select>'+
+
+    '<div id="planPreview" style="background:var(--mid);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:0.75rem;color:var(--gray);display:none;"></div>'+
+
+    '<button onclick="applyPaymentPlan('+id+','+total+','+remaining+')" style="width:100%;padding:13px;background:#6f42c1;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">✅ Set Up Plan</button>'+
+    '<button onclick="document.getElementById(\'paymentPlanOverlay\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function previewPlan() {
+  var months = parseInt(document.getElementById('planMonths').value);
+  var startVal = document.getElementById('planStartDate').value;
+  var amount = parseFloat(document.getElementById('planAmount').value);
+  var preview = document.getElementById('planPreview');
+  if (!months || months < 1 || !startVal) { preview.style.display='none'; return; }
+
+  var dates = [];
+  var start = new Date(startVal + 'T12:00:00');
+  for (var i = 0; i < Math.min(months, 6); i++) {
+    var d = new Date(start);
+    d.setMonth(d.getMonth() + i);
+    dates.push((d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
+  }
+
+  var html = '<div style="color:#a78bfa;font-weight:700;margin-bottom:6px;">Payment Schedule Preview:</div>';
+  dates.forEach(function(d, i) {
+    html += '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'+
+      '<span>Payment '+(i+1)+(months>6&&i===5?' ... ('+months+' total)':'')+'</span>'+
+      '<span style="color:var(--white);font-weight:700;">'+(amount?'$'+amount.toFixed(2)+' · ':'')+d+'</span>'+
+      '</div>';
+  });
+  if (months > 6) html += '<div style="color:var(--gray);margin-top:4px;">...and '+(months-6)+' more payments</div>';
+  preview.innerHTML = html;
+  preview.style.display = 'block';
+}
+
+function applyPaymentPlan(id, total, remaining) {
+  var amount = parseFloat(document.getElementById('planAmount').value);
+  var months = parseInt(document.getElementById('planMonths').value);
+  var startVal = document.getElementById('planStartDate').value;
+  var method = document.getElementById('planMethod').value;
+
+  if (!amount || amount <= 0) { showToast('Enter a monthly amount', true); return; }
+  if (!months || months < 1) { showToast('Enter number of months', true); return; }
+  if (!startVal) { showToast('Enter a start date', true); return; }
+
+  // Build all due dates
+  var dueDates = [];
+  var start = new Date(startVal + 'T12:00:00');
+  for (var i = 0; i < months; i++) {
+    var d = new Date(start);
+    d.setMonth(d.getMonth() + i);
+    dueDates.push((d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
+  }
+
+  document.getElementById('paymentPlanOverlay').remove();
+
+  // Update customer with payment plan
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  var isSheetOnly = false;
+  if (!c && mgrAllData.length>0) {
+    var sc = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sc) { c = JSON.parse(JSON.stringify(sc)); data.unshift(c); isSheetOnly=true; }
+  }
+  if (!c) { showToast('Customer not found', true); return; }
+
+  c.paymentPlan = {
+    monthlyAmount: amount,
+    months: months,
+    method: method,
+    dueDates: dueDates,
+    startDate: startVal,
+    createdDate: new Date().toLocaleDateString()
+  };
+  c.nextPaymentDate = dueDates[0];
+  c.paid = c.paid || 'No';
+
+  // Store plan in notes for Apps Script
+  var notesBase = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+  c.notes = notesBase + (notesBase?'\n':'') + 'Payment plan: $'+amount+'/mo x '+months+' months\nNext payment: '+dueDates[0];
+
+  for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
+  saveData(data);
+
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) { mgrC.paymentPlan=c.paymentPlan; mgrC.nextPaymentDate=c.nextPaymentDate; mgrC.notes=c.notes; }
+
+  // Sync to sheet
+  fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
+  });
+
+  renderJobs('');
+  showToast('✅ Payment plan set! First payment due '+dueDates[0]);
+}
+
+function showPaymentPlan_placeholder() {}
+
 function showPaymentPicker(id, total, amountReceived) {
-  var existing = document.getElementById('paymentPicker');
   if (existing) existing.remove();
   var methods = ['Credit Card','Cash','Check','PayPal','Venmo','Zelle','Other'];
   var picker = document.createElement('div');
@@ -1735,9 +1875,21 @@ function applyPayment(id, method, total, amountReceived) {
   }
 
   // Store next payment date in notes for Apps Script daily check
-  if (c.nextPaymentDate && c.paid === 'Partial') {
-    var notesBase = (c.notes || '').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi, '').trim();
-    c.notes = notesBase + (notesBase ? '\n' : '') + 'Next payment: ' + c.nextPaymentDate;
+  if (c.paid === 'Partial') {
+    // If payment plan exists, advance to next due date automatically
+    if (c.paymentPlan && c.paymentPlan.dueDates && c.paymentPlan.dueDates.length > 1) {
+      var currentIdx = c.paymentPlan.dueDates.indexOf(c.nextPaymentDate);
+      var nextIdx = currentIdx + 1;
+      if (nextIdx < c.paymentPlan.dueDates.length) {
+        c.nextPaymentDate = c.paymentPlan.dueDates[nextIdx];
+      } else {
+        c.nextPaymentDate = null; // All planned payments done
+      }
+    }
+    if (c.nextPaymentDate) {
+      var notesBase2 = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').trim();
+      c.notes = notesBase2 + (notesBase2?'\n':'') + 'Next payment: ' + c.nextPaymentDate;
+    }
   }
 
   for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
