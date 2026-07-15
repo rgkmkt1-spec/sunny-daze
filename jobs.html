@@ -1246,6 +1246,7 @@ function cardHTML(c,showPay,showRep) {
     '</div>'+
     paymentInfo+
     (c.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+c.notes+'</div>':'')+
+    (c.nextPaymentDate&&c.paid==='Partial'?'<div style="font-size:0.75rem;background:rgba(253,126,20,0.15);border:1px solid rgba(253,126,20,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:var(--orange);font-weight:700;">📅 Next Payment Due: '+c.nextPaymentDate+'</div>':'')+
     (c.returnVisit?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
     '<div class="card-actions">'+
     (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
@@ -1719,10 +1720,24 @@ function applyPayment(id, method, total, amountReceived) {
     c.balance = 0;
     c.status = 'Completed';
     c.completedDate = new Date().toLocaleDateString();
+    c.nextPaymentDate = null;
     showToast('✅ Paid in full via ' + method + '! Job Complete!');
   } else {
     c.paid = 'Partial';
-    showToast('💰 $' + amountReceived.toFixed(2) + ' via ' + method + ' — $' + c.balance.toFixed(2) + ' remaining');
+    // Ask for next payment due date
+    var nextDate = prompt(
+      '💰 $' + amountReceived.toFixed(2) + ' received via ' + method + '\n' +
+      'Balance remaining: $' + c.balance.toFixed(2) + '\n\n' +
+      'When is the next payment due?\n(Enter date as MM/DD/YYYY or leave blank to skip)'
+    );
+    c.nextPaymentDate = nextDate ? nextDate.trim() : null;
+    showToast('💰 $' + amountReceived.toFixed(2) + ' via ' + method + ' — $' + c.balance.toFixed(2) + ' remaining' + (c.nextPaymentDate ? ' · Next due: ' + c.nextPaymentDate : ''));
+  }
+
+  // Store next payment date in notes for Apps Script daily check
+  if (c.nextPaymentDate && c.paid === 'Partial') {
+    var notesBase = (c.notes || '').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi, '').trim();
+    c.notes = notesBase + (notesBase ? '\n' : '') + 'Next payment: ' + c.nextPaymentDate;
   }
 
   for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
