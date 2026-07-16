@@ -1241,7 +1241,7 @@ function cardHTML(c,showPay,showRep) {
     (c.phone?'📞 '+c.phone+'<br>':'')+(c.email?'✉️ '+c.email+'<br>':'')+(c.address?'📍 '+c.address+'<br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+
     '</div></div>'+(amount>0?'<div class="customer-amount">$'+parseFloat(amount).toFixed(2)+'</div>':'')+'</div>'+
     '<div class="badges"><span class="badge '+bc+'">'+c.status+'</span>'+
-    (c.paymentPlan?'<span class="badge" style="background:rgba(111,66,193,0.3);color:#a78bfa;border:1px solid rgba(111,66,193,0.5);">💳 Payment Plan</span>':'')+
+    (c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?'<span class="badge" style="background:rgba(111,66,193,0.3);color:#a78bfa;border:1px solid rgba(111,66,193,0.5);">💳 Payment Plan</span>':'')+
     (c.service?'<span class="badge badge-blue">'+c.service+'</span>':'')+
     (c.payment?'<span class="badge badge-blue">'+c.payment+'</span>':'')+
     (showRep?'<span class="badge badge-rep">'+c.repName+'</span>':'')+
@@ -1250,17 +1250,17 @@ function cardHTML(c,showPay,showRep) {
     paymentInfo+
     (c.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+c.notes+'</div>':'')+
     (c.nextPaymentDate&&c.paid==='Partial'?'<div style="font-size:0.75rem;background:rgba(253,126,20,0.15);border:1px solid rgba(253,126,20,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:var(--orange);font-weight:700;">'+
-    (c.paymentPlan?'📅 Payment Plan: $'+c.paymentPlan.monthlyAmount+'/mo · ':'📅 ')+
+    (c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?'📅 Payment Plan: $'+c.paymentPlan.monthlyAmount+'/mo · ':'📅 ')+
     'Next Due: '+c.nextPaymentDate+
-    (c.paymentPlan?' · '+c.paymentPlan.dueDates.indexOf(c.nextPaymentDate)+1+' of '+c.paymentPlan.months+' payments':'')+
+    (c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?' · '+(c.paymentPlan.dueDates.indexOf(c.nextPaymentDate)+1)+' of '+c.paymentPlan.months+' payments':'')+
     '</div>':'')+
     (c.returnVisit?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
     '<div class="card-actions">'+
     (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
     '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
-    // Plan button only shows on active jobs that already have a plan set
-    (showPay&&!isCompleted&&c.paymentPlan?'<button class="action-btn" style="background:#6f42c1;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="showPaymentPlan('+c.id+')">📅 Plan</button>':'')+
+    // Plan button only shows on active jobs that already have a plan with due dates
+    (showPay&&!isCompleted&&c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?'<button class="action-btn" style="background:#6f42c1;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="showPaymentPlan('+c.id+')">📅 Plan</button>':'')+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
 }
@@ -1966,7 +1966,7 @@ function showNextStepPicker(id, c, method, amountReceived) {
     '<input type="number" id="quickPlanMonths" placeholder="5" min="1" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" oninput="quickPlanPreview()"/></div>'+
     '</div>'+
     '<div id="quickPlanPreview" style="font-size:0.72rem;color:#a78bfa;margin-bottom:10px;"></div>'+
-    '<button onclick="applyQuickPlan('+id+','+c.balance+')" style="width:100%;padding:13px;background:#6f42c1;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:14px;">💳 Set Up Payment Plan</button>'+
+    '<button onclick="applyQuickPlan('+id+')" style="width:100%;padding:13px;background:#6f42c1;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:14px;">💳 Set Up Payment Plan</button>'+
 
     '<button onclick="applyNoNextDate('+id+')" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.82rem;cursor:pointer;">Skip — Set Date Later</button>'+
     '</div>';
@@ -2020,7 +2020,7 @@ function applyNoNextDate(id) {
   showToast('💰 Payment recorded — set due date later');
 }
 
-function applyQuickPlan(id, remaining) {
+function applyQuickPlan(id) {
   var amt = parseFloat(document.getElementById('quickPlanAmt').value);
   var months = parseInt(document.getElementById('quickPlanMonths').value);
   if (!amt || amt<=0) { showToast('Enter monthly amount', true); return; }
