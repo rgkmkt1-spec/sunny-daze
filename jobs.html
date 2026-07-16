@@ -2083,6 +2083,11 @@ function showNextStepPicker(id, c, method, amountReceived) {
   var existing = document.getElementById('nextStepPicker');
   if (existing) existing.remove();
 
+  // Auto-set next payment date to 1 month from job date or today
+  var baseDate = c.date ? new Date(c.date + 'T12:00:00') : new Date();
+  baseDate.setMonth(baseDate.getMonth() + 1);
+  var autoNextDate = baseDate.getFullYear() + '-' + String(baseDate.getMonth()+1).padStart(2,'0') + '-' + String(baseDate.getDate()).padStart(2,'0');
+
   var today = new Date().toISOString().split('T')[0];
   var hasPlan = c.paymentPlan && c.paymentPlan.dueDates;
 
@@ -2096,7 +2101,7 @@ function showNextStepPicker(id, c, method, amountReceived) {
 
     // Option 1 - Set single next date
     '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Next Payment Due Date</div>'+
-    '<input type="date" id="nextPayDate" value="'+today+'" style="width:100%;background:var(--mid);border:1px solid rgba(0,180,216,0.3);border-radius:8px;padding:10px 12px;color:var(--white);font-size:0.95rem;margin-bottom:10px;outline:none;"/>'+
+    '<input type="date" id="nextPayDate" value="'+autoNextDate+'" style="width:100%;background:var(--mid);border:1px solid rgba(0,180,216,0.3);border-radius:8px;padding:10px 12px;color:var(--white);font-size:0.95rem;margin-bottom:10px;outline:none;"/>'+
     '<button onclick="applySingleNextDate('+id+')" style="width:100%;padding:13px;background:var(--blue);color:var(--navy);border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:14px;">📅 Set Next Payment Date</button>'+
 
     '<div style="border-top:1px solid rgba(255,255,255,0.08);margin-bottom:14px;"></div>'+
