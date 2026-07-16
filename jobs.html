@@ -1241,7 +1241,6 @@ function cardHTML(c,showPay,showRep) {
     (c.phone?'📞 '+c.phone+'<br>':'')+(c.email?'✉️ '+c.email+'<br>':'')+(c.address?'📍 '+c.address+'<br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+
     '</div></div>'+(amount>0?'<div class="customer-amount">$'+parseFloat(amount).toFixed(2)+'</div>':'')+'</div>'+
     '<div class="badges"><span class="badge '+bc+'">'+c.status+'</span>'+
-    (c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?'<span class="badge" style="background:rgba(111,66,193,0.3);color:#a78bfa;border:1px solid rgba(111,66,193,0.5);">💳 Payment Plan</span>':'')+
     (c.service?'<span class="badge badge-blue">'+c.service+'</span>':'')+
     (c.payment?'<span class="badge badge-blue">'+c.payment+'</span>':'')+
     (showRep?'<span class="badge badge-rep">'+c.repName+'</span>':'')+
@@ -1259,8 +1258,6 @@ function cardHTML(c,showPay,showRep) {
     (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
     '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
-    // Plan button only shows on active jobs that already have a plan with due dates
-    (showPay&&!isCompleted&&c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?'<button class="action-btn" style="background:#6f42c1;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="showPaymentPlan('+c.id+')">📅 Plan</button>':'')+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
 }
