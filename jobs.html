@@ -2139,8 +2139,11 @@ function quickPlanPreview() {
 }
 
 function applySingleNextDate(id) {
-  var dateVal = document.getElementById('nextPayDate').value;
-  document.getElementById('nextStepPicker').remove();
+  // Read date BEFORE removing picker
+  var dateEl = document.getElementById('nextPayDate');
+  var dateVal = dateEl ? dateEl.value : '';
+  var picker = document.getElementById('nextStepPicker');
+  if (picker) picker.remove();
   id = parseInt(id);
   var data = getData();
   var c = data.find(function(d){ return parseInt(d.id)===id; });
@@ -2177,11 +2180,18 @@ function applyNoNextDate(id) {
 }
 
 function applyQuickPlan(id) {
-  var amt = parseFloat(document.getElementById('quickPlanAmt').value);
-  var months = parseInt(document.getElementById('quickPlanMonths').value);
+  // Read values BEFORE removing the picker (removing destroys the inputs)
+  var amtEl = document.getElementById('quickPlanAmt');
+  var monthsEl = document.getElementById('quickPlanMonths');
+  var amt = amtEl ? parseFloat(amtEl.value) : 0;
+  var months = monthsEl ? parseInt(monthsEl.value) : 0;
+
   if (!amt || amt<=0) { showToast('Enter monthly amount', true); return; }
   if (!months || months<1) { showToast('Enter number of months', true); return; }
-  document.getElementById('nextStepPicker').remove();
+
+  // NOW remove the picker
+  var picker = document.getElementById('nextStepPicker');
+  if (picker) picker.remove();
 
   id = parseInt(id);
   var data = getData();
