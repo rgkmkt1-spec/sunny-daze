@@ -1376,20 +1376,58 @@ function togglePaid(id) {
     renderJobs(''); updateDashboard();
     showToast('⚠️ Moved back to Active — marked unpaid');
   } else {
-    var input = prompt(
-      'Payment received for ' + c.fname + ' ' + (c.lname||'') + '\n' +
-      'Total Owed: $' + total.toFixed(2) + '\n' +
-      'Already Paid: $' + parseFloat(c.amountPaid||0).toFixed(2) + '\n\n' +
-      'Enter amount received\n(or leave blank for full payment):'
-    );
-    if (input === null) return;
+    // Show amount entry overlay instead of prompt
+    var existing2 = document.getElementById('amountOverlay');
+    if (existing2) existing2.remove();
+    var total2 = total;
+    var alreadyPaid = parseFloat(c.amountPaid||0);
+    var overlay2 = document.createElement('div');
+    overlay2.id = 'amountOverlay';
+    overlay2.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+    overlay2.innerHTML =
+      '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:320px;border:1px solid rgba(0,180,216,0.3);">'+
+      '<div style="font-size:1rem;font-weight:900;color:var(--blue);margin-bottom:4px;">💰 Record Payment</div>'+
+      '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:12px;">'+c.fname+' '+(c.lname||'')+'</div>'+
+      '<div style="display:flex;justify-content:space-between;background:var(--mid);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:0.82rem;">'+
+      '<span style="color:var(--gray);">Total: <strong style="color:var(--white);">$'+total2.toFixed(2)+'</strong></span>'+
+      '<span style="color:var(--gray);">Paid: <strong style="color:#5cb85c;">$'+alreadyPaid.toFixed(2)+'</strong></span>'+
+      '<span style="color:var(--gray);">Balance: <strong style="color:var(--orange);">$'+(total2-alreadyPaid).toFixed(2)+'</strong></span>'+
+      '</div>'+
 
-    var amountReceived = input.trim() === '' ? total : parseFloat(input);
-    if (isNaN(amountReceived) || amountReceived < 0) { showToast('Invalid amount', true); return; }
+      // Full payment button
+      '<button onclick="submitAmountOverlay('+id+','+total2+','+total2+')" style="width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:10px;text-align:left;">✅ Paid in Full — $'+(total2-alreadyPaid).toFixed(2)+'</button>'+
 
-    // Show payment method picker — it handles the rest
-    showPaymentPicker(id, total, amountReceived);
+      // Divider
+      '<div style="text-align:center;font-size:0.72rem;color:var(--gray);margin-bottom:10px;">— OR ENTER PARTIAL AMOUNT —</div>'+
+
+      // Partial amount input
+      '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Amount Received</div>'+
+      '<input type="number" id="amountInput" placeholder="e.g. 100.00" style="width:100%;background:var(--mid);border:1px solid rgba(0,180,216,0.3);border-radius:8px;padding:12px;color:var(--white);font-size:1.1rem;margin-bottom:10px;outline:none;"/>'+
+      '<button onclick="submitAmountOverlay('+id+','+total2+',null)" style="width:100%;padding:13px;background:var(--blue);color:var(--navy);border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">💰 Partial Payment → Set Up Plan</button>'+
+      '<button onclick="document.getElementById(\'amountOverlay\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
+      '</div>';
+    document.body.appendChild(overlay2);
+    setTimeout(function(){ var el=document.getElementById('amountInput'); if(el) el.focus(); }, 100);
   }
+}
+
+function submitAmountOverlay(id, total, fixedAmount) {
+  // fixedAmount = total means full payment button was tapped
+  // fixedAmount = null means partial button was tapped - read from input
+  var amountReceived;
+  if (fixedAmount !== null && fixedAmount !== undefined) {
+    amountReceived = parseFloat(fixedAmount);
+  } else {
+    var input = document.getElementById('amountInput');
+    var val = input ? input.value.trim() : '';
+    if (!val || isNaN(parseFloat(val)) || parseFloat(val) <= 0) {
+      showToast('Please enter a payment amount', true);
+      return;
+    }
+    amountReceived = parseFloat(val);
+  }
+  document.getElementById('amountOverlay').remove();
+  showPaymentPicker(id, total, amountReceived);
 }
 
 function changeStatus(id) {
