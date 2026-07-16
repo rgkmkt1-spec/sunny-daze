@@ -838,7 +838,11 @@ function _renderManagerWithEntries(emps, allEntries) {
   document.getElementById('m-active').textContent = activeToday;
 
   document.getElementById('emp-sections').innerHTML = emps.map(function(emp){
-    var empEntries = filterByDate(allEntries.filter(function(e){ return String(e.empId)===String(emp.id); }), 'week');
+    var empEntries = filterByDate(allEntries.filter(function(e){ 
+      return String(e.empId)===String(emp.id) || 
+             String(e.empId)===String(emp.pin) ||
+             String(e.empName||'').toLowerCase()===String(emp.name||'').toLowerCase();
+    }), 'week');
     var empMin = empEntries.reduce(function(s,e){return s+(e.totalMinutes||0);},0);
     var empOT = empEntries.reduce(function(s,e){return s+(e.overtimeMinutes||0);},0);
     var empDays = empEntries.length;
@@ -957,16 +961,52 @@ function deleteEntry(id) {
 // EDIT MODAL
 function openEditModal(id) {
   var entries = getEntries();
-  var e = entries.find(function(x){return x.id==id;});
-  if (!e) return;
-  document.getElementById('edit-entry-id').value = id;
-  document.getElementById('edit-date').value = new Date(e.clockIn).toISOString().split('T')[0];
-  document.getElementById('edit-in').value = fmtTimeInput(new Date(e.clockIn));
-  document.getElementById('edit-lunch-start').value = e.lunchStart ? fmtTimeInput(new Date(e.lunchStart)) : '';
-  document.getElementById('edit-lunch-end').value = e.lunchEnd ? fmtTimeInput(new Date(e.lunchEnd)) : '';
-  document.getElementById('edit-out').value = e.clockOut ? fmtTimeInput(new Date(e.clockOut)) : '';
+  var e = entries.find(function(x){ return String(x.id)===String(id); });
+
+  if (!e) {
+    // Not in localStorage — fetch from sheet and open
+    fetch(SHEET_URL + '?action=timecard&t=' + Date.now(), {method:'GET', mode:'cors'})
+      .then(function(r){ return r.json(); })
+      .then(function(response){
+        var sheetEntries = response.data || [];
+        var se = sheetEntries.find(function(x){ return String(x.id)===String(id); });
+        if (se) _openEditModalWithEntry(se);
+        else showToast('Entry not found', true);
+      }).catch(function(){ showToast('Could not load entry', true); });
+    return;
+  }
+  _openEditModalWithEntry(e);
+}
+
+function _openEditModalWithEntry(e) {
+  document.getElementById('edit-entry-id').value = e.id;
+  // Handle both ISO and formatted time strings
+  function toTimeInput(t) {
+    if (!t || t==='undefined' || t==='') return '';
+    if (t.indexOf('AM')>-1||t.indexOf('PM')>-1) {
+      // Convert "9:30 AM" to "09:30"
+      var parts = t.split(' ');
+      var timeParts = parts[0].split(':');
+      var h = parseInt(timeParts[0]);
+      var m = timeParts[1]||'00';
+      if (parts[1]==='PM' && h!==12) h+=12;
+      if (parts[1]==='AM' && h===12) h=0;
+      return String(h).padStart(2,'0')+':'+m;
+    }
+    try { return fmtTimeInput(new Date(t)); } catch(ex) { return ''; }
+  }
+  // Get date
+  var dateVal = e.date || '';
+  if (dateVal && dateVal.indexOf('/')>-1) {
+    var dp = dateVal.split('/');
+    if (dp.length===3) dateVal = dp[2]+'-'+dp[0].padStart(2,'0')+'-'+dp[1].padStart(2,'0');
+  }
+  document.getElementById('edit-date').value = dateVal;
+  document.getElementById('edit-in').value = toTimeInput(e.clockIn);
+  document.getElementById('edit-lunch-start').value = toTimeInput(e.lunchStart);
+  document.getElementById('edit-lunch-end').value = toTimeInput(e.lunchEnd);
+  document.getElementById('edit-out').value = toTimeInput(e.clockOut);
   document.getElementById('edit-notes').value = e.notes || '';
-  // Populate employee select
   var emps = getEmployees();
   document.getElementById('edit-emp').innerHTML = emps.map(function(emp){
     return '<option value="'+emp.id+'"'+(emp.id===e.empId?' selected':'')+'>'+emp.name+'</option>';
@@ -1090,10 +1130,12 @@ function renderWageReport(allEntries) {
 
   var html = emps.map(function(emp) {
     var wage = parseFloat(wages[emp.id]) || 0;
+    // Match by id, pin, or name (in case empId format differs)
     var empEntries = allEntries.filter(function(e){ 
-      return String(e.empId) === String(emp.id) || String(e.empId) === String(emp.pin);
+      return String(e.empId) === String(emp.id) || 
+             String(e.empId) === String(emp.pin) ||
+             String(e.empName||'').toLowerCase() === String(emp.name||'').toLowerCase();
     });
-    console.log('Emp:', emp.name, 'id:', emp.id, 'entries found:', empEntries.length, 'total entries:', allEntries.length);
 
     // Daily — today
     var todayStr = today.toLocaleDateString();
