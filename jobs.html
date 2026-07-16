@@ -2084,7 +2084,14 @@ function showNextStepPicker(id, c, method, amountReceived) {
   if (existing) existing.remove();
 
   // Auto-set next payment date to 1 month from job date or today
-  var baseDate = c.date ? new Date(c.date + 'T12:00:00') : new Date();
+  var baseDate = new Date();
+  if (c.date) {
+    // Handle both YYYY-MM-DD and MM/DD/YYYY formats
+    var dateParts = c.date.indexOf('-') > -1 ? c.date.split('-') : null;
+    if (dateParts && dateParts.length === 3) {
+      baseDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1])-1, parseInt(dateParts[2]));
+    }
+  }
   baseDate.setMonth(baseDate.getMonth() + 1);
   var autoNextDate = baseDate.getFullYear() + '-' + String(baseDate.getMonth()+1).padStart(2,'0') + '-' + String(baseDate.getDate()).padStart(2,'0');
 
@@ -2196,16 +2203,22 @@ function applyQuickPlan(id) {
 
   c.paymentPlan = { monthlyAmount:amt, months:months, method:c.payment||'', dueDates:dueDates, startDate:start.toISOString().split('T')[0], createdDate:new Date().toLocaleDateString() };
   c.nextPaymentDate = dueDates[0];
+  c.paid = c.paid || 'Partial'; // ensure paid status is set
   var nb = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
   c.notes = nb+(nb?'\n':'')+'Payment plan: $'+amt+'/mo x '+months+' months\nNext payment: '+dueDates[0];
 
-  for (var j=0; j<data.length; j++) { if (parseInt(data[j].id)===id) { data[j]=c; break; } }
+  // Make sure data array is updated
+  var found = false;
+  for (var j=0; j<data.length; j++) { if (parseInt(data[j].id)===id) { data[j]=c; found=true; break; } }
+  if (!found) data.unshift(c);
   saveData(data);
+
   var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
-  if (mgrC) { mgrC.paymentPlan=c.paymentPlan; mgrC.nextPaymentDate=c.nextPaymentDate; mgrC.notes=c.notes; }
+  if (mgrC) { mgrC.paymentPlan=c.paymentPlan; mgrC.nextPaymentDate=c.nextPaymentDate; mgrC.notes=c.notes; mgrC.paid=c.paid; }
+
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
   renderJobs(''); updateDashboard();
-  showToast('💳 Payment plan set! First payment due '+dueDates[0]);
+  showToast('💳 Plan set! $'+amt+'/mo x '+months+' months. First due '+dueDates[0]);
 }
 
 function lookupZip(zip) {
