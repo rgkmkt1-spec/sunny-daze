@@ -1293,7 +1293,7 @@ function cardHTML(c,showPay,showRep) {
 
   var paidBadge=isPaid?'badge-sold':isPartial?'':'badge-lost';
   var paidLabel=isPaid?'✅ Paid in Full':isPartial?'💰 Partial — $'+balance.toFixed(2)+' due':'⚠️ Unpaid';
-  var paidBtnLabel = isCompleted ? '↩️ Mark Unpaid' : isPaid?'Mark Unpaid':isPartial?'💰 Add Payment':'💰 Mark Paid';
+  var paidBtnLabel = isCompleted ? '↩️ Mark Unpaid' : isPaid ? 'Mark Unpaid' : isPartial ? '↩️ Mark Unpaid' : '💰 Mark Paid';
 
   return '<div class="customer-card '+sc+'">'+
     '<div class="customer-top"><div><div class="customer-name">'+name+'</div><div class="customer-details">'+
@@ -1409,7 +1409,7 @@ function togglePaid(id) {
 
   var total = parseFloat(c.total||c.amount||0);
 
-  if (c.paid === 'Yes' || c.status === 'Completed') {
+  if (c.paid === 'Yes' || c.paid === 'Partial' || c.status === 'Completed') {
     if (!confirm('Mark this job as unpaid and move it back to Active?')) return;
     c.paid = 'No';
     c.amountPaid = 0;
