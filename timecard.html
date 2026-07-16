@@ -844,23 +844,54 @@ function updateManager() {
 }
 
 function renderMgrEntries() {
-  var entries = filterByDate(getEntries(), mgrFilter);
   var list = document.getElementById('mgr-entries');
-  list.innerHTML = entries.length ? entries.map(function(e){ return entryCardHTML(e, true); }).join('') :
-    '<div class="empty-state"><span>📋</span>No entries found.</div>';
+  list.innerHTML = '<div class="empty-state"><span>⏳</span>Loading from Google Sheets...</div>';
+
+  fetch(SHEET_URL + '?action=timecard&t=' + Date.now(), {method:'GET', mode:'cors'})
+    .then(function(r){ return r.json(); })
+    .then(function(response){
+      var sheetEntries = response.data || [];
+      var localEntries = getEntries();
+
+      // Merge — prefer local entries (more detail), add sheet-only entries
+      var localIds = localEntries.map(function(e){ return String(e.empId)+String(e.date); });
+      var sheetOnly = sheetEntries.filter(function(e){
+        return localIds.indexOf(String(e.empId)+String(e.date)) < 0;
+      });
+
+      var allEntries = localEntries.concat(sheetOnly);
+      var filtered = filterByDate(allEntries, mgrFilter);
+
+      list.innerHTML = filtered.length ? filtered.map(function(e){ return entryCardHTML(e, true); }).join('') :
+        '<div class="empty-state"><span>📋</span>No entries found.</div>';
+    })
+    .catch(function(){
+      var entries = filterByDate(getEntries(), mgrFilter);
+      list.innerHTML = entries.length ? entries.map(function(e){ return entryCardHTML(e, true); }).join('') :
+        '<div class="empty-state"><span>📋</span>No entries found.</div>';
+    });
 }
 
 function entryCardHTML(e, showEmp) {
   var ot = e.overtimeMinutes > 0;
+  // Handle both ISO timestamps (local) and formatted strings (from sheet)
+  function safeTime(t) {
+    if (!t || t === 'undefined' || t === '') return '—';
+    // If already formatted (e.g. "9:00 AM") return as-is
+    if (t.indexOf('AM') > -1 || t.indexOf('PM') > -1) return t;
+    // Otherwise parse as ISO
+    var d = new Date(t);
+    return isNaN(d.getTime()) ? t : fmtTime(d);
+  }
   return '<div class="entry-card'+(ot?' overtime':'')+'">'+
     '<div class="entry-top">'+
     '<div><div class="entry-date">'+e.date+(showEmp?' — <span style="color:var(--cyan)">'+e.empName+'</span>':'')+(ot?'<span class="overtime-badge">OT</span>':'')+'</div></div>'+
     '<div class="entry-hours'+(ot?' overtime':'')+'">'+fmtHours(e.totalMinutes)+'</div>'+
     '</div>'+
     '<div class="entry-details">'+
-    '⬆️ In: '+fmtTime(new Date(e.clockIn))+'<br>'+
-    (e.lunchStart?'🍽️ Lunch: '+fmtTime(new Date(e.lunchStart))+' – '+(e.lunchEnd?fmtTime(new Date(e.lunchEnd)):'?')+'  ('+Math.round(e.lunchMinutes)+'m)<br>':'')+
-    '⬇️ Out: '+(e.clockOut?fmtTime(new Date(e.clockOut)):'Still working')+
+    '⬆️ In: '+safeTime(e.clockIn)+'<br>'+
+    (e.lunchStart&&e.lunchStart!=='undefined'&&e.lunchStart!==''?'🍽️ Lunch: '+safeTime(e.lunchStart)+' – '+safeTime(e.lunchEnd)+'  ('+Math.round(e.lunchMinutes||0)+'m)<br>':'')+
+    '⬇️ Out: '+safeTime(e.clockOut)+
     (e.overtimeMinutes>0?'<br>⚠️ Overtime: '+fmtHours(e.overtimeMinutes):'')+'</div>'+
     (isManager?'<div class="entry-actions">'+
       '<button class="action-btn blue" onclick="openEditModal(\''+e.id+'\')">✏️ Adjust</button>'+
