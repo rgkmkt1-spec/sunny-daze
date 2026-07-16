@@ -807,13 +807,27 @@ function renderHistory(filter) {
 // MANAGER
 function updateManager() {
   var emps = getEmployees();
-  var allEntries = getEntries();
-  var weekStart = getWeekStart();
-  var today = new Date().toLocaleDateString();
 
+  // Fetch from sheet and merge with local
+  fetch(SHEET_URL + '?action=timecard&t=' + Date.now(), {method:'GET', mode:'cors'})
+    .then(function(r){ return r.json(); })
+    .then(function(response){
+      var sheetEntries = response.data || [];
+      var localEntries = getEntries();
+      var localKeys = localEntries.map(function(e){ return String(e.empId)+String(e.date); });
+      var sheetOnly = sheetEntries.filter(function(e){ return localKeys.indexOf(String(e.empId)+String(e.date)) < 0; });
+      var allEntries = localEntries.concat(sheetOnly);
+      _renderManagerWithEntries(emps, allEntries);
+    })
+    .catch(function(){
+      _renderManagerWithEntries(emps, getEntries());
+    });
+}
+
+function _renderManagerWithEntries(emps, allEntries) {
   var weekEntries = filterByDate(allEntries, 'week');
-  var totalMin = weekEntries.reduce(function(s,e){return s+e.totalMinutes;},0);
-  var otMin = weekEntries.reduce(function(s,e){return s+e.overtimeMinutes;},0);
+  var totalMin = weekEntries.reduce(function(s,e){return s+(e.totalMinutes||0);},0);
+  var otMin = weekEntries.reduce(function(s,e){return s+(e.overtimeMinutes||0);},0);
   var activeToday = emps.filter(function(emp){
     var s = JSON.parse(localStorage.getItem('tc_session_'+emp.id)||'null');
     return s && s.clockIn && !s.clockOut;
@@ -824,9 +838,9 @@ function updateManager() {
   document.getElementById('m-active').textContent = activeToday;
 
   document.getElementById('emp-sections').innerHTML = emps.map(function(emp){
-    var empEntries = filterByDate(allEntries.filter(function(e){return e.empId===emp.id;}), 'week');
-    var empMin = empEntries.reduce(function(s,e){return s+e.totalMinutes;},0);
-    var empOT = empEntries.reduce(function(s,e){return s+e.overtimeMinutes;},0);
+    var empEntries = filterByDate(allEntries.filter(function(e){ return String(e.empId)===String(emp.id); }), 'week');
+    var empMin = empEntries.reduce(function(s,e){return s+(e.totalMinutes||0);},0);
+    var empOT = empEntries.reduce(function(s,e){return s+(e.overtimeMinutes||0);},0);
     var empDays = empEntries.length;
     var session = JSON.parse(localStorage.getItem('tc_session_'+emp.id)||'null');
     var status = session && session.clockIn && !session.clockOut ? '<span style="color:#5cb85c;font-size:0.7rem">● CLOCKED IN</span>' : '<span style="color:var(--gray);font-size:0.7rem">● OUT</span>';
@@ -839,7 +853,7 @@ function updateManager() {
       '</div></div>';
   }).join('');
 
-  renderWageReport();
+  renderWageReport(allEntries);
   renderMgrEntries();
 }
 
@@ -1045,9 +1059,9 @@ function saveWage(empId) {
   showToast('✅ Wage updated to $'+wage.toFixed(2)+'/hr!');
 }
 
-function renderWageReport() {
+function renderWageReport(allEntries) {
   var emps = getEmployees();
-  var allEntries = getEntries();
+  if (!allEntries) allEntries = getEntries();
   var wages = getWages();
   var today = new Date();
   var weekStart = getWeekStart();
@@ -1056,20 +1070,24 @@ function renderWageReport() {
 
   var html = emps.map(function(emp) {
     var wage = parseFloat(wages[emp.id]) || 0;
-    var empEntries = allEntries.filter(function(e){ return e.empId === emp.id; });
+    var empEntries = allEntries.filter(function(e){ return String(e.empId) === String(emp.id); });
 
     // Daily — today
     var todayStr = today.toLocaleDateString();
     var dailyMin = empEntries.filter(function(e){ return e.date === todayStr; })
-      .reduce(function(s,e){ return s+e.totalMinutes; }, 0);
+      .reduce(function(s,e){ return s+(e.totalMinutes||0); }, 0);
 
-    // Weekly
-    var weeklyMin = empEntries.filter(function(e){ return new Date(e.clockIn) >= weekStart; })
-      .reduce(function(s,e){ return s+e.totalMinutes; }, 0);
+    // Weekly — use date string comparison
+    var weeklyMin = empEntries.filter(function(e){
+      var d = new Date(e.date);
+      return !isNaN(d.getTime()) && d >= weekStart;
+    }).reduce(function(s,e){ return s+(e.totalMinutes||0); }, 0);
 
     // Monthly
-    var monthlyMin = empEntries.filter(function(e){ return new Date(e.clockIn) >= monthStart; })
-      .reduce(function(s,e){ return s+e.totalMinutes; }, 0);
+    var monthlyMin = empEntries.filter(function(e){
+      var d = new Date(e.date);
+      return !isNaN(d.getTime()) && d >= monthStart;
+    }).reduce(function(s,e){ return s+(e.totalMinutes||0); }, 0);
 
     var dailyHrs = dailyMin / 60;
     var weeklyHrs = weeklyMin / 60;
