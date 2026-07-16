@@ -881,6 +881,8 @@ function saveCustomer() {
       notes: document.getElementById('l-notes').value.trim(), paid: 'No'
     };
     var data = getData(); data.unshift(customer); saveData(data);
+    // Add to mgrAllData immediately so manager sees it in leads without waiting for sheet sync
+    if (mgrAllData.length > 0) { mgrAllData.unshift(JSON.parse(JSON.stringify(customer))); }
     showToast('✅ Saved!');
     document.getElementById('savingInd').style.display='block';
     fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(customer)})
