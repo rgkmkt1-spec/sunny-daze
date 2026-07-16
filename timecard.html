@@ -862,27 +862,33 @@ function renderMgrEntries() {
   list.innerHTML = '<div class="empty-state"><span>⏳</span>Loading from Google Sheets...</div>';
 
   fetch(SHEET_URL + '?action=timecard&t=' + Date.now(), {method:'GET', mode:'cors'})
-    .then(function(r){ return r.json(); })
+    .then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(function(response){
       var sheetEntries = response.data || [];
+      if (sheetEntries.length === 0) {
+        list.innerHTML = '<div class="empty-state"><span>⚠️</span>No sheet data found — make sure Apps Script is deployed as a new version with getTimecardEntries.</div>';
+        return;
+      }
       var localEntries = getEntries();
-
-      // Merge — prefer local entries (more detail), add sheet-only entries
       var localIds = localEntries.map(function(e){ return String(e.empId)+String(e.date); });
       var sheetOnly = sheetEntries.filter(function(e){
         return localIds.indexOf(String(e.empId)+String(e.date)) < 0;
       });
-
       var allEntries = localEntries.concat(sheetOnly);
       var filtered = filterByDate(allEntries, mgrFilter);
-
       list.innerHTML = filtered.length ? filtered.map(function(e){ return entryCardHTML(e, true); }).join('') :
-        '<div class="empty-state"><span>📋</span>No entries found.</div>';
+        '<div class="empty-state"><span>📋</span>No entries for this period.</div>';
     })
-    .catch(function(){
+    .catch(function(err){
+      list.innerHTML = '<div class="empty-state"><span>⚠️</span>Sheet fetch failed — showing local only. Deploy Apps Script as new version.</div>';
       var entries = filterByDate(getEntries(), mgrFilter);
-      list.innerHTML = entries.length ? entries.map(function(e){ return entryCardHTML(e, true); }).join('') :
-        '<div class="empty-state"><span>📋</span>No entries found.</div>';
+      setTimeout(function(){
+        list.innerHTML = entries.length ? entries.map(function(e){ return entryCardHTML(e, true); }).join('') :
+          '<div class="empty-state"><span>📋</span>No local entries found.</div>';
+      }, 2000);
     });
 }
 
