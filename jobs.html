@@ -1257,8 +1257,9 @@ function cardHTML(c,showPay,showRep) {
     (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
     '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
-    (showPay&&!isCompleted?'<button class="action-btn" style="background:#6f42c1;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="showPaymentPlan('+c.id+')">📅 Plan</button>':'')+
-    (c.status==='Sold'||c.status==='Completed'?'<button class="action-btn" style="background:#5b21b6;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="scheduleReturn('+c.id+')">🔁 Return</button>':'')+
+    // Show Plan button on leads always, on active jobs only if no plan set yet, hide on completed
+    (!isCompleted && !showPay?'<button class="action-btn" style="background:#6f42c1;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="showPaymentPlan('+c.id+')">📅 Plan</button>':'')+
+    (showPay&&!isCompleted&&!c.paymentPlan?'<button class="action-btn" style="background:#6f42c1;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="showPaymentPlan('+c.id+')">📅 Plan</button>':'')+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
 }
@@ -1855,54 +1856,206 @@ function applyPayment(id, method, total, amountReceived) {
   c.payment = method;
 
   if (c.balance <= 0) {
+    // PAID IN FULL — auto complete then prompt for return visit
     c.paid = 'Yes';
     c.amountPaid = total;
     c.balance = 0;
     c.status = 'Completed';
     c.completedDate = new Date().toLocaleDateString();
     c.nextPaymentDate = null;
+    for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
+    saveData(data);
+    var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; mgrC.status=c.status; mgrC.payment=method; }
+    fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
+    });
+    renderJobs(''); updateDashboard();
     showToast('✅ Paid in full via ' + method + '! Job Complete!');
+    // Prompt for return visit date
+    setTimeout(function(){ showReturnVisitPrompt(id); }, 800);
   } else {
+    // PARTIAL PAYMENT — show next steps popup
     c.paid = 'Partial';
-    // Ask for next payment due date
-    var nextDate = prompt(
-      '💰 $' + amountReceived.toFixed(2) + ' received via ' + method + '\n' +
-      'Balance remaining: $' + c.balance.toFixed(2) + '\n\n' +
-      'When is the next payment due?\n(Enter date as MM/DD/YYYY or leave blank to skip)'
-    );
-    c.nextPaymentDate = nextDate ? nextDate.trim() : null;
-    showToast('💰 $' + amountReceived.toFixed(2) + ' via ' + method + ' — $' + c.balance.toFixed(2) + ' remaining' + (c.nextPaymentDate ? ' · Next due: ' + c.nextPaymentDate : ''));
+    for (var j=0; j<data.length; j++) { if (parseInt(data[j].id)===id) { data[j]=c; break; } }
+    saveData(data);
+    showNextStepPicker(id, c, method, amountReceived);
   }
+}
 
-  // Store next payment date in notes for Apps Script daily check
-  if (c.paid === 'Partial') {
-    // If payment plan exists, advance to next due date automatically
-    if (c.paymentPlan && c.paymentPlan.dueDates && c.paymentPlan.dueDates.length > 1) {
-      var currentIdx = c.paymentPlan.dueDates.indexOf(c.nextPaymentDate);
-      var nextIdx = currentIdx + 1;
-      if (nextIdx < c.paymentPlan.dueDates.length) {
-        c.nextPaymentDate = c.paymentPlan.dueDates[nextIdx];
-      } else {
-        c.nextPaymentDate = null; // All planned payments done
-      }
-    }
-    if (c.nextPaymentDate) {
-      var notesBase2 = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').trim();
-      c.notes = notesBase2 + (notesBase2?'\n':'') + 'Next payment: ' + c.nextPaymentDate;
-    }
+function showReturnVisitPrompt(id) {
+  id = parseInt(id);
+  var now = new Date();
+  var y1 = new Date(now); y1.setFullYear(now.getFullYear()+1);
+  var y18 = new Date(now); y18.setMonth(now.getMonth()+18);
+  var y2 = new Date(now); y2.setFullYear(now.getFullYear()+2);
+
+  function fmtISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function fmtDisplay(d){ return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear(); }
+
+  var existing = document.getElementById('returnPrompt');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'returnPrompt';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:320px;border:1px solid rgba(111,66,193,0.4);">'+
+    '<div style="font-size:1.2rem;margin-bottom:8px;text-align:center;">🎉</div>'+
+    '<div style="font-size:1rem;font-weight:900;color:#a78bfa;margin-bottom:4px;text-align:center;">Job Complete!</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:18px;text-align:center;">Schedule a return visit to follow up for repeat business?</div>'+
+    '<button onclick="applyReturnFromPrompt('+id+',\''+fmtISO(y1)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;color:var(--white);font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 1 Year — '+fmtDisplay(y1)+'</button>'+
+    '<button onclick="applyReturnFromPrompt('+id+',\''+fmtISO(y18)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;color:var(--white);font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 18 Months — '+fmtDisplay(y18)+'</button>'+
+    '<button onclick="applyReturnFromPrompt('+id+',\''+fmtISO(y2)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;color:var(--white);font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 2 Years — '+fmtDisplay(y2)+'</button>'+
+    '<button onclick="document.getElementById(\'returnPrompt\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Skip</button>'+
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function applyReturnFromPrompt(id, dateStr) {
+  document.getElementById('returnPrompt').remove();
+  if (!dateStr) return;
+  id = parseInt(id);
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length>0) {
+    var sc = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sc) { c = JSON.parse(JSON.stringify(sc)); data.unshift(c); }
   }
-
+  if (!c) return;
+  c.returnVisit = dateStr;
   for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
   saveData(data);
   var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
-  if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; mgrC.status=c.status; mgrC.payment=method; }
+  if (mgrC) mgrC.returnVisit = dateStr;
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
+  renderJobs('');
+  var d = new Date(dateStr+'T12:00:00');
+  showToast('📅 Return visit set for '+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
+}
 
-  // Sync to sheet
-  fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
-  });
+function showNextStepPicker(id, c, method, amountReceived) {
+  var existing = document.getElementById('nextStepPicker');
+  if (existing) existing.remove();
 
+  var today = new Date().toISOString().split('T')[0];
+  var hasPlan = c.paymentPlan && c.paymentPlan.dueDates;
+
+  var picker = document.createElement('div');
+  picker.id = 'nextStepPicker';
+  picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;';
+  picker.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:340px;border:1px solid rgba(0,180,216,0.3);">'+
+    '<div style="font-size:1rem;font-weight:900;color:var(--blue);margin-bottom:4px;">💰 $'+amountReceived.toFixed(2)+' received via '+method+'</div>'+
+    '<div style="font-size:0.82rem;color:var(--orange);font-weight:700;margin-bottom:16px;">Balance Remaining: $'+c.balance.toFixed(2)+'</div>'+
+
+    // Option 1 - Set single next date
+    '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Next Payment Due Date</div>'+
+    '<input type="date" id="nextPayDate" value="'+today+'" style="width:100%;background:var(--mid);border:1px solid rgba(0,180,216,0.3);border-radius:8px;padding:10px 12px;color:var(--white);font-size:0.95rem;margin-bottom:10px;outline:none;"/>'+
+    '<button onclick="applySingleNextDate('+id+')" style="width:100%;padding:13px;background:var(--blue);color:var(--navy);border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:14px;">📅 Set Next Payment Date</button>'+
+
+    '<div style="border-top:1px solid rgba(255,255,255,0.08);margin-bottom:14px;"></div>'+
+
+    // Option 2 - Set up full payment plan
+    '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Or Set Up Full Payment Plan</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'+
+    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Monthly Amount</div>'+
+    '<input type="number" id="quickPlanAmt" placeholder="$100" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" oninput="quickPlanPreview()"/></div>'+
+    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Months</div>'+
+    '<input type="number" id="quickPlanMonths" placeholder="5" min="1" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" oninput="quickPlanPreview()"/></div>'+
+    '</div>'+
+    '<div id="quickPlanPreview" style="font-size:0.72rem;color:#a78bfa;margin-bottom:10px;"></div>'+
+    '<button onclick="applyQuickPlan('+id+','+c.balance+')" style="width:100%;padding:13px;background:#6f42c1;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:14px;">💳 Set Up Payment Plan</button>'+
+
+    '<button onclick="applyNoNextDate('+id+')" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.82rem;cursor:pointer;">Skip — Set Date Later</button>'+
+    '</div>';
+  document.body.appendChild(picker);
+}
+
+function quickPlanPreview() {
+  var amt = parseFloat(document.getElementById('quickPlanAmt').value);
+  var months = parseInt(document.getElementById('quickPlanMonths').value);
+  var prev = document.getElementById('quickPlanPreview');
+  if (!amt || !months) { prev.textContent=''; return; }
+  var total = amt * months;
+  prev.textContent = months+' payments of $'+amt.toFixed(2)+' = $'+total.toFixed(2)+' total';
+}
+
+function applySingleNextDate(id) {
+  var dateVal = document.getElementById('nextPayDate').value;
+  document.getElementById('nextStepPicker').remove();
+  id = parseInt(id);
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c) return;
+  if (dateVal) {
+    var d = new Date(dateVal+'T12:00:00');
+    c.nextPaymentDate = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+    var nb = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').trim();
+    c.notes = nb + (nb?'\n':'') + 'Next payment: '+c.nextPaymentDate;
+  }
+  for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
+  saveData(data);
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; mgrC.nextPaymentDate=c.nextPaymentDate; }
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
   renderJobs(''); updateDashboard();
+  showToast('💰 $'+parseFloat(c.amountPaid).toFixed(2)+' paid — $'+c.balance.toFixed(2)+' remaining'+(c.nextPaymentDate?' · Next due: '+c.nextPaymentDate:''));
+}
+
+function applyNoNextDate(id) {
+  document.getElementById('nextStepPicker').remove();
+  id = parseInt(id);
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (c) {
+    for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
+    saveData(data);
+    var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; }
+    fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
+  }
+  renderJobs(''); updateDashboard();
+  showToast('💰 Payment recorded — set due date later');
+}
+
+function applyQuickPlan(id, remaining) {
+  var amt = parseFloat(document.getElementById('quickPlanAmt').value);
+  var months = parseInt(document.getElementById('quickPlanMonths').value);
+  if (!amt || amt<=0) { showToast('Enter monthly amount', true); return; }
+  if (!months || months<1) { showToast('Enter number of months', true); return; }
+  document.getElementById('nextStepPicker').remove();
+
+  id = parseInt(id);
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length>0) {
+    var sc = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sc) { c = JSON.parse(JSON.stringify(sc)); data.unshift(c); }
+  }
+  if (!c) { showToast('Customer not found', true); return; }
+
+  // Build due dates starting next month
+  var start = new Date(); start.setMonth(start.getMonth()+1); start.setDate(1);
+  var dueDates = [];
+  for (var i=0; i<months; i++) {
+    var d = new Date(start);
+    d.setMonth(d.getMonth()+i);
+    dueDates.push((d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
+  }
+
+  c.paymentPlan = { monthlyAmount:amt, months:months, method:c.payment||'', dueDates:dueDates, startDate:start.toISOString().split('T')[0], createdDate:new Date().toLocaleDateString() };
+  c.nextPaymentDate = dueDates[0];
+  var nb = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+  c.notes = nb+(nb?'\n':'')+'Payment plan: $'+amt+'/mo x '+months+' months\nNext payment: '+dueDates[0];
+
+  for (var j=0; j<data.length; j++) { if (parseInt(data[j].id)===id) { data[j]=c; break; } }
+  saveData(data);
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) { mgrC.paymentPlan=c.paymentPlan; mgrC.nextPaymentDate=c.nextPaymentDate; mgrC.notes=c.notes; }
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
+  renderJobs(''); updateDashboard();
+  showToast('💳 Payment plan set! First payment due '+dueDates[0]);
 }
 
 function lookupZip(zip) {
