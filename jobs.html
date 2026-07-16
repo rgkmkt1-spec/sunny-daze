@@ -1259,9 +1259,8 @@ function cardHTML(c,showPay,showRep) {
     (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
     '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
-    // Show Plan button on leads always, on active jobs only if no plan set yet, hide on completed
+    // Show Plan button on leads always, on jobs only if no plan set yet, hide on completed
     (!isCompleted && !showPay?'<button class="action-btn" style="background:#6f42c1;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="showPaymentPlan('+c.id+')">📅 Plan</button>':'')+
-    (showPay&&!isCompleted&&!c.paymentPlan?'<button class="action-btn" style="background:#6f42c1;color:white;border:none;padding:5px 10px;border-radius:6px;font-size:0.68rem;font-weight:700;cursor:pointer;" onclick="showPaymentPlan('+c.id+')">📅 Plan</button>':'')+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
 }
