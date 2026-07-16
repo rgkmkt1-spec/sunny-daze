@@ -1248,7 +1248,7 @@ function cardHTML(c,showPay,showRep) {
     '</div>'+
     paymentInfo+
     (c.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+c.notes+'</div>':'')+
-    (c.nextPaymentDate&&c.paid==='Partial'?'<div style="font-size:0.75rem;background:rgba(253,126,20,0.15);border:1px solid rgba(253,126,20,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:var(--orange);font-weight:700;">'+
+    (c.nextPaymentDate&&c.paid==='Partial'&&!isCompleted?'<div style="font-size:0.75rem;background:rgba(253,126,20,0.15);border:1px solid rgba(253,126,20,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:var(--orange);font-weight:700;">'+
     (c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?'📅 Payment Plan: $'+c.paymentPlan.monthlyAmount+'/mo · ':'📅 ')+
     'Next Due: '+c.nextPaymentDate+
     (c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?' · '+(c.paymentPlan.dueDates.indexOf(c.nextPaymentDate)+1)+' of '+c.paymentPlan.months+' payments':'')+
@@ -1359,6 +1359,7 @@ function togglePaid(id) {
     c.completedDate = null;
     c.returnVisit = null;
     c.nextPaymentDate = null;
+    c.paymentPlan = null;
     // Force update the data array entry
     for (var i=0; i<data.length; i++) {
       if (parseInt(data[i].id)===id) {
@@ -1367,7 +1368,7 @@ function togglePaid(id) {
     }
     saveData(data);
     var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
-    if(mgrC){ mgrC.paid='No'; mgrC.amountPaid=0; mgrC.balance=total; mgrC.status='Sold'; mgrC.completedDate=null; }
+    if(mgrC){ mgrC.paid='No'; mgrC.amountPaid=0; mgrC.balance=total; mgrC.status='Sold'; mgrC.completedDate=null; mgrC.returnVisit=null; mgrC.nextPaymentDate=null; mgrC.paymentPlan=null; }
     fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
     });
@@ -1375,6 +1376,9 @@ function togglePaid(id) {
     document.querySelectorAll('#view-jobs .pill').forEach(function(p){p.classList.remove('active');});
     var ap = document.getElementById('jobs-pill-active');
     if(ap) ap.classList.add('active');
+    // Force fresh data reload
+    var freshData = getData();
+    renderJobs(''); renderLeads(''); updateDashboard();
     renderJobs(''); updateDashboard();
     showToast('⚠️ Moved back to Active — marked unpaid');
   } else {
