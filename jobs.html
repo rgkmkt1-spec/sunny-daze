@@ -2300,80 +2300,158 @@ function renderCommercial(search) {
     .then(function(response) {
       var accounts = response.data || [];
       commercialSheetData = accounts;
-      // Also merge local accounts not yet synced
-      var local = getCommercialData();
       if (search) accounts = accounts.filter(function(a){ return a.business.toLowerCase().includes(search.toLowerCase())||(a.address||'').toLowerCase().includes(search.toLowerCase()); });
       if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
-      // Update stats
       var monthly = accounts.reduce(function(s,a){ return s+(a.amount||0); }, 0);
       var unpaid = accounts.filter(function(a){ return a.paid !== 'Yes'; }).length;
       document.getElementById('c-revenue').textContent = '$'+monthly.toFixed(0);
       document.getElementById('c-count').textContent = accounts.length;
       document.getElementById('c-unpaid').textContent = unpaid;
-      list.innerHTML = accounts.map(function(a) {
-        return '<div class="customer-card" style="border-left-color:#00B4D8">'+
-          '<div class="customer-top"><div><div class="customer-name">'+a.business+'</div>'+
-          '<div class="customer-details">'+
-          (a.contact?'👤 '+a.contact+'<br>':'')+
-          (a.phone?'📞 '+a.phone+'<br>':'')+
-          (a.address?'📍 '+a.address+'<br>':'')+
-          (a.nextDate?'📅 Next: '+fmtDate(a.nextDate):'')+'</div></div>'+
-          '<div class="customer-amount">$'+parseFloat(a.amount||0).toFixed(2)+'</div></div>'+
-          '<div class="badges">'+
-          (a.schedule?'<span class="badge badge-blue">'+a.schedule+'</span>':'')+
-          (a.service?'<span class="badge badge-blue">'+a.service+'</span>':'')+
-          '<span class="badge '+(a.paid==='Yes'?'badge-sold':'badge-lost')+'">'+(a.paid==='Yes'?'✅ Paid':'⚠️ Unpaid')+'</span>'+
-          '</div>'+
-          (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
-          '<div class="card-actions">'+
-          '<button class="action-btn green" onclick="toggleCommercialPaid('+a.id+')">'+(a.paid==='Yes'?'Mark Unpaid':'Mark Paid')+'</button>'+
-          '<button class="action-btn blue" onclick="editCommercial('+a.id+')">✏️ Edit</button>'+
-          '<button class="action-btn red" onclick="deleteCommercial('+a.id+')">🗑</button>'+
-          '</div></div>';
-      }).join('');
+      list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
     })
     .catch(function() {
-      // Fallback to local
       var accounts = getCommercialData();
       if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
-      list.innerHTML = accounts.map(function(a) {
-        return '<div class="customer-card" style="border-left-color:#00B4D8">'+
-          '<div class="customer-top"><div><div class="customer-name">'+a.business+'</div>'+
-          '<div class="customer-details">'+
-          (a.contact?'👤 '+a.contact+'<br>':'')+
-          (a.phone?'📞 '+a.phone+'<br>':'')+
-          (a.address?'📍 '+a.address+'<br>':'')+
-          (a.nextDate?'📅 Next: '+fmtDate(a.nextDate):'')+'</div></div>'+
-          '<div class="customer-amount">$'+parseFloat(a.amount||0).toFixed(2)+'</div></div>'+
-          '<div class="badges">'+
-          (a.schedule?'<span class="badge badge-blue">'+a.schedule+'</span>':'')+
-          (a.service?'<span class="badge badge-blue">'+a.service+'</span>':'')+
-          '<span class="badge '+(a.paid==='Yes'?'badge-sold':'badge-lost')+'">'+(a.paid==='Yes'?'✅ Paid':'⚠️ Unpaid')+'</span>'+
-          '</div>'+
-          (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
-          '<div class="card-actions">'+
-          '<button class="action-btn green" onclick="toggleCommercialPaid('+a.id+')">'+(a.paid==='Yes'?'Mark Unpaid':'Mark Paid')+'</button>'+
-          '<button class="action-btn blue" onclick="editCommercial('+a.id+')">✏️ Edit</button>'+
-          '<button class="action-btn red" onclick="deleteCommercial('+a.id+')">🗑</button>'+
-          '</div></div>';
-      }).join('');
+      list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
     });
+}
+
+function commercialCardHTML(a) {
+  var isPaid = a.paid === 'Yes';
+  return '<div class="customer-card" style="border-left-color:#00B4D8">'+
+    '<div class="customer-top"><div><div class="customer-name">'+a.business+'</div>'+
+    '<div class="customer-details">'+
+    (a.contact?'👤 '+a.contact+'<br>':'')+
+    (a.phone?'📞 '+a.phone+'<br>':'')+
+    (a.address?'📍 '+a.address+'<br>':'')+
+    (a.nextDate?'📅 Next: '+fmtDate(a.nextDate):'')+'</div></div>'+
+    '<div class="customer-amount">$'+parseFloat(a.amount||0).toFixed(2)+'</div></div>'+
+    '<div class="badges">'+
+    (a.schedule?'<span class="badge badge-blue">'+a.schedule+'</span>':'')+
+    (a.service?'<span class="badge badge-blue">'+a.service+'</span>':'')+
+    '<span class="badge '+(isPaid?'badge-sold':'badge-lost')+'">'+(isPaid?'✅ Paid':'⚠️ Unpaid')+'</span>'+
+    '</div>'+
+    (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
+    '<div class="card-actions">'+
+    '<button class="action-btn '+(isPaid?'red':'green')+'" onclick="toggleCommercialPaid(\''+a.id+'\')">'+(isPaid?'↩️ Mark Unpaid':'💰 Mark Paid')+'</button>'+
+    '<button class="action-btn blue" onclick="editCommercial(\''+a.id+'\')">✏️ Edit</button>'+
+    '<button class="action-btn red" onclick="deleteCommercial(\''+a.id+'\')">🗑</button>'+
+    '</div></div>';
 }
 
 function toggleCommercialPaid(id) {
   var accounts = getCommercialData();
   var a = accounts.find(function(x){ return x.id===id; });
-  if (a) a.paid = a.paid==='Yes'?'No':'Yes';
+  if (!a) {
+    // Check sheet data
+    var sheetA = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
+    if (sheetA) { a = JSON.parse(JSON.stringify(sheetA)); accounts.unshift(a); }
+  }
+  if (!a) { showToast('Account not found', true); return; }
+
+  if (a.paid === 'Yes') {
+    a.paid = 'No';
+    localStorage.setItem('sd_commercial', JSON.stringify(accounts));
+    // Sync to sheet
+    fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({},a,{type:'commercial'}))
+    });
+    renderCommercial(''); updateCommercialStats();
+    showToast('⚠️ Marked unpaid');
+  } else {
+    // Show payment method picker
+    var existing = document.getElementById('commercialPayPicker');
+    if (existing) existing.remove();
+    var methods = ['Credit Card','Cash','Check','PayPal','Venmo','Zelle','Other'];
+    var picker = document.createElement('div');
+    picker.id = 'commercialPayPicker';
+    picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.95);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+    picker.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:320px;border:1px solid rgba(0,180,216,0.3);">'+
+      '<div style="font-size:1rem;font-weight:900;color:var(--blue);margin-bottom:6px;">💳 Payment Method</div>'+
+      '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:16px;">'+a.business+' — $'+parseFloat(a.amount||0).toFixed(2)+'</div>'+
+      methods.map(function(m){
+        return '<button onclick="applyCommercialPaid(\''+id+'\',\''+m+'\')" style="width:100%;padding:13px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:8px;color:var(--white);font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">'+m+'</button>';
+      }).join('')+
+      '<button onclick="document.getElementById(\'commercialPayPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Cancel</button>'+
+      '</div>';
+    document.body.appendChild(picker);
+  }
+}
+
+function applyCommercialPaid(id, method) {
+  document.getElementById('commercialPayPicker').remove();
+  var accounts = getCommercialData();
+  var a = accounts.find(function(x){ return String(x.id)===String(id); });
+  if (!a) {
+    var sheetA = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
+    if (sheetA) { a = JSON.parse(JSON.stringify(sheetA)); accounts.unshift(a); }
+  }
+  if (!a) { showToast('Account not found', true); return; }
+  a.paid = 'Yes';
+  a.payment = method;
   localStorage.setItem('sd_commercial', JSON.stringify(accounts));
+  fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({},a,{type:'commercial'}))
+  });
   renderCommercial(''); updateCommercialStats();
-  showToast('✅ Payment updated!');
+  showToast('✅ Paid via ' + method + '!');
 }
 
 function deleteCommercial(id) {
-  if (!confirm('Delete this commercial account?')) return;
-  localStorage.setItem('sd_commercial', JSON.stringify(getCommercialData().filter(function(a){ return a.id!==id; })));
+  if (!confirm('Are you sure you want to delete this account?')) return;
+
+  // Require manager PIN
+  var existing = document.getElementById('commercialDelOverlay');
+  if (existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'commercialDelOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:28px;width:100%;max-width:300px;border:2px solid var(--red);text-align:center;">'+
+    '<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>'+
+    '<div style="font-size:1rem;font-weight:900;color:var(--red);margin-bottom:6px;">DELETE ACCOUNT</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:18px;">Enter Manager PIN to permanently delete this commercial account.</div>'+
+    '<div id="comDelPinDisplay" style="font-size:2rem;letter-spacing:0.4em;color:var(--blue);margin-bottom:16px;font-weight:900;">_ _ _ _</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">'+
+    ['1','2','3','4','5','6','7','8','9','','0','⌫'].map(function(k){
+      return k===''?'<div></div>':'<button onclick="comDelPinKey(\''+k+'\')" style="padding:16px;background:var(--mid);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--white);font-size:1.2rem;font-weight:700;cursor:pointer;">'+k+'</button>';
+    }).join('')+
+    '</div>'+
+    '<button onclick="confirmComDelPin(\''+id+'\')" style="width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">🗑 Confirm Delete</button>'+
+    '<button onclick="document.getElementById(\'commercialDelOverlay\').remove();comDelPinVal=\'\';" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+var comDelPinVal = '';
+function comDelPinKey(k) {
+  if (k === '⌫') { comDelPinVal = comDelPinVal.slice(0,-1); }
+  else if (comDelPinVal.length < 4) { comDelPinVal += k; }
+  var display = comDelPinVal.replace(/./g,'●').padEnd(4,'_').split('').join(' ');
+  document.getElementById('comDelPinDisplay').textContent = display;
+}
+
+function confirmComDelPin(id) {
+  if (comDelPinVal !== getMgrPin()) {
+    document.getElementById('comDelPinDisplay').textContent = '✗ ✗ ✗ ✗';
+    document.getElementById('comDelPinDisplay').style.color = 'var(--red)';
+    comDelPinVal = '';
+    setTimeout(function(){
+      document.getElementById('comDelPinDisplay').textContent = '_ _ _ _';
+      document.getElementById('comDelPinDisplay').style.color = 'var(--blue)';
+    }, 1000);
+    showToast('❌ Incorrect PIN — deletion cancelled', true);
+    return;
+  }
+  document.getElementById('commercialDelOverlay').remove();
+  comDelPinVal = '';
+  localStorage.setItem('sd_commercial', JSON.stringify(getCommercialData().filter(function(a){ return String(a.id)!==String(id); })));
+  // Delete from Google Sheets
+  fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({type:'delete_commercial', id:id})
+  });
   renderCommercial(''); updateCommercialStats();
-  showToast('🗑 Account deleted');
+  showToast('🗑 Account deleted!');
 }
 
 function fmtDate(d) { if(!d) return ''; var p=d.split('-'); return p[1]+'/'+p[2]+'/'+p[0]; }
