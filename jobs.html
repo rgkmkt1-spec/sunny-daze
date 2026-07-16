@@ -1394,8 +1394,8 @@ function togglePaid(id) {
       '<span style="color:var(--gray);">Balance: <strong style="color:var(--orange);">$'+(total2-alreadyPaid).toFixed(2)+'</strong></span>'+
       '</div>'+
 
-      // Full payment button
-      '<button onclick="submitAmountOverlay('+id+','+total2+','+total2+')" style="width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:10px;text-align:left;">✅ Paid in Full — $'+(total2-alreadyPaid).toFixed(2)+'</button>'+
+      // Full payment button — passes remaining balance through method picker
+      '<button onclick="submitAmountOverlay('+id+','+total2+','+(total2-alreadyPaid)+')" style="width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:10px;text-align:left;">✅ Paid in Full — $'+(total2-alreadyPaid).toFixed(2)+'</button>'+
 
       // Divider
       '<div style="text-align:center;font-size:0.72rem;color:var(--gray);margin-bottom:10px;">— OR ENTER PARTIAL AMOUNT —</div>'+
@@ -1860,6 +1860,7 @@ function applyPaymentPlan(id, total, remaining) {
 function showPaymentPlan_placeholder() {}
 
 function showPaymentPicker(id, total, amountReceived) {
+  var existing = document.getElementById('paymentPicker');
   if (existing) existing.remove();
   var methods = ['Credit Card','Cash','Check','PayPal','Venmo','Zelle','Other'];
   var picker = document.createElement('div');
