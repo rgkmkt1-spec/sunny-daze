@@ -1247,7 +1247,7 @@ function cardHTML(c,showPay,showRep) {
     (showPay?'<span class="badge '+(isPaid?'badge-sold':isPartial?'badge-followup':'badge-lost')+'">'+paidLabel+'</span>':'')+
     '</div>'+
     paymentInfo+
-    (c.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+c.notes+'</div>':'')+
+    (c.notes?(function(n){ var clean=n.replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim(); return clean?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+clean+'</div>':''; })(c.notes):'')+
     (c.nextPaymentDate&&c.paid==='Partial'&&!isCompleted?'<div style="font-size:0.75rem;background:rgba(253,126,20,0.15);border:1px solid rgba(253,126,20,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:var(--orange);font-weight:700;">'+
     (c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?'📅 Payment Plan: $'+c.paymentPlan.monthlyAmount+'/mo · ':'📅 ')+
     'Next Due: '+c.nextPaymentDate+
