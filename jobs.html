@@ -204,7 +204,9 @@
 
 <div class="view active" id="view-dashboard">
   <div class="stats">
-    <div class="stat-card green"><div class="stat-label">💰 Revenue</div><div class="stat-value" id="d-revenue">$0</div></div>
+    <div class="stat-card green"><div class="stat-label">🏠 Residential</div><div class="stat-value" id="d-revenue">$0</div></div>
+    <div class="stat-card" style="border-color:#00B4D8"><div class="stat-label">🏢 Business</div><div class="stat-value" id="d-biz-revenue">$0</div></div>
+    <div class="stat-card green"><div class="stat-label">💰 Combined</div><div class="stat-value" id="d-combined">$0</div></div>
     <div class="stat-card yellow"><div class="stat-label">📋 Estimates</div><div class="stat-value" id="d-estimates">0</div></div>
     <div class="stat-card orange"><div class="stat-label">🔔 Follow Ups</div><div class="stat-value" id="d-followups">0</div></div>
     <div class="stat-card"><div class="stat-label">✅ Close Rate</div><div class="stat-value" id="d-closerate">0%</div></div>
@@ -221,6 +223,14 @@
 <div class="view" id="view-log">
   <div class="form-card">
     <h2>➕ Log Customer</h2>
+    <div class="form-group">
+      <label>Customer Type *</label>
+      <div class="form-row" style="gap:10px;">
+        <button id="type-residential" class="status-btn estimate active" style="flex:1;" onclick="setCustomerType('Residential')">🏠 RESIDENTIAL</button>
+        <button id="type-business" class="status-btn sold" style="flex:1;" onclick="setCustomerType('Business')">🏢 BUSINESS</button>
+      </div>
+      <input type="hidden" id="l-type" value="Residential"/>
+    </div>
     <div class="form-group">
       <label>Outcome *</label>
       <div class="status-grid">
@@ -315,7 +325,7 @@
 <!-- COMMERCIAL -->
 <div class="view" id="view-commercial">
   <div class="stats three">
-    <div class="stat-card green"><div class="stat-label">💰 Monthly Revenue</div><div class="stat-value" id="c-revenue">$0</div></div>
+    <div class="stat-card green"><div class="stat-label">💰 Collected</div><div class="stat-value" id="c-revenue">$0</div></div>
     <div class="stat-card"><div class="stat-label">🏢 Accounts</div><div class="stat-value" id="c-count">0</div></div>
     <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="c-unpaid">0</div></div>
   </div>
@@ -767,6 +777,12 @@ function logout() {
   renderLoginButtons();
 }
 
+function setCustomerType(type) {
+  document.getElementById('l-type').value = type;
+  document.getElementById('type-residential').className = 'status-btn estimate' + (type==='Residential'?' active':'');
+  document.getElementById('type-business').className = 'status-btn sold' + (type==='Business'?' active':'');
+}
+
 function setStatus(s) {
   document.getElementById('l-status').value = s;
   document.querySelectorAll('.status-btn').forEach(function(b){b.classList.remove('active');});
@@ -867,6 +883,7 @@ function saveCustomer() {
     showToast('✅ Customer updated!');
     renderLeads(''); renderJobs(''); updateDashboard();
   } else {
+    var custType = document.getElementById('l-type').value || 'Residential';
     var customer = {
       id: Date.now(), repId: currentRep.id, repName: currentRep.name,
       fname: fname, lname: document.getElementById('l-lname').value.trim(),
@@ -875,19 +892,48 @@ function saveCustomer() {
       address: getFullAddress(),
       service: services, amount: amt, tax: tax, total: amt+tax,
       taxable: taxable, status: status,
+      custType: custType,
       date: document.getElementById('l-date').value,
       followup: document.getElementById('l-followup').value,
       payment: '',
       notes: document.getElementById('l-notes').value.trim(), paid: 'No'
     };
-    var data = getData(); data.unshift(customer); saveData(data);
-    // Add to mgrAllData immediately so manager sees it in leads without waiting for sheet sync
-    if (mgrAllData.length > 0) { mgrAllData.unshift(JSON.parse(JSON.stringify(customer))); }
-    showToast('✅ Saved!');
-    document.getElementById('savingInd').style.display='block';
-    fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(customer)})
-      .then(function(){document.getElementById('savingInd').style.display='none'; showToast('✅ Saved to Google Sheets!');})
-      .catch(function(){document.getElementById('savingInd').style.display='none';});
+
+    if (custType === 'Business') {
+      // Route to commercial — save as commercial account
+      var bizAccount = {
+        id: customer.id,
+        business: fname + ' ' + (document.getElementById('l-lname').value.trim()),
+        contact: fname + ' ' + (document.getElementById('l-lname').value.trim()),
+        phone: customer.phone,
+        address: customer.address,
+        service: services,
+        schedule: 'One-Time',
+        amount: amt+tax,
+        nextDate: customer.date,
+        repName: currentRep.name,
+        dateAdded: new Date().toLocaleDateString(),
+        paid: 'No',
+        notes: customer.notes,
+        custType: 'Business',
+        status: status
+      };
+      var bizData = getCommercialData();
+      bizData.unshift(bizAccount);
+      localStorage.setItem('sd_commercial', JSON.stringify(bizData));
+      if (commercialSheetData.length > 0) commercialSheetData.unshift(JSON.parse(JSON.stringify(bizAccount)));
+      fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},bizAccount,{type:'commercial'}))});
+      showToast('✅ Business lead saved to Biz tab!');
+    } else {
+      // Route to residential — leads/jobs
+      var data = getData(); data.unshift(customer); saveData(data);
+      if (mgrAllData.length > 0) { mgrAllData.unshift(JSON.parse(JSON.stringify(customer))); }
+      showToast('✅ Saved!');
+      document.getElementById('savingInd').style.display='block';
+      fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(customer)})
+        .then(function(){document.getElementById('savingInd').style.display='none'; showToast('✅ Saved to Google Sheets!');})
+        .catch(function(){document.getElementById('savingInd').style.display='none';});
+    }
   }
 
   ['l-fname','l-lname','l-phone','l-email','l-address','l-city','l-state','l-zip','l-amount','l-notes','l-followup'].forEach(function(id){
@@ -895,14 +941,20 @@ function saveCustomer() {
   });
   var naEl = document.getElementById('l-email-na'); if(naEl) naEl.value='';
   document.querySelectorAll('.svc-check').forEach(function(c){c.checked=false;});
-  // payment set via picker
   document.getElementById('l-taxable').checked=false;
   document.getElementById('l-date').value=new Date().toISOString().split('T')[0];
+  autoFollowUp(new Date().toISOString().split('T')[0]);
   document.querySelectorAll('.status-btn').forEach(function(b){b.classList.remove('active');});
-  document.getElementById('l-status').value=''; document.getElementById('taxBox').style.display='none'; calcTax();
-  updateDashboard(); renderLeads(''); renderJobs();
+  document.getElementById('l-status').value='';
+  document.getElementById('taxBox').style.display='none'; calcTax();
+  // Reset type to Residential
+  setCustomerType('Residential');
+  updateDashboard(); renderLeads(''); renderJobs(); renderCommercial('');
   // Auto switch to correct tab after save
-  if (status === 'Sold') {
+  var savedType = document.getElementById('l-type') ? document.getElementById('l-type').value : 'Residential';
+  if (custType === 'Business') {
+    setTimeout(function(){ switchTab('commercial'); }, 600);
+  } else if (status === 'Sold') {
     setTimeout(function(){ switchTab('jobs'); }, 600);
   } else if (status === 'Estimate' || status === 'Follow Up' || status === 'Lost') {
     setTimeout(function(){ switchTab('leads'); }, 600);
@@ -922,6 +974,13 @@ function updateDashboard() {
   revenue += sold.filter(function(d){return d.paid==='Partial';}).reduce(function(s,d){return s+parseFloat(d.amountPaid||0);},0);
   var total=sold.length+estimates.length+lost.length;
   document.getElementById('d-revenue').textContent='$'+revenue.toFixed(0);
+  // Business revenue from commercial accounts
+  var bizData = getCommercialData();
+  var bizRevenue = bizData.filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
+  var bizEl = document.getElementById('d-biz-revenue');
+  var combEl = document.getElementById('d-combined');
+  if (bizEl) bizEl.textContent = '$'+bizRevenue.toFixed(0);
+  if (combEl) combEl.textContent = '$'+(revenue+bizRevenue).toFixed(0);
   document.getElementById('d-estimates').textContent=estimates.length;
   document.getElementById('d-followups').textContent=followups.length;
   document.getElementById('d-closerate').textContent=(total?Math.round((sold.length/total)*100):0)+'%';
@@ -1543,13 +1602,43 @@ function applyStatus(id, newStatus) {
   }
   if (localC) {
     localC.status = newStatus;
-    if (newStatus==='Sold') localC.paid = localC.paid||'No';
+    if (newStatus === 'Sold') {
+      // Moving TO Sold — reset payment data fresh
+      localC.paid = 'No';
+      localC.amountPaid = 0;
+      localC.balance = parseFloat(localC.total||localC.amount||0);
+      localC.paymentPlan = null;
+      localC.nextPaymentDate = null;
+      localC.completedDate = null;
+      localC.returnVisit = null;
+      if (localC.notes) localC.notes = localC.notes.replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+    } else {
+      // Moving AWAY from Sold — clear all payment data
+      localC.paid = 'No';
+      localC.amountPaid = 0;
+      localC.balance = parseFloat(localC.total||localC.amount||0);
+      localC.paymentPlan = null;
+      localC.nextPaymentDate = null;
+      localC.completedDate = null;
+      localC.returnVisit = null;
+      if (localC.notes) localC.notes = localC.notes.replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+    }
     saveData(localData);
   }
 
   // Update mgrAllData
   var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
-  if (mgrC) { mgrC.status = newStatus; if(newStatus==='Sold') mgrC.paid = mgrC.paid||'No'; }
+  if (mgrC) {
+    mgrC.status = newStatus;
+    mgrC.paid = 'No';
+    mgrC.amountPaid = 0;
+    mgrC.balance = parseFloat(mgrC.total||mgrC.amount||0);
+    mgrC.paymentPlan = null;
+    mgrC.nextPaymentDate = null;
+    mgrC.completedDate = null;
+    mgrC.returnVisit = null;
+    if (mgrC.notes) mgrC.notes = mgrC.notes.replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+  }
 
   // Re-render immediately
   renderLeads(''); renderJobs(''); updateDashboard();
@@ -2283,9 +2372,10 @@ function getCommercialData() {
 
 function updateCommercialStats() {
   var accounts = getCommercialData();
-  var monthly = accounts.reduce(function(s,a){ return s+(a.amount||0); }, 0);
+  var collected = accounts.filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
   var unpaid = accounts.filter(function(a){ return a.paid !== 'Yes'; }).length;
-  document.getElementById('c-revenue').textContent = '$'+monthly.toFixed(0);
+  var unpaidAmt = accounts.filter(function(a){ return a.paid !== 'Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
+  document.getElementById('c-revenue').textContent = '$'+collected.toFixed(0);
   document.getElementById('c-count').textContent = accounts.length;
   document.getElementById('c-unpaid').textContent = unpaid;
 }
@@ -2302,9 +2392,9 @@ function renderCommercial(search) {
       commercialSheetData = accounts;
       if (search) accounts = accounts.filter(function(a){ return a.business.toLowerCase().includes(search.toLowerCase())||(a.address||'').toLowerCase().includes(search.toLowerCase()); });
       if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
-      var monthly = accounts.reduce(function(s,a){ return s+(a.amount||0); }, 0);
+      var collected = accounts.filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
       var unpaid = accounts.filter(function(a){ return a.paid !== 'Yes'; }).length;
-      document.getElementById('c-revenue').textContent = '$'+monthly.toFixed(0);
+      document.getElementById('c-revenue').textContent = '$'+collected.toFixed(0);
       document.getElementById('c-count').textContent = accounts.length;
       document.getElementById('c-unpaid').textContent = unpaid;
       list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
@@ -2318,6 +2408,9 @@ function renderCommercial(search) {
 
 function commercialCardHTML(a) {
   var isPaid = a.paid === 'Yes';
+  var status = a.status || 'Estimate';
+  var statusColor = {Sold:'background:var(--green);color:white;border-color:var(--green)',Estimate:'background:var(--yellow);color:var(--navy);border-color:var(--yellow)','Follow Up':'background:var(--orange);color:white;border-color:var(--orange)',Lost:'background:var(--red);color:white;border-color:var(--red)',Cancelled:'background:#6c757d;color:white;border-color:#6c757d'}[status]||'background:var(--mid);color:var(--white);border-color:var(--blue)';
+  var statusIcon = {Sold:'✅',Estimate:'📋','Follow Up':'🔔',Lost:'❌',Cancelled:'🚫'}[status]||'🔄';
   return '<div class="customer-card" style="border-left-color:#00B4D8">'+
     '<div class="customer-top"><div><div class="customer-name">'+a.business+'</div>'+
     '<div class="customer-details">'+
@@ -2327,16 +2420,62 @@ function commercialCardHTML(a) {
     (a.nextDate?'📅 Next: '+fmtDate(a.nextDate):'')+'</div></div>'+
     '<div class="customer-amount">$'+parseFloat(a.amount||0).toFixed(2)+'</div></div>'+
     '<div class="badges">'+
+    '<span class="badge '+(isPaid?'badge-sold':'badge-lost')+'">'+(isPaid?'✅ Paid':'⚠️ Unpaid')+'</span>'+
     (a.schedule?'<span class="badge badge-blue">'+a.schedule+'</span>':'')+
     (a.service?'<span class="badge badge-blue">'+a.service+'</span>':'')+
-    '<span class="badge '+(isPaid?'badge-sold':'badge-lost')+'">'+(isPaid?'✅ Paid':'⚠️ Unpaid')+'</span>'+
     '</div>'+
     (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
     '<div class="card-actions">'+
-    '<button class="action-btn '+(isPaid?'red':'green')+'" onclick="toggleCommercialPaid(\''+a.id+'\')">'+(isPaid?'↩️ Mark Unpaid':'💰 Mark Paid')+'</button>'+
+    (status==='Sold'?'<button class="action-btn '+(isPaid?'red':'green')+'" onclick="toggleCommercialPaid(\''+a.id+'\')">'+(isPaid?'↩️ Mark Unpaid':'💰 Mark Paid')+'</button>':'')+
     '<button class="action-btn blue" onclick="editCommercial(\''+a.id+'\')">✏️ Edit</button>'+
+    '<button onclick="changeCommercialStatus(\''+a.id+'\')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+status+'</button>'+
     '<button class="action-btn red" onclick="deleteCommercial(\''+a.id+'\')">🗑</button>'+
     '</div></div>';
+}
+
+function changeCommercialStatus(id) {
+  var existing = document.getElementById('bizStatusPicker');
+  if (existing) { existing.remove(); return; }
+  var statuses = [
+    {val:'Sold', label:'✅ Sold', color:'var(--green)', text:'white'},
+    {val:'Estimate', label:'📋 Estimate', color:'var(--yellow)', text:'var(--navy)'},
+    {val:'Follow Up', label:'🔔 Follow Up', color:'var(--orange)', text:'white'},
+    {val:'Lost', label:'❌ Lost', color:'var(--red)', text:'white'},
+    {val:'Cancelled', label:'🚫 Cancelled', color:'#6c757d', text:'white'}
+  ];
+  var picker = document.createElement('div');
+  picker.id = 'bizStatusPicker';
+  picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.92);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+  picker.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:300px;border:1px solid rgba(0,180,216,0.3);">'+
+    '<div style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;text-align:center;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Change Status</div>'+
+    statuses.map(function(s){
+      return '<button onclick="applyCommercialStatus(\''+id+'\',\''+s.val+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:'+s.color+';color:'+s.text+';border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;text-align:left;">'+s.label+'</button>';
+    }).join('')+
+    '<button onclick="document.getElementById(\'bizStatusPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(picker);
+}
+
+function applyCommercialStatus(id, newStatus) {
+  document.getElementById('bizStatusPicker').remove();
+  var accounts = getCommercialData();
+  var a = accounts.find(function(x){ return String(x.id)===String(id); });
+  if (!a && commercialSheetData.length>0) {
+    var sa = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
+    if (sa) { a = JSON.parse(JSON.stringify(sa)); accounts.unshift(a); }
+  }
+  if (!a) { showToast('Account not found', true); return; }
+  a.status = newStatus;
+  // Clear paid if moving away from Sold
+  if (newStatus !== 'Sold') { a.paid = 'No'; }
+  localStorage.setItem('sd_commercial', JSON.stringify(accounts));
+  var mgrA = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
+  if (mgrA) { mgrA.status = newStatus; if(newStatus!=='Sold') mgrA.paid='No'; }
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({},a,{type:'commercial'}))
+  });
+  renderCommercial(''); updateCommercialStats(); updateDashboard();
+  showToast('✅ Status → ' + newStatus);
 }
 
 function toggleCommercialPaid(id) {
