@@ -1067,16 +1067,33 @@ function saveWage(empId) {
 
 function renderWageReport(allEntries) {
   var emps = getEmployees();
-  if (!allEntries) allEntries = getEntries();
   var wages = getWages();
   var today = new Date();
   var weekStart = getWeekStart();
   var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
   var totalWeekly = 0; var totalMonthly = 0;
 
+  // If no entries passed, fetch from sheet
+  if (!allEntries || allEntries.length === 0) {
+    fetch(SHEET_URL + '?action=timecard&t=' + Date.now(), {method:'GET', mode:'cors'})
+      .then(function(r){ return r.json(); })
+      .then(function(response){
+        var sheetEntries = response.data || [];
+        var localEntries = getEntries();
+        var localKeys = localEntries.map(function(e){ return String(e.empId)+String(e.date); });
+        var sheetOnly = sheetEntries.filter(function(e){ return localKeys.indexOf(String(e.empId)+String(e.date)) < 0; });
+        renderWageReport(localEntries.concat(sheetOnly));
+      })
+      .catch(function(){ renderWageReport(getEntries()); });
+    return;
+  }
+
   var html = emps.map(function(emp) {
     var wage = parseFloat(wages[emp.id]) || 0;
-    var empEntries = allEntries.filter(function(e){ return String(e.empId) === String(emp.id); });
+    var empEntries = allEntries.filter(function(e){ 
+      return String(e.empId) === String(emp.id) || String(e.empId) === String(emp.pin);
+    });
+    console.log('Emp:', emp.name, 'id:', emp.id, 'entries found:', empEntries.length, 'total entries:', allEntries.length);
 
     // Daily — today
     var todayStr = today.toLocaleDateString();
