@@ -1360,6 +1360,13 @@ function togglePaid(id) {
     c.returnVisit = null;
     c.nextPaymentDate = null;
     c.paymentPlan = null;
+    // Clear payment plan info from notes
+    if (c.notes) {
+      c.notes = c.notes
+        .replace(/\s*next payment[:\s]+[0-9\/\-]+/gi, '')
+        .replace(/\s*payment plan[:\s]+[^\n]*/gi, '')
+        .trim();
+    }
     // Force update the data array entry
     for (var i=0; i<data.length; i++) {
       if (parseInt(data[i].id)===id) {
@@ -1368,7 +1375,11 @@ function togglePaid(id) {
     }
     saveData(data);
     var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
-    if(mgrC){ mgrC.paid='No'; mgrC.amountPaid=0; mgrC.balance=total; mgrC.status='Sold'; mgrC.completedDate=null; mgrC.returnVisit=null; mgrC.nextPaymentDate=null; mgrC.paymentPlan=null; }
+    if(mgrC){ 
+      mgrC.paid='No'; mgrC.amountPaid=0; mgrC.balance=total; mgrC.status='Sold'; 
+      mgrC.completedDate=null; mgrC.returnVisit=null; mgrC.nextPaymentDate=null; mgrC.paymentPlan=null;
+      if(mgrC.notes) mgrC.notes = mgrC.notes.replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+    }
     fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
     });
