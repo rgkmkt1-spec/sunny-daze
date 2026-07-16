@@ -1205,10 +1205,16 @@ function openSheet() { window.open('https://docs.google.com/spreadsheets/d/1L2ie
 function filterByDate(entries, filter) {
   if (filter==='week') {
     var ws = getWeekStart();
-    return entries.filter(function(e){return new Date(e.clockIn)>=ws;});
+    return entries.filter(function(e){
+      var d = e.date ? new Date(e.date) : new Date(e.clockIn);
+      return !isNaN(d.getTime()) && d >= ws;
+    });
   } else if (filter==='month') {
     var now = new Date(); var ms = new Date(now.getFullYear(),now.getMonth(),1);
-    return entries.filter(function(e){return new Date(e.clockIn)>=ms;});
+    return entries.filter(function(e){
+      var d = e.date ? new Date(e.date) : new Date(e.clockIn);
+      return !isNaN(d.getTime()) && d >= ms;
+    });
   }
   return entries;
 }
