@@ -1253,7 +1253,7 @@ function cardHTML(c,showPay,showRep) {
     'Next Due: '+c.nextPaymentDate+
     (c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?' · '+(c.paymentPlan.dueDates.indexOf(c.nextPaymentDate)+1)+' of '+c.paymentPlan.months+' payments':'')+
     '</div>':'')+
-    (c.returnVisit?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
+    (c.returnVisit&&isCompleted?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
     '<div class="card-actions">'+
     (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
