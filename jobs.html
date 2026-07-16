@@ -1357,6 +1357,8 @@ function togglePaid(id) {
     c.balance = total;
     c.status = 'Sold';
     c.completedDate = null;
+    c.returnVisit = null;
+    c.nextPaymentDate = null;
     // Force update the data array entry
     for (var i=0; i<data.length; i++) {
       if (parseInt(data[i].id)===id) {
