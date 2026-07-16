@@ -1281,9 +1281,9 @@ function cardHTML(c,showPay,showRep) {
   var isPartial=c.paid==='Partial';
   var isPaid=c.paid==='Yes' && !isCompleted ? true : isCompleted ? true : false;
 
-  // Payment breakdown for partial payments
+  // Payment breakdown for partial payments — only show if there's actually been a payment
   var paymentInfo='';
-  if(showPay && amount>0 && (isPartial||isPaid)){
+  if(showPay && amount>0 && amountPaid>0 && (isPartial||isPaid)){
     paymentInfo='<div style="background:var(--mid);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:0.78rem;">'+
       '<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:var(--gray);">Total</span><span style="font-weight:700;">$'+parseFloat(amount).toFixed(2)+'</span></div>'+
       '<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:#5cb85c;">Paid</span><span style="color:#5cb85c;font-weight:700;">$'+amountPaid.toFixed(2)+'</span></div>'+
