@@ -1080,8 +1080,11 @@ function renderWageReport(allEntries) {
 
     // Daily — today
     var todayStr = today.toLocaleDateString();
-    var dailyMin = empEntries.filter(function(e){ return e.date === todayStr; })
-      .reduce(function(s,e){ return s+(e.totalMinutes||0); }, 0);
+    var todayDate = today.toISOString().split('T')[0];
+    var dailyMin = empEntries.filter(function(e){
+      return e.date === todayStr || e.date === todayDate ||
+        new Date(e.date).toLocaleDateString() === todayStr;
+    }).reduce(function(s,e){ return s+(e.totalMinutes||0); }, 0);
 
     // Weekly — use date string comparison
     var weeklyMin = empEntries.filter(function(e){
@@ -1100,7 +1103,10 @@ function renderWageReport(allEntries) {
     var monthlyHrs = monthlyMin / 60;
 
     // OT calc — time and a half over 8hrs/day and 40hrs/week
-    var weekEntries = empEntries.filter(function(e){ return new Date(e.clockIn) >= weekStart; });
+    var weekEntries = empEntries.filter(function(e){
+      var d = new Date(e.date);
+      return !isNaN(d.getTime()) && d >= weekStart;
+    });
     var regularHrs = Math.min(weeklyHrs, 40);
     var otHrs = Math.max(0, weeklyHrs - 40);
     var weeklyWage = (regularHrs * wage) + (otHrs * wage * 1.5);
