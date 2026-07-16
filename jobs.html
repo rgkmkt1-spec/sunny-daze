@@ -1293,7 +1293,9 @@ function cardHTML(c,showPay,showRep) {
 
   var paidBadge=isPaid?'badge-sold':isPartial?'':'badge-lost';
   var paidLabel=isPaid?'✅ Paid in Full':isPartial?'💰 Partial — $'+balance.toFixed(2)+' due':'⚠️ Unpaid';
-  var paidBtnLabel = isCompleted ? '↩️ Mark Unpaid' : isPaid ? 'Mark Unpaid' : isPartial ? '↩️ Mark Unpaid' : '💰 Mark Paid';
+  var paidBtnLabel = isCompleted ? '↩️ Mark Unpaid' : isPaid ? '↩️ Mark Unpaid' : isPartial ? '💰 Add Payment' : '💰 Mark Paid';
+  var paidBtnAction = (isCompleted || isPaid) ? "'unpaid'" : 'null';
+  var paidBtnAction2 = isPartial ? "'unpaid'" : 'null';
 
   return '<div class="customer-card '+sc+'">'+
     '<div class="customer-top"><div><div class="customer-name">'+name+'</div><div class="customer-details">'+
@@ -1314,7 +1316,8 @@ function cardHTML(c,showPay,showRep) {
     '</div>':'')+
     (c.returnVisit&&isCompleted?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
     '<div class="card-actions">'+
-    (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'orange':'green')+'" onclick="togglePaid('+c.id+')">'+paidBtnLabel+'</button>':'')+
+    (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'green':'green')+'" onclick="togglePaid('+c.id+','+(isCompleted||isPaid?"'unpaid'":'null')+')">'+paidBtnLabel+'</button>':'')+
+    (showPay&&isPartial?'<button class="action-btn red" onclick="togglePaid('+c.id+',\'unpaid\')">↩️ Reset</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
     '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
@@ -1388,18 +1391,17 @@ function editCommercial(id) {
   showToast('✏️ Editing account — make changes and tap Save');
 }
 
-function togglePaid(id) {
+function togglePaid(id, action) {
+  // action = 'unpaid' means explicitly resetting, otherwise show payment overlay
   id = parseInt(id);
   var data = getData();
   var c = data.find(function(d){ return parseInt(d.id)===id; });
   var isSheetOnly = false;
 
-  // If not in localStorage check mgrAllData (sheet-only leads like website leads)
   if (!c && mgrAllData.length > 0) {
     c = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
     if (c) {
-      // Copy to localStorage so we can track payments locally
-      c = JSON.parse(JSON.stringify(c)); // clone
+      c = JSON.parse(JSON.stringify(c));
       data.unshift(c);
       isSheetOnly = true;
     }
@@ -1409,7 +1411,7 @@ function togglePaid(id) {
 
   var total = parseFloat(c.total||c.amount||0);
 
-  if (c.paid === 'Yes' || c.paid === 'Partial' || c.status === 'Completed') {
+  if (action === 'unpaid' || c.paid === 'Yes' || c.status === 'Completed') {
     if (!confirm('Mark this job as unpaid and move it back to Active?')) return;
     c.paid = 'No';
     c.amountPaid = 0;
@@ -1471,7 +1473,7 @@ function togglePaid(id) {
       '</div>'+
 
       // Full payment button — passes remaining balance through method picker
-      '<button onclick="submitAmountOverlay('+id+','+total2+','+(total2-alreadyPaid)+')" style="width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:10px;text-align:left;">✅ Paid in Full — $'+(total2-alreadyPaid).toFixed(2)+'</button>'+
+      '<button onclick="submitAmountOverlay('+id+','+total2.toFixed(2)+','+(total2-alreadyPaid).toFixed(2)+')" style="width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:10px;text-align:left;">✅ Paid in Full — $'+(total2-alreadyPaid).toFixed(2)+'</button>'+
 
       // Divider
       '<div style="text-align:center;font-size:0.72rem;color:var(--gray);margin-bottom:10px;">— OR ENTER PARTIAL AMOUNT —</div>'+
@@ -1479,7 +1481,7 @@ function togglePaid(id) {
       // Partial amount input
       '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Amount Received</div>'+
       '<input type="number" id="amountInput" placeholder="e.g. 100.00" style="width:100%;background:var(--mid);border:1px solid rgba(0,180,216,0.3);border-radius:8px;padding:12px;color:var(--white);font-size:1.1rem;margin-bottom:10px;outline:none;"/>'+
-      '<button onclick="submitAmountOverlay('+id+','+total2+',null)" style="width:100%;padding:13px;background:var(--blue);color:var(--navy);border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">💰 Partial Payment → Set Up Plan</button>'+
+      '<button onclick="submitAmountOverlay('+id+','+total2.toFixed(2)+',null)" style="width:100%;padding:13px;background:var(--blue);color:var(--navy);border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">💰 Partial Payment → Set Up Plan</button>'+
       '<button onclick="document.getElementById(\'amountOverlay\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
       '</div>';
     document.body.appendChild(overlay2);
@@ -2089,8 +2091,8 @@ function showNextStepPicker(id, c, method, amountReceived) {
   picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;';
   picker.innerHTML =
     '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:340px;border:1px solid rgba(0,180,216,0.3);">'+
-    '<div style="font-size:1rem;font-weight:900;color:var(--blue);margin-bottom:4px;">💰 $'+amountReceived.toFixed(2)+' received via '+method+'</div>'+
-    '<div style="font-size:0.82rem;color:var(--orange);font-weight:700;margin-bottom:16px;">Balance Remaining: $'+c.balance.toFixed(2)+'</div>'+
+    '<div style="font-size:1rem;font-weight:900;color:var(--blue);margin-bottom:4px;">💰 $'+parseFloat(amountReceived||0).toFixed(2)+' received via '+method+'</div>'+
+    '<div style="font-size:0.82rem;color:var(--orange);font-weight:700;margin-bottom:16px;">Balance Remaining: $'+parseFloat(c.balance||0).toFixed(2)+'</div>'+
 
     // Option 1 - Set single next date
     '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Next Payment Due Date</div>'+
