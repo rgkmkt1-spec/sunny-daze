@@ -1752,7 +1752,7 @@ function confirmDeletePin(id) {
     fetch(SHEET_URL, {
       method: 'POST', mode: 'no-cors',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({type:'delete', id: String(id), repId:customer.repId, fname:customer.fname, lname:customer.lname||'', date:customer.date||''})
+      body: JSON.stringify({type:'delete', id: String(id), rowNum: customer.rowNum||null, repId:customer.repId, fname:customer.fname, lname:customer.lname||'', date:customer.date||''})
     }).then(function(){
       showToast('🗑 Customer deleted!');
     }).catch(function(){ showToast('🗑 Deleted locally', true); });
