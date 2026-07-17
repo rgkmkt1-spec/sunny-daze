@@ -815,24 +815,26 @@ function saveCustomer() {
   var checked = document.querySelectorAll('.svc-check:checked');
   var services = Array.prototype.map.call(checked, function(c){ return c.value; }).join(', ');
 
-  // Validate all required fields
-  var errors = [];
-  if (!fname) errors.push('First Name');
-  if (!lname) errors.push('Last Name');
-  if (!phone) errors.push('Phone Number');
-  if (!email && document.getElementById('l-email-na').value === '') errors.push('Email (or select "No Email Available")');
-  if (!address) errors.push('Street Address');
-  if (!city) errors.push('City');
-  if (!state) errors.push('State');
-  if (!zip) errors.push('Zip Code');
-  if (!status) errors.push('Outcome (Sold/Estimate/Follow Up/Not Interested)');
-  if (!services) errors.push('Service (select at least one)');
-  if (!amt) errors.push('Amount');
-  if (!date) errors.push('Job Date');
-
-  if (errors.length > 0) {
-    showToast('⚠️ Please fill in: ' + errors.join(', '), true);
-    return;
+  // Only validate all fields for NEW customers, not edits
+  var editId = document.getElementById('l-fname').dataset.editId;
+  if (!editId) {
+    var errors = [];
+    if (!fname) errors.push('First Name');
+    if (!lname) errors.push('Last Name');
+    if (!phone) errors.push('Phone Number');
+    if (!email && document.getElementById('l-email-na').value === '') errors.push('Email (or select "No Email Available")');
+    if (!address) errors.push('Street Address');
+    if (!city) errors.push('City');
+    if (!state) errors.push('State');
+    if (!zip) errors.push('Zip Code');
+    if (!status) errors.push('Outcome (Sold/Estimate/Follow Up/Not Interested)');
+    if (!services) errors.push('Service (select at least one)');
+    if (!amt) errors.push('Amount');
+    if (!date) errors.push('Job Date');
+    if (errors.length > 0) { showToast('⚠️ Please fill in: ' + errors.join(', '), true); return; }
+  } else {
+    if (!fname) { showToast('⚠️ First Name is required', true); return; }
+    if (!status) { showToast('⚠️ Please select an Outcome', true); return; }
   }
 
   var taxable = document.getElementById('l-taxable').checked;
@@ -1356,6 +1358,8 @@ function editCustomer(id) {
     });
   }
   calcTax();
+  // Set customer type
+  setCustomerType(c.custType || 'Residential');
   // Store editing ID so save updates instead of creates
   document.getElementById('l-fname').dataset.editId = id;
   showToast('✏️ Editing customer — make changes and tap Save');
@@ -1712,6 +1716,9 @@ function confirmDeletePin(id) {
   }
   document.getElementById('deletePinOverlay').remove();
   delPinVal = '';
+  // Clear any pending edit to prevent duplicate on next save
+  var fnameEl = document.getElementById('l-fname');
+  if (fnameEl) delete fnameEl.dataset.editId;
 
   id = parseInt(id);
   var data = getData();
