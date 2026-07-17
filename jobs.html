@@ -475,8 +475,8 @@ var mgrAllData = [];
 var deletedIds = JSON.parse(localStorage.getItem('sd_deleted_ids') || '[]');
 
 function addToDeletedIds(id) {
-  id = String(id);
-  if (deletedIds.indexOf(id) < 0) deletedIds.push(id);
+  var sid = String(id);
+  if (deletedIds.indexOf(sid) < 0) deletedIds.push(sid);
   localStorage.setItem('sd_deleted_ids', JSON.stringify(deletedIds));
 }
 
@@ -1732,14 +1732,15 @@ function confirmDeletePin(id) {
   }
   document.getElementById('deletePinOverlay').remove();
   delPinVal = '';
-  // Clear any pending edit to prevent duplicate on next save
+  // Clear any pending edit
   var fnameEl = document.getElementById('l-fname');
   if (fnameEl) delete fnameEl.dataset.editId;
 
-  // Add to permanent blacklist so it never comes back from sheet
+  id = parseInt(id);
+
+  // Add to permanent blacklist AFTER parsing to int
   addToDeletedIds(id);
 
-  id = parseInt(id);
   var data = getData();
   var customer = data.find(function(d){return parseInt(d.id)===id;});
   if (!customer && mgrAllData.length > 0) {
@@ -1751,12 +1752,12 @@ function confirmDeletePin(id) {
     fetch(SHEET_URL, {
       method: 'POST', mode: 'no-cors',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({type:'delete', id: id, repId:customer.repId, fname:customer.fname, lname:customer.lname||'', date:customer.date||''})
+      body: JSON.stringify({type:'delete', id: String(id), repId:customer.repId, fname:customer.fname, lname:customer.lname||'', date:customer.date||''})
     }).then(function(){
       showToast('🗑 Customer deleted!');
-      // Force fresh fetch from sheet to confirm deletion
-      mgrAllData = mgrAllData.filter(function(d){ return parseInt(d.id) !== id; });
     }).catch(function(){ showToast('🗑 Deleted locally', true); });
+  } else {
+    showToast('🗑 Customer deleted!');
   }
   // Clear mgrAllData of this customer immediately so it doesn't reappear
   mgrAllData = mgrAllData.filter(function(d){ return parseInt(d.id) !== id; });
