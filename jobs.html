@@ -1295,10 +1295,10 @@ function cardHTML(c,showPay,showRep) {
   var amount=c.total||c.amount||0;
   var amountPaid=parseFloat(c.amountPaid||0);
   var balance=parseFloat(c.balance!=null?c.balance:amount);
-    var safeId = JSON.stringify(String(c.id));
-    var cardId = c.id;
+  var safeId = JSON.stringify(String(c.id));
+  var isCompleted = c.status==='Completed';
   var isPartial=c.paid==='Partial';
-  var isPaid=c.paid==='Yes' && !isCompleted ? true : isCompleted ? true : false;
+  var isPaid=(c.paid==='Yes' && !isCompleted) || isCompleted;
 
   // Payment breakdown for partial payments — only show if there's actually been a payment
   var paymentInfo='';
