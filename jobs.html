@@ -472,6 +472,17 @@ var pinValue = '';
 var activeFilter = 'All';
 var mgrFilter = 'All';
 var mgrAllData = [];
+var deletedIds = JSON.parse(localStorage.getItem('sd_deleted_ids') || '[]');
+
+function addToDeletedIds(id) {
+  id = String(id);
+  if (deletedIds.indexOf(id) < 0) deletedIds.push(id);
+  localStorage.setItem('sd_deleted_ids', JSON.stringify(deletedIds));
+}
+
+function isDeleted(id) {
+  return deletedIds.indexOf(String(id)) >= 0;
+}
 var commercialSheetData = [];
 var jobsFilter = 'active';
 var sessionTimer = null;
@@ -502,7 +513,12 @@ function getReps() {
 function saveReps(r) { localStorage.setItem('sd_reps', JSON.stringify(r)); }
 function getMgrPin() { return localStorage.getItem('sd_mgr_pin') || '1014'; }
 function saveMgrPin(p) { localStorage.setItem('sd_mgr_pin', p); }
-function getData() { try { return JSON.parse(localStorage.getItem('sd_customers') || '[]'); } catch(e) { return []; } }
+function getData() { 
+  try { 
+    var data = JSON.parse(localStorage.getItem('sd_customers') || '[]');
+    return data.filter(function(d){ return !isDeleted(d.id); });
+  } catch(e) { return []; } 
+}
 function saveData(d) {
   // Save primary data
   localStorage.setItem('sd_customers', JSON.stringify(d));
@@ -1010,17 +1026,17 @@ function renderLeads(search) {
 
   if (isManager) {
     var list = document.getElementById('leads-list');
-    // If mgrAllData not loaded yet, fetch from sheet first
-    if (mgrAllData.length === 0) {
+    // Only fetch from sheet if mgrAllData is completely empty AND we haven't fetched yet
+    if (mgrAllData.length === 0 && !window.mgrDataLoaded) {
+      window.mgrDataLoaded = true;
       list.innerHTML='<div class="empty-state"><span>⏳</span>Loading leads...</div>';
       fetch(SHEET_URL + '?t=' + Date.now(), {method:'GET', mode:'cors'})
         .then(function(r){return r.json();})
         .then(function(response){
-          mgrAllData = response.data || [];
+          mgrAllData = (response.data || []).filter(function(d){ return !isDeleted(d.id); });
           renderLeads(search);
         })
         .catch(function(){
-          // Fall back to local data
           mgrAllData = getData();
           renderLeads(search);
         });
@@ -1720,6 +1736,9 @@ function confirmDeletePin(id) {
   var fnameEl = document.getElementById('l-fname');
   if (fnameEl) delete fnameEl.dataset.editId;
 
+  // Add to permanent blacklist so it never comes back from sheet
+  addToDeletedIds(id);
+
   id = parseInt(id);
   var data = getData();
   var customer = data.find(function(d){return parseInt(d.id)===id;});
@@ -1733,9 +1752,14 @@ function confirmDeletePin(id) {
       method: 'POST', mode: 'no-cors',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({type:'delete', id: id, repId:customer.repId, fname:customer.fname, lname:customer.lname||'', date:customer.date||''})
-    }).then(function(){ showToast('🗑 Customer deleted!'); })
-      .catch(function(){ showToast('🗑 Deleted locally', true); });
+    }).then(function(){
+      showToast('🗑 Customer deleted!');
+      // Force fresh fetch from sheet to confirm deletion
+      mgrAllData = mgrAllData.filter(function(d){ return parseInt(d.id) !== id; });
+    }).catch(function(){ showToast('🗑 Deleted locally', true); });
   }
+  // Clear mgrAllData of this customer immediately so it doesn't reappear
+  mgrAllData = mgrAllData.filter(function(d){ return parseInt(d.id) !== id; });
   renderLeads(''); renderJobs(''); updateDashboard();
   if(isManager) updateManager();
 }
@@ -2369,7 +2393,7 @@ function switchTab(tab) {
   document.getElementById('tab-'+tab).classList.add('active');
   document.getElementById('view-'+tab).classList.add('active');
   if(tab==='dashboard') updateDashboard();
-  if(tab==='leads') renderLeads('');
+  if(tab==='leads') { window.mgrDataLoaded = false; mgrAllData = []; renderLeads(''); }
   if(tab==='jobs') renderJobs('');
   if(tab==='manager') updateManager();
   if(tab==='settings') { renderRepList(); renderCommissionList(); }
