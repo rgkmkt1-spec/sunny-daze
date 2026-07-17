@@ -771,6 +771,30 @@ function loginSuccess() {
     document.getElementById('tab-commercial').style.display = 'block';
     document.getElementById('tab-manager').style.display = 'block';
     document.getElementById('tab-settings').style.display = 'block';
+    // Load sheet leads once on login and merge into localStorage
+    fetch(SHEET_URL + '?t=' + Date.now(), {method:'GET', mode:'cors'})
+      .then(function(r){ return r.json(); })
+      .then(function(response){
+        var sheetData = (response.data || []).filter(function(d){ return !isDeleted(d.id); });
+        var local = JSON.parse(localStorage.getItem('sd_customers') || '[]');
+        var localIds = local.map(function(d){ return String(d.id); });
+        var newOnes = sheetData.filter(function(d){ return localIds.indexOf(String(d.id)) < 0; });
+        // Give sheet-only customers a stable numeric ID based on their timestamp
+        newOnes = newOnes.map(function(d){
+          if (!d.id || isNaN(d.id)) {
+            // Convert timestamp to a numeric ID
+            var ts = new Date(d.id).getTime();
+            d.id = ts || (Date.now() - Math.random()*1000000);
+          }
+          return d;
+        });
+        if (newOnes.length > 0) {
+          localStorage.setItem('sd_customers', JSON.stringify(local.concat(newOnes)));
+        }
+        mgrAllData = sheetData;
+      }).catch(function(){
+        mgrAllData = [];
+      });
   }
   switchTab('dashboard');
   resetSessionTimer();
@@ -1026,23 +1050,14 @@ function renderLeads(search) {
 
   if (isManager) {
     var list = document.getElementById('leads-list');
-    // Only fetch from sheet if mgrAllData is completely empty AND we haven't fetched yet
-    if (mgrAllData.length === 0 && !window.mgrDataLoaded) {
-      window.mgrDataLoaded = true;
-      list.innerHTML='<div class="empty-state"><span>⏳</span>Loading leads...</div>';
-      fetch(SHEET_URL + '?t=' + Date.now(), {method:'GET', mode:'cors'})
-        .then(function(r){return r.json();})
-        .then(function(response){
-          mgrAllData = (response.data || []).filter(function(d){ return !isDeleted(d.id); });
-          renderLeads(search);
-        })
-        .catch(function(){
-          mgrAllData = getData();
-          renderLeads(search);
-        });
-      return;
+    var all = getData();
+    // Merge with any sheet-only data already loaded
+    if (mgrAllData.length > 0) {
+      var localIds = all.map(function(d){ return String(d.id); });
+      var sheetOnly = mgrAllData.filter(function(d){ return localIds.indexOf(String(d.id)) < 0 && !isDeleted(d.id); });
+      all = all.concat(sheetOnly);
     }
-    var data = mgrAllData;
+    var data = all.slice();
     if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold' && d.status!=='Cancelled' && d.status!=='Completed';});
     else data=data.filter(function(d){return d.status===activeFilter && d.status!=='Completed';});
     if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
@@ -2395,7 +2410,7 @@ function switchTab(tab) {
   document.getElementById('tab-'+tab).classList.add('active');
   document.getElementById('view-'+tab).classList.add('active');
   if(tab==='dashboard') updateDashboard();
-  if(tab==='leads') { window.mgrDataLoaded = false; mgrAllData = []; renderLeads(''); }
+  if(tab==='leads') { renderLeads(''); }
   if(tab==='jobs') renderJobs('');
   if(tab==='manager') updateManager();
   if(tab==='settings') { renderRepList(); renderCommissionList(); }
