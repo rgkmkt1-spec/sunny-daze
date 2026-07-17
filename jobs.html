@@ -1356,7 +1356,7 @@ function editCustomer(id) {
   id = String(id);
   var data = getData();
   var c = null;
-  for (var i=0; i<data.length; i++) { if (String(data[i].id) === id) { c = data[i]; break; } }
+  for (var i=0; i<data.length; i++) { if (String(data[i].id) === String(id)) { c = data[i]; break; } }
   // Also search mgrAllData if not found locally
   if (!c && mgrAllData.length > 0) {
     for (var j=0; j<mgrAllData.length; j++) { if (String(mgrAllData[j].id) === String(id)) { c = mgrAllData[j]; break; } }
@@ -1392,7 +1392,6 @@ function editCustomer(id) {
 }
 
 function editCommercial(id) {
-  id = parseInt(id);
   var accounts = getCommercialData();
   var a = null;
   for (var i=0; i<accounts.length; i++) { if (parseInt(accounts[i].id) === id) { a = accounts[i]; break; } }
@@ -1424,13 +1423,13 @@ function editCommercial(id) {
 function togglePaid(id, action) {
   id = String(id);
   // action = 'unpaid' means explicitly resetting, otherwise show payment overlay
-  id = parseInt(id);
+
   var data = getData();
-  var c = data.find(function(d){ return String(d.id) === id; });
+  var c = data.find(function(d){ return String(d.id) === String(id); });
   var isSheetOnly = false;
 
   if (!c && mgrAllData.length > 0) {
-    c = mgrAllData.find(function(d){ return String(d.id) === id; });
+    c = mgrAllData.find(function(d){ return String(d.id) === String(id); });
     if (c) {
       c = JSON.parse(JSON.stringify(c));
       data.unshift(c);
@@ -1466,7 +1465,7 @@ function togglePaid(id, action) {
       }
     }
     saveData(data);
-    var mgrC = mgrAllData.find(function(d){ return String(d.id) === id; });
+    var mgrC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
     if(mgrC){ 
       mgrC.paid='No'; mgrC.amountPaid=0; mgrC.balance=total; mgrC.status='Sold'; 
       mgrC.completedDate=null; mgrC.returnVisit=null; mgrC.nextPaymentDate=null; mgrC.paymentPlan=null;
@@ -1541,7 +1540,7 @@ function submitAmountOverlay(id, total, fixedAmount) {
 
 function changeStatus(id) {
   id = String(id);
-  id = parseInt(id);
+
   // Remove any existing status picker
   var existing = document.getElementById('statusPicker');
   if (existing) { existing.remove(); return; }
@@ -1568,7 +1567,6 @@ function changeStatus(id) {
 }
 
 function scheduleReturn(id) {
-  id = parseInt(id);
 
   // Build picker overlay
   var existing = document.getElementById('returnPicker');
@@ -1602,12 +1600,11 @@ function scheduleReturn(id) {
 function applyReturn(id, dateStr) {
   document.getElementById('returnPicker').remove();
   if (!dateStr) return;
-  id = parseInt(id);
 
   var data = getData();
-  var c = data.find(function(d){ return String(d.id) === id; });
+  var c = data.find(function(d){ return String(d.id) === String(id); });
   if (!c && mgrAllData.length > 0) {
-    var sheetC = mgrAllData.find(function(d){ return String(d.id) === id; });
+    var sheetC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
     if (sheetC) { c = JSON.parse(JSON.stringify(sheetC)); data.unshift(c); }
   }
   if (!c) { showToast('Customer not found', true); return; }
@@ -1615,7 +1612,7 @@ function applyReturn(id, dateStr) {
   c.returnVisit = dateStr;
   saveData(data);
 
-  var mgrC = mgrAllData.find(function(d){ return String(d.id) === id; });
+  var mgrC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
   if (mgrC) mgrC.returnVisit = dateStr;
 
   renderJobs('');
@@ -1629,9 +1626,9 @@ function applyStatus(id, newStatus) {
 
   // Update localStorage first
   var localData = getData();
-  var localC = localData.find(function(d){ return String(d.id) === id; });
+  var localC = localData.find(function(d){ return String(d.id) === String(id); });
   if (!localC && mgrAllData.length > 0) {
-    var sheetC = mgrAllData.find(function(d){ return String(d.id) === id; });
+    var sheetC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
     if (sheetC) { localC = JSON.parse(JSON.stringify(sheetC)); localData.unshift(localC); }
   }
   if (localC) {
@@ -1661,7 +1658,7 @@ function applyStatus(id, newStatus) {
   }
 
   // Update mgrAllData
-  var mgrC = mgrAllData.find(function(d){ return String(d.id) === id; });
+  var mgrC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
   if (mgrC) {
     mgrC.status = newStatus;
     mgrC.paid = 'No';
@@ -1750,18 +1747,17 @@ function confirmDeletePin(id) {
   var fnameEl = document.getElementById('l-fname');
   if (fnameEl) delete fnameEl.dataset.editId;
 
-  id = parseInt(id);
 
   // Add to permanent blacklist AFTER parsing to int
   addToDeletedIds(id);
 
   var data = getData();
-  var customer = data.find(function(d){return String(d.id) === id;});
+  var customer = data.find(function(d){return String(d.id) === String(id);});
   if (!customer && mgrAllData.length > 0) {
-    customer = mgrAllData.find(function(d){return String(d.id) === id;});
+    customer = mgrAllData.find(function(d){return String(d.id) === String(id);});
   }
-  saveData(data.filter(function(d){return String(d.id) !== id;}));
-  mgrAllData = mgrAllData.filter(function(d){return String(d.id) !== id;});
+  saveData(data.filter(function(d){return String(d.id) !== String(id);}));
+  mgrAllData = mgrAllData.filter(function(d){return String(d.id) !== String(id);});
   if (customer) {
     fetch(SHEET_URL, {
       method: 'POST', mode: 'no-cors',
@@ -1774,7 +1770,7 @@ function confirmDeletePin(id) {
     showToast('🗑 Customer deleted!');
   }
   // Clear mgrAllData of this customer immediately so it doesn't reappear
-  mgrAllData = mgrAllData.filter(function(d){ return String(d.id) !== id; });
+  mgrAllData = mgrAllData.filter(function(d){ return String(d.id) !== String(id); });
   renderLeads(''); renderJobs(''); updateDashboard();
   if(isManager) updateManager();
 }
@@ -1879,10 +1875,9 @@ function autoFollowUp(dateVal) {
 }
 
 function showPaymentPlan(id) {
-  id = parseInt(id);
   var data = getData();
-  var c = data.find(function(d){ return String(d.id) === id; });
-  if (!c && mgrAllData.length>0) c = mgrAllData.find(function(d){ return String(d.id) === id; });
+  var c = data.find(function(d){ return String(d.id) === String(id); });
+  if (!c && mgrAllData.length>0) c = mgrAllData.find(function(d){ return String(d.id) === String(id); });
   if (!c) return;
 
   var total = parseFloat(c.total||c.amount||0);
@@ -1973,10 +1968,10 @@ function applyPaymentPlan(id, total, remaining) {
 
   // Update customer with payment plan
   var data = getData();
-  var c = data.find(function(d){ return String(d.id) === id; });
+  var c = data.find(function(d){ return String(d.id) === String(id); });
   var isSheetOnly = false;
   if (!c && mgrAllData.length>0) {
-    var sc = mgrAllData.find(function(d){ return String(d.id) === id; });
+    var sc = mgrAllData.find(function(d){ return String(d.id) === String(id); });
     if (sc) { c = JSON.parse(JSON.stringify(sc)); data.unshift(c); isSheetOnly=true; }
   }
   if (!c) { showToast('Customer not found', true); return; }
@@ -1999,7 +1994,7 @@ function applyPaymentPlan(id, total, remaining) {
   for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
   saveData(data);
 
-  var mgrC = mgrAllData.find(function(d){ return String(d.id) === id; });
+  var mgrC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
   if (mgrC) { mgrC.paymentPlan=c.paymentPlan; mgrC.nextPaymentDate=c.nextPaymentDate; mgrC.notes=c.notes; }
 
   // Sync to sheet
@@ -2033,11 +2028,10 @@ function showPaymentPicker(id, total, amountReceived) {
 
 function applyPayment(id, method, total, amountReceived) {
   document.getElementById('paymentPicker').remove();
-  id = parseInt(id);
   var data = getData();
-  var c = data.find(function(d){ return String(d.id) === id; });
+  var c = data.find(function(d){ return String(d.id) === String(id); });
   if (!c && mgrAllData.length > 0) {
-    var sheetC = mgrAllData.find(function(d){ return String(d.id) === id; });
+    var sheetC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
     if (sheetC) { c = JSON.parse(JSON.stringify(sheetC)); data.unshift(c); }
   }
   if (!c) { showToast('Customer not found', true); return; }
@@ -2056,7 +2050,7 @@ function applyPayment(id, method, total, amountReceived) {
     c.nextPaymentDate = null;
     for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
     saveData(data);
-    var mgrC = mgrAllData.find(function(d){ return String(d.id) === id; });
+    var mgrC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
     if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; mgrC.status=c.status; mgrC.payment=method; }
     fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
       body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
@@ -2075,7 +2069,6 @@ function applyPayment(id, method, total, amountReceived) {
 }
 
 function showReturnVisitPrompt(id) {
-  id = parseInt(id);
   var now = new Date();
   var y1 = new Date(now); y1.setFullYear(now.getFullYear()+1);
   var y18 = new Date(now); y18.setMonth(now.getMonth()+18);
@@ -2106,18 +2099,17 @@ function showReturnVisitPrompt(id) {
 function applyReturnFromPrompt(id, dateStr) {
   document.getElementById('returnPrompt').remove();
   if (!dateStr) return;
-  id = parseInt(id);
   var data = getData();
-  var c = data.find(function(d){ return String(d.id) === id; });
+  var c = data.find(function(d){ return String(d.id) === String(id); });
   if (!c && mgrAllData.length>0) {
-    var sc = mgrAllData.find(function(d){ return String(d.id) === id; });
+    var sc = mgrAllData.find(function(d){ return String(d.id) === String(id); });
     if (sc) { c = JSON.parse(JSON.stringify(sc)); data.unshift(c); }
   }
   if (!c) return;
   c.returnVisit = dateStr;
   for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
   saveData(data);
-  var mgrC = mgrAllData.find(function(d){ return String(d.id) === id; });
+  var mgrC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
   if (mgrC) mgrC.returnVisit = dateStr;
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
   renderJobs('');
@@ -2192,9 +2184,8 @@ function applySingleNextDate() {
   var dateVal = dateEl ? dateEl.value : '';
   var picker = document.getElementById('nextStepPicker');
   if (picker) picker.remove();
-  id = parseInt(id);
   var data = getData();
-  var c = data.find(function(d){ return String(d.id) === id; });
+  var c = data.find(function(d){ return String(d.id) === String(id); });
   if (!c) return;
   if (dateVal) {
     var d = new Date(dateVal+'T12:00:00');
@@ -2204,7 +2195,7 @@ function applySingleNextDate() {
   }
   for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
   saveData(data);
-  var mgrC = mgrAllData.find(function(d){ return String(d.id) === id; });
+  var mgrC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
   if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; mgrC.nextPaymentDate=c.nextPaymentDate; }
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
   renderJobs(''); updateDashboard();
@@ -2215,13 +2206,12 @@ function applyNoNextDate() {
   var id = pendingPaymentId;
   if (!id) { showToast('No customer selected', true); return; }
   document.getElementById('nextStepPicker').remove();
-  id = parseInt(id);
   var data = getData();
-  var c = data.find(function(d){ return String(d.id) === id; });
+  var c = data.find(function(d){ return String(d.id) === String(id); });
   if (c) {
     for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
     saveData(data);
-    var mgrC = mgrAllData.find(function(d){ return String(d.id) === id; });
+    var mgrC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
     if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; }
     fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
   }
@@ -2245,11 +2235,10 @@ function applyQuickPlan() {
   var picker = document.getElementById('nextStepPicker');
   if (picker) picker.remove();
 
-  id = parseInt(id);
   var data = getData();
-  var c = data.find(function(d){ return String(d.id) === id; });
+  var c = data.find(function(d){ return String(d.id) === String(id); });
   if (!c && mgrAllData.length>0) {
-    var sc = mgrAllData.find(function(d){ return String(d.id) === id; });
+    var sc = mgrAllData.find(function(d){ return String(d.id) === String(id); });
     if (sc) { c = JSON.parse(JSON.stringify(sc)); data.unshift(c); }
   }
   if (!c) { showToast('Customer not found', true); return; }
@@ -2275,7 +2264,7 @@ function applyQuickPlan() {
   if (!found) data.unshift(c);
   saveData(data);
 
-  var mgrC = mgrAllData.find(function(d){ return String(d.id) === id; });
+  var mgrC = mgrAllData.find(function(d){ return String(d.id) === String(id); });
   if (mgrC) { mgrC.paymentPlan=c.paymentPlan; mgrC.nextPaymentDate=c.nextPaymentDate; mgrC.notes=c.notes; mgrC.paid=c.paid; }
 
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
