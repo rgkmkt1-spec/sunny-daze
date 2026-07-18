@@ -1335,11 +1335,11 @@ function cardHTML(c,showPay,showRep) {
     '</div>':'')+
     (c.returnVisit&&isCompleted?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
     '<div class="card-actions">'+
-    (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'green':'green')+'" onclick="togglePaid('+c.id+','+(isCompleted||isPaid?"'unpaid'":'null')+')">'+paidBtnLabel+'</button>':'')+
-    (showPay&&isPartial?'<button class="action-btn red" onclick="togglePaid('+c.id+',\'unpaid\')">↩️ Reset</button>':'')+
-    '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
-    '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
-    '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
+    (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'green':'green')+'" onclick="togglePaid('+parseInt(c.id)+',' +(isCompleted||isPaid?"'unpaid'":'null')+')">'+paidBtnLabel+'</button>':'')+
+    (showPay&&isPartial?'<button class="action-btn red" onclick="togglePaid('+parseInt(c.id)+',\'unpaid\')">↩️ Reset</button>':'')+
+    '<button class="action-btn blue" onclick="editCustomer('+parseInt(c.id)+')">✏️ Edit</button>'+
+    '<button onclick="changeStatus('+parseInt(c.id)+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
+    '<button class="action-btn red" onclick="deleteCustomer('+parseInt(c.id)+')">🗑</button>'+
     '</div></div>';
 }
 
