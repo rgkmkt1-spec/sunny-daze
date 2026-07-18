@@ -770,6 +770,8 @@ function loginSuccess() {
         // Sheet is source of truth — save all to localStorage
         localStorage.setItem('sd_customers', JSON.stringify(sheetData));
         mgrAllData = sheetData;
+        var estimates = sheetData.filter(function(d){ return d.status==='Estimate' || d.status==='Follow Up'; });
+        showToast('Loaded ' + sheetData.length + ' total, ' + estimates.length + ' leads');
         renderLeads(''); renderJobs(''); updateDashboard();
       }).catch(function(){
         mgrAllData = [];
@@ -2376,7 +2378,29 @@ function switchTab(tab) {
   document.getElementById('tab-'+tab).classList.add('active');
   document.getElementById('view-'+tab).classList.add('active');
   if(tab==='dashboard') updateDashboard();
-  if(tab==='leads') { renderLeads(''); }
+  if(tab==='leads') { 
+    if(isManager) {
+      // Re-fetch from sheet to pick up any new website leads
+      fetch(SHEET_URL + '?t=' + Date.now(), {method:'GET', mode:'cors'})
+        .then(function(r){ return r.json(); })
+        .then(function(response){
+          var sheetData = response.data || [];
+          var counter = Date.now();
+          sheetData = sheetData.map(function(d){
+            if (!d.id || isNaN(parseInt(d.id))) d.id = counter--;
+            else d.id = parseInt(d.id);
+            return d;
+          });
+          localStorage.setItem('sd_customers', JSON.stringify(sheetData));
+          mgrAllData = sheetData;
+          var estimates = sheetData.filter(function(d){ return d.status==='Estimate' || d.status==='Follow Up'; });
+          showToast('📋 Loaded ' + sheetData.length + ' customers, ' + estimates.length + ' leads');
+          renderLeads('');
+        }).catch(function(){ renderLeads(''); });
+    } else {
+      renderLeads('');
+    }
+  }
   if(tab==='jobs') renderJobs('');
   if(tab==='manager') updateManager();
   if(tab==='settings') { renderRepList(); renderCommissionList(); }
