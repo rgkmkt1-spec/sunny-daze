@@ -755,30 +755,25 @@ function loginSuccess() {
     document.getElementById('tab-commercial').style.display = 'block';
     document.getElementById('tab-manager').style.display = 'block';
     document.getElementById('tab-settings').style.display = 'block';
-    // Load sheet leads once on login and merge into localStorage
+    // Load sheet leads fresh on every manager login
     fetch(SHEET_URL + '?t=' + Date.now(), {method:'GET', mode:'cors'})
       .then(function(r){ return r.json(); })
       .then(function(response){
         var sheetData = response.data || [];
-        var local = JSON.parse(localStorage.getItem('sd_customers') || '[]');
-        var localIds = local.map(function(d){ return String(d.id); });
-        var newOnes = sheetData.filter(function(d){ return localIds.indexOf(String(d.id)) < 0; });
-        // Assign stable numeric IDs to sheet customers with timestamp string IDs
+        // Assign proper integer IDs to all sheet customers
         var counter = Date.now();
-        newOnes = newOnes.map(function(d){
-          if (!d.id || isNaN(parseInt(d.id))) {
-            d.id = counter--;
-          } else {
-            d.id = parseInt(d.id);
-          }
+        sheetData = sheetData.map(function(d){
+          if (!d.id || isNaN(parseInt(d.id))) d.id = counter--;
+          else d.id = parseInt(d.id);
           return d;
         });
-        if (newOnes.length > 0) {
-          localStorage.setItem('sd_customers', JSON.stringify(local.concat(newOnes)));
-        }
+        // Sheet is source of truth — save all to localStorage
+        localStorage.setItem('sd_customers', JSON.stringify(sheetData));
         mgrAllData = sheetData;
+        renderLeads(''); renderJobs(''); updateDashboard();
       }).catch(function(){
         mgrAllData = [];
+        renderLeads(''); renderJobs('');
       });
   }
   switchTab('dashboard');
