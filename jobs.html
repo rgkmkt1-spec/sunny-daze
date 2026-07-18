@@ -1412,7 +1412,7 @@ function editCommercial(id) {
 }
 
 function togglePaid(id, action) {
-  id = String(id);
+  id = parseInt(id);
   // action = 'unpaid' means explicitly resetting, otherwise show payment overlay
 
   var data = getData();
