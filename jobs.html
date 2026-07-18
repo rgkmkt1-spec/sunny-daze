@@ -1280,6 +1280,9 @@ function filterMgr(f,el) {
 }
 
 function cardHTML(c,showPay,showRep) {
+  // Ensure ID is always a valid integer
+  if (!c.id || isNaN(parseInt(c.id))) c.id = Date.now() - Math.floor(Math.random()*999999);
+  c.id = parseInt(c.id);
   var sc={Sold:'sold',Estimate:'estimate','Follow Up':'followup',Lost:'lost'}[c.status]||'';
   var bc={Sold:'badge-sold',Estimate:'badge-estimate','Follow Up':'badge-followup',Lost:'badge-lost',Cancelled:'badge-lost'}[c.status]||'';
   var statusColor={Sold:'background:var(--green);color:white;border-color:var(--green)',Estimate:'background:var(--yellow);color:var(--navy);border-color:var(--yellow)','Follow Up':'background:var(--orange);color:white;border-color:var(--orange)',Lost:'background:var(--red);color:white;border-color:var(--red)',Cancelled:'background:#6c757d;color:white;border-color:#6c757d',Completed:'background:var(--green);color:white;border-color:var(--green)'}[c.status]||'background:var(--mid);color:var(--white);border-color:var(--blue)';
@@ -1329,11 +1332,11 @@ function cardHTML(c,showPay,showRep) {
     '</div>':'')+
     (c.returnVisit&&isCompleted?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
     '<div class="card-actions">'+
-    (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'green':'green')+'" onclick="togglePaid('+parseInt(c.id)+',' +(isCompleted||isPaid?"'unpaid'":'null')+')">'+paidBtnLabel+'</button>':'')+
-    (showPay&&isPartial?'<button class="action-btn red" onclick="togglePaid('+parseInt(c.id)+',\'unpaid\')">↩️ Reset</button>':'')+
-    '<button class="action-btn blue" onclick="editCustomer('+parseInt(c.id)+')">✏️ Edit</button>'+
-    '<button onclick="changeStatus('+parseInt(c.id)+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
-    '<button class="action-btn red" onclick="deleteCustomer('+parseInt(c.id)+')">🗑</button>'+
+    (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'green':'green')+'" onclick="togglePaid('+c.id+','+(isCompleted||isPaid?"'unpaid'":'null')+')">'+paidBtnLabel+'</button>':'')+
+    (showPay&&isPartial?'<button class="action-btn red" onclick="togglePaid('+c.id+',\'unpaid\')">↩️ Reset</button>':'')+
+    '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
+    '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
+    '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
 }
 
