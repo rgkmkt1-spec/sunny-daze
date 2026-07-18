@@ -1730,10 +1730,6 @@ function confirmDeletePin(id) {
   var fnameEl = document.getElementById('l-fname');
   if (fnameEl) delete fnameEl.dataset.editId;
 
-
-  // Add to permanent blacklist AFTER parsing to int
-  addToDeletedIds(id);
-
   var data = getData();
   var customer = data.find(function(d){return parseInt(d.id)===id;});
   if (!customer && mgrAllData.length > 0) {
