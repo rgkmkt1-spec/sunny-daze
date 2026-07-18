@@ -763,19 +763,13 @@ function loginSuccess() {
         var local = JSON.parse(localStorage.getItem('sd_customers') || '[]');
         var localIds = local.map(function(d){ return String(d.id); });
         var newOnes = sheetData.filter(function(d){ return localIds.indexOf(String(d.id)) < 0; });
-        // Assign numeric IDs to sheet customers that have timestamp strings
+        // Assign stable numeric IDs to sheet customers with timestamp string IDs
+        var counter = Date.now();
         newOnes = newOnes.map(function(d){
-          if (isNaN(parseInt(d.id))) {
-            d.id = parseInt(new Date(d.id).getTime()) || Date.now();
-          }
-          return d;
-        });
-        // Give sheet-only customers a stable numeric ID based on their timestamp
-        newOnes = newOnes.map(function(d){
-          if (!d.id || isNaN(d.id)) {
-            // Convert timestamp to a numeric ID
-            var ts = new Date(d.id).getTime();
-            d.id = ts || (Date.now() - Math.random()*1000000);
+          if (!d.id || isNaN(parseInt(d.id))) {
+            d.id = counter--;
+          } else {
+            d.id = parseInt(d.id);
           }
           return d;
         });
