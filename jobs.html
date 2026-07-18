@@ -234,10 +234,10 @@
     <div class="form-group">
       <label>Outcome *</label>
       <div class="status-grid">
-        <button class="status-btn sold" onclick="setStatus('Sold')">✅ SOLD</button>
-        <button class="status-btn estimate" onclick="setStatus('Estimate')">📋 ESTIMATE</button>
-        <button class="status-btn followup" onclick="setStatus('Follow Up')">🔔 FOLLOW UP</button>
-        <button class="status-btn lost" onclick="setStatus('Lost')">❌ NOT INTERESTED</button>
+        <button class="status-btn outcome-btn sold" onclick="setStatus('Sold')">✅ SOLD</button>
+        <button class="status-btn outcome-btn estimate" onclick="setStatus('Estimate')">📋 ESTIMATE</button>
+        <button class="status-btn outcome-btn followup" onclick="setStatus('Follow Up')">🔔 FOLLOW UP</button>
+        <button class="status-btn outcome-btn lost" onclick="setStatus('Lost')">❌ NOT INTERESTED</button>
       </div>
       <input type="hidden" id="l-status"/>
     </div>
@@ -810,9 +810,9 @@ function setCustomerType(type) {
 
 function setStatus(s) {
   document.getElementById('l-status').value = s;
-  document.querySelectorAll('.status-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.outcome-btn').forEach(function(b){b.classList.remove('active');});
   var map = {Sold:'sold',Estimate:'estimate','Follow Up':'followup',Lost:'lost'};
-  document.querySelector('.status-btn.' + map[s]).classList.add('active');
+  document.querySelector('.outcome-btn.' + map[s]).classList.add('active');
   document.getElementById('taxBox').style.display = (s==='Sold'||s==='Estimate') ? 'block' : 'none';
 }
 
@@ -870,7 +870,7 @@ function saveCustomer() {
     editId = parseInt(editId);
     var data = getData();
     var idx = -1;
-    for (var i=0; i<data.length; i++) { if (parseInt(data[i].id) === String(editId)) { idx = i; break; } }
+    for (var i=0; i<data.length; i++) { if (parseInt(data[i].id) === editId) { idx = i; break; } }
 
     // If not in localStorage, pull from mgrAllData and add to localStorage
     if (idx < 0 && mgrAllData.length > 0) {
@@ -971,7 +971,7 @@ function saveCustomer() {
   document.getElementById('l-taxable').checked=false;
   document.getElementById('l-date').value=new Date().toISOString().split('T')[0];
   autoFollowUp(new Date().toISOString().split('T')[0]);
-  document.querySelectorAll('.status-btn').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.outcome-btn').forEach(function(b){b.classList.remove('active');});
   document.getElementById('l-status').value='';
   document.getElementById('taxBox').style.display='none'; calcTax();
   // Reset type to Residential
