@@ -1,0 +1,2903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SunnyDaze Sales Tool</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#00B4D8"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-title" content="SD Sales"/>
+  <link rel="apple-touch-icon" href="/sd-icon-192.png"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0A1628; --mid: #0F1E38; --card: #1E293B;
+      --blue: #00B4D8; --cyan: #90E0EF; --white: #F8FAFC;
+      --gray: #94A3B8; --green: #28a745; --red: #dc3545;
+      --yellow: #ffc107; --orange: #fd7e14; --purple: #6f42c1;
+    }
+    body { font-family: Arial, sans-serif; background: var(--navy); color: var(--white); min-height: 100vh; }
+    .login-screen { position: fixed; inset: 0; background: var(--navy); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 24px; }
+    .login-logo { font-size: 2.2rem; font-weight: 900; color: var(--blue); margin-bottom: 4px; text-align: center; }
+    .login-sub { color: var(--gray); font-size: 0.85rem; margin-bottom: 28px; text-align: center; }
+    .login-card { background: var(--card); border-radius: 14px; padding: 24px; width: 100%; max-width: 320px; border: 1px solid rgba(0,180,216,0.2); }
+    .login-card h3 { font-size: 1rem; color: var(--blue); margin-bottom: 16px; text-align: center; text-transform: uppercase; letter-spacing: 0.08em; }
+    .rep-btn { width: 100%; padding: 16px; margin-bottom: 10px; background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; color: var(--white); font-size: 1rem; font-weight: 700; cursor: pointer; text-align: center; }
+    .rep-btn:active { background: var(--navy); }
+    .manager-btn { width: 100%; padding: 12px; margin-top: 6px; background: transparent; border: 1px solid var(--blue); border-radius: 8px; color: var(--blue); font-size: 0.9rem; font-weight: 700; cursor: pointer; text-transform: uppercase; }
+    .pin-screen { position: fixed; inset: 0; background: rgba(10,22,40,0.98); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; padding: 24px; }
+    .pin-screen.show { display: flex; }
+    .pin-title { font-size: 1.2rem; font-weight: 900; color: var(--blue); margin-bottom: 6px; }
+    .pin-sub { color: var(--gray); font-size: 0.8rem; margin-bottom: 20px; }
+    .pin-display { font-size: 2rem; letter-spacing: 0.5em; color: var(--white); margin-bottom: 20px; min-height: 44px; }
+    .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 240px; }
+    .pin-key { padding: 18px; background: var(--card); border: 1px solid rgba(0,180,216,0.2); border-radius: 10px; font-size: 1.3rem; font-weight: 700; cursor: pointer; text-align: center; color: var(--white); user-select: none; }
+    .pin-key:active { background: var(--mid); }
+    .pin-key.clear { color: var(--red); }
+    .pin-key.back { color: var(--gray); }
+    .pin-fp { margin-top: 14px; background: none; border: 1px solid #5cb85c; color: #5cb85c; padding: 10px 24px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; display: none; }
+    .pin-error { color: #e05a6a; font-size: 0.85rem; margin-top: 10px; display: none; }
+    .pin-cancel { color: var(--gray); font-size: 0.8rem; margin-top: 16px; cursor: pointer; text-decoration: underline; }
+    header { background: var(--mid); padding: 10px 16px; border-bottom: 3px solid var(--blue); position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; }
+    .header-logo { font-size: 1rem; font-weight: 900; color: var(--blue); }
+    .header-rep { font-size: 0.72rem; color: var(--gray); }
+    .header-right { display: flex; gap: 8px; align-items: center; }
+    .hdr-btn { background: none; border: 1px solid rgba(255,255,255,0.2); color: var(--gray); padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
+    .hdr-btn.blue { border-color: var(--blue); color: var(--blue); background: rgba(0,180,216,0.1); }
+    .tabs { display: flex; background: var(--card); border-bottom: 2px solid var(--blue); }
+    .tab { flex: 1; padding: 11px 4px; text-align: center; font-size: 0.68rem; font-weight: 700; color: var(--gray); cursor: pointer; border: none; background: none; text-transform: uppercase; border-bottom: 3px solid transparent; }
+    .tab.active { color: var(--blue); border-bottom: 3px solid var(--blue); }
+    .view { display: none; padding: 14px; }
+    .view.active { display: block; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .stats.three { grid-template-columns: 1fr 1fr 1fr; }
+    .stat-card { background: var(--card); border-radius: 10px; padding: 12px; border: 1px solid rgba(0,180,216,0.2); text-align: center; }
+    .stat-card.green { border-color: var(--green); }
+    .stat-card.red { border-color: var(--red); }
+    .stat-card.yellow { border-color: var(--yellow); }
+    .stat-card.orange { border-color: var(--orange); }
+    .stat-label { font-size: 0.62rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .stat-value { font-size: 1.3rem; font-weight: 900; color: var(--white); }
+    .stat-card.green .stat-value { color: #5cb85c; }
+    .stat-card.red .stat-value { color: #e05a6a; }
+    .stat-card.yellow .stat-value { color: var(--yellow); }
+    .stat-card.orange .stat-value { color: var(--orange); }
+    .form-card { background: var(--card); border-radius: 12px; padding: 16px; border: 1px solid rgba(0,180,216,0.2); margin-bottom: 14px; }
+    .form-card h2 { font-size: 1rem; color: var(--blue); margin-bottom: 14px; font-weight: 900; }
+    .form-group { margin-bottom: 11px; }
+    .form-group label { display: block; font-size: 0.68rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 11px 12px; color: var(--white); font-size: 0.95rem; outline: none; }
+    .form-group select option { background: var(--mid); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .status-btn { padding: 12px 8px; border: 2px solid; border-radius: 8px; font-size: 0.8rem; font-weight: 900; cursor: pointer; text-align: center; text-transform: uppercase; background: transparent; }
+    .status-btn.sold { border-color: var(--green); color: var(--green); }
+    .status-btn.sold.active { background: var(--green); color: white; }
+    .status-btn.estimate { border-color: var(--yellow); color: var(--yellow); }
+    .status-btn.estimate.active { background: var(--yellow); color: var(--navy); }
+    .status-btn.followup { border-color: var(--orange); color: var(--orange); }
+    .status-btn.followup.active { background: var(--orange); color: white; }
+    .status-btn.lost { border-color: var(--red); color: var(--red); }
+    .status-btn.lost.active { background: var(--red); color: white; }
+    .tax-box { background: var(--mid); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px; display: none; }
+    .tax-toggle { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 0.8rem; color: var(--gray); }
+    .tax-toggle input { width: 16px; height: 16px; }
+    .tax-row { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px; }
+    .tax-row.total { font-weight: 900; font-size: 1rem; color: var(--blue); border-top: 1px solid rgba(0,180,216,0.2); padding-top: 8px; margin-top: 4px; }
+    .btn-submit { width: 100%; padding: 14px; background: var(--blue); color: var(--navy); border: none; border-radius: 8px; font-size: 1rem; font-weight: 900; text-transform: uppercase; cursor: pointer; margin-top: 4px; }
+    .btn-green { width: 100%; padding: 14px; background: var(--green); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 900; cursor: pointer; margin-top: 4px; }
+    .customer-list { display: flex; flex-direction: column; gap: 10px; }
+    .customer-card { background: var(--card); border-radius: 10px; padding: 14px; border-left: 4px solid var(--blue); }
+    .customer-card.sold { border-left-color: var(--green); }
+    .customer-card.estimate { border-left-color: var(--yellow); }
+    .customer-card.followup { border-left-color: var(--orange); }
+    .customer-card.lost { border-left-color: var(--red); }
+    .customer-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .customer-name { font-size: 0.95rem; font-weight: 700; }
+    .customer-amount { font-size: 0.95rem; font-weight: 900; color: var(--blue); }
+    .customer-details { font-size: 0.75rem; color: var(--gray); line-height: 1.6; margin-bottom: 8px; }
+    .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .badge { font-size: 0.62rem; font-weight: 700; padding: 3px 8px; border-radius: 20px; text-transform: uppercase; }
+    .badge-sold { background: rgba(40,167,69,0.2); color: #5cb85c; border: 1px solid #5cb85c; }
+    .badge-estimate { background: rgba(255,193,7,0.2); color: var(--yellow); border: 1px solid var(--yellow); }
+    .badge-followup { background: rgba(253,126,20,0.2); color: var(--orange); border: 1px solid var(--orange); }
+    .badge-lost { background: rgba(220,53,69,0.2); color: #e05a6a; border: 1px solid #e05a6a; }
+    .badge-blue { background: rgba(0,180,216,0.15); color: var(--blue); border: 1px solid var(--blue); }
+    .badge-rep { background: rgba(144,224,239,0.1); color: var(--cyan); border: 1px solid var(--cyan); }
+    .card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; align-items: center; }
+    .action-btn { padding: 5px 10px; border-radius: 6px; font-size: 0.68rem; font-weight: 700; cursor: pointer; border: 1px solid; text-transform: uppercase; background: transparent; }
+    .action-btn.green { border-color: var(--green); color: var(--green); }
+    .action-btn.red { border-color: var(--red); color: #e05a6a; }
+    .action-btn.blue { border-color: var(--blue); color: var(--blue); }
+    .action-btn.orange { border-color: var(--orange); color: var(--orange); }
+    .search-bar { width: 100%; background: var(--card); border: 1px solid rgba(0,180,216,0.2); border-radius: 8px; padding: 11px 14px; color: var(--white); font-size: 0.95rem; outline: none; margin-bottom: 12px; }
+    .filter-pills { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+    .pill { padding: 5px 12px; border-radius: 20px; font-size: 0.68rem; font-weight: 700; cursor: pointer; border: 1px solid; white-space: nowrap; background: transparent; text-transform: uppercase; }
+    .pill.all { border-color: var(--blue); color: var(--blue); }
+    .pill.all.active { background: var(--blue); color: var(--navy); }
+    .pill.p-sold { border-color: var(--green); color: var(--green); }
+    .pill.p-sold.active { background: var(--green); color: white; }
+    .pill.p-estimate { border-color: var(--yellow); color: var(--yellow); }
+    .pill.p-estimate.active { background: var(--yellow); color: var(--navy); }
+    .pill.p-followup { border-color: var(--orange); color: var(--orange); }
+    .pill.p-followup.active { background: var(--orange); color: white; }
+    .pill.p-lost { border-color: var(--red); color: #e05a6a; }
+    .pill.p-lost.active { background: var(--red); color: white; }
+    .rep-section { background: var(--card); border-radius: 10px; padding: 14px; margin-bottom: 12px; border: 1px solid rgba(0,180,216,0.2); }
+    .rep-section h3 { font-size: 0.9rem; font-weight: 900; color: var(--blue); margin-bottom: 10px; }
+    .rep-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+    .rep-stat { text-align: center; }
+    .rep-stat-val { font-size: 1rem; font-weight: 900; }
+    .rep-stat-lbl { font-size: 0.58rem; color: var(--gray); text-transform: uppercase; }
+    .settings-card { background: var(--card); border-radius: 12px; padding: 16px; border: 1px solid rgba(0,180,216,0.2); margin-bottom: 14px; }
+    .settings-card h2 { font-size: 1rem; color: var(--blue); margin-bottom: 14px; font-weight: 900; }
+    .settings-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .settings-label { font-size: 0.85rem; font-weight: 600; }
+    .settings-val { font-size: 0.78rem; color: var(--gray); }
+    .btn-change { padding: 6px 14px; background: var(--blue); color: var(--navy); border: none; border-radius: 6px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--green); color: white; padding: 12px 24px; border-radius: 24px; font-weight: 700; font-size: 0.88rem; z-index: 9999; display: none; white-space: nowrap; }
+    .toast.show { display: block; }
+    .toast.error { background: var(--red); }
+    .empty-state { text-align: center; padding: 32px 20px; color: var(--gray); }
+    .empty-state span { font-size: 2rem; display: block; margin-bottom: 8px; }
+    .section-title { font-size: 0.75rem; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; margin-top: 4px; }
+    .saving-ind { text-align: center; font-size: 0.75rem; color: var(--gray); margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-logo"><svg width="64" height="64" viewBox="0 0 840 840" style="vertical-align:middle;margin-right:10px;margin-bottom:6px;"><circle cx="420" cy="420" r="160" fill="none" stroke="#00B4D8" stroke-width="12"/><circle cx="420" cy="420" r="90" fill="#00B4D8"/><line x1="420" y1="200" x2="420" y2="140" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="420" y1="640" x2="420" y2="700" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="200" y1="420" x2="140" y2="420" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="640" y1="420" x2="700" y2="420" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="264" y1="264" x2="222" y2="222" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="576" y1="576" x2="618" y2="618" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="576" y1="264" x2="618" y2="222" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="264" y1="576" x2="222" y2="618" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/></svg>SUNNYDAZE</div>
+  <div class="login-sub">Pressure Washing · Sales & Job Tracker</div>
+  <div class="login-card">
+    <h3>Select Your Profile</h3>
+    <div id="loginBtns"></div>
+    <button class="manager-btn" onclick="mgrAccess()">👔 MANAGER VIEW</button>
+  </div>
+</div>
+
+<div class="pin-screen" id="pinScreen">
+  <div class="pin-title" id="pinTitle">Enter PIN</div>
+  <div class="pin-sub" id="pinSub">Enter your 4-digit PIN</div>
+  <div class="pin-display" id="pinDisplay">_ _ _ _</div>
+  <div class="pin-pad">
+    <div class="pin-key" onclick="pinKey('1')">1</div>
+    <div class="pin-key" onclick="pinKey('2')">2</div>
+    <div class="pin-key" onclick="pinKey('3')">3</div>
+    <div class="pin-key" onclick="pinKey('4')">4</div>
+    <div class="pin-key" onclick="pinKey('5')">5</div>
+    <div class="pin-key" onclick="pinKey('6')">6</div>
+    <div class="pin-key" onclick="pinKey('7')">7</div>
+    <div class="pin-key" onclick="pinKey('8')">8</div>
+    <div class="pin-key" onclick="pinKey('9')">9</div>
+    <div class="pin-key clear" onclick="pinClear()">CLR</div>
+    <div class="pin-key" onclick="pinKey('0')">0</div>
+    <div class="pin-key back" onclick="pinBack()">⌫</div>
+  </div>
+  <div class="pin-error" id="pinError">Incorrect PIN. Try again.</div>
+  <button id="fpPinBtn" onclick="pinFingerprint()" style="display:none;margin-top:14px;background:none;border:1px solid #5cb85c;color:#5cb85c;padding:10px 24px;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;">👆 USE FINGERPRINT</button>
+  <div class="pin-cancel" onclick="cancelPin()">Cancel</div>
+</div>
+
+<header id="mainHeader" style="display:none">
+  <div>
+    <div class="header-logo"><svg width="32" height="32" viewBox="0 0 840 840" style="vertical-align:middle;margin-right:6px;margin-bottom:3px;"><circle cx="420" cy="420" r="160" fill="none" stroke="#00B4D8" stroke-width="12"/><circle cx="420" cy="420" r="90" fill="#00B4D8"/><line x1="420" y1="200" x2="420" y2="140" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="420" y1="640" x2="420" y2="700" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="200" y1="420" x2="140" y2="420" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="640" y1="420" x2="700" y2="420" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="264" y1="264" x2="222" y2="222" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="576" y1="576" x2="618" y2="618" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="576" y1="264" x2="618" y2="222" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/><line x1="264" y1="576" x2="222" y2="618" stroke="#00B4D8" stroke-width="14" stroke-linecap="round"/></svg>SUNNYDAZE SALES</div>
+    <div class="header-rep" id="headerRep"></div>
+  </div>
+  <div class="header-right">
+    <div style="font-size:0.7rem;color:var(--gray)" id="headerDate"></div>
+    <button class="hdr-btn blue" id="mgrHeaderBtn" onclick="mgrAccess()" style="display:none">👔 Mgr</button>
+    <button class="hdr-btn" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div class="tabs" id="mainTabs" style="display:none">
+  <button class="tab active" id="tab-dashboard" onclick="switchTab('dashboard')">📊 Dash</button>
+  <button class="tab" id="tab-log" onclick="switchTab('log')">➕ Log</button>
+  <button class="tab" id="tab-leads" onclick="switchTab('leads')">👥 Leads</button>
+  <button class="tab" id="tab-jobs" onclick="switchTab('jobs')">🔧 Jobs</button>
+  <button class="tab" id="tab-commercial" onclick="switchTab('commercial')" style="display:none">🏢 Biz</button>
+  <button class="tab" id="tab-manager" onclick="switchTab('manager')" style="display:none">👔 Mgr</button>
+  <button class="tab" id="tab-expenses" onclick="switchTab('expenses')" style="display:none">💸 Expenses</button>
+  <button class="tab" id="tab-settings" onclick="switchTab('settings')" style="display:none">⚙️</button>
+</div>
+
+<div class="view active" id="view-dashboard">
+  <div class="stats">
+    <div class="stat-card green"><div class="stat-label">🏠 Residential</div><div class="stat-value" id="d-revenue">$0</div></div>
+    <div class="stat-card" style="border-color:#00B4D8"><div class="stat-label">🏢 Business</div><div class="stat-value" id="d-biz-revenue">$0</div></div>
+    <div class="stat-card green"><div class="stat-label">💰 Combined</div><div class="stat-value" id="d-combined">$0</div></div>
+    <div class="stat-card yellow"><div class="stat-label">📋 Estimates</div><div class="stat-value" id="d-estimates">0</div></div>
+    <div class="stat-card orange"><div class="stat-label">🔔 Follow Ups</div><div class="stat-value" id="d-followups">0</div></div>
+    <div class="stat-card"><div class="stat-label">✅ Close Rate</div><div class="stat-value" id="d-closerate">0%</div></div>
+    <div class="stat-card green"><div class="stat-label">🤝 Sold</div><div class="stat-value" id="d-sold">0</div></div>
+    <div class="stat-card red"><div class="stat-label">❌ Lost</div><div class="stat-value" id="d-lost">0</div></div>
+    <div class="stat-card green"><div class="stat-label">💵 Commission</div><div class="stat-value" id="d-commission">$0</div></div>
+  </div>
+  <div class="section-title">🔔 Today's Follow Ups</div>
+  <div class="customer-list" id="d-followup-list"></div>
+  <div class="section-title" style="margin-top:14px">Recent Activity</div>
+  <div class="customer-list" id="d-recent"></div>
+</div>
+
+<div class="view" id="view-log">
+  <div class="form-card">
+    <h2>➕ Log Customer</h2>
+    <div class="form-group">
+      <label>Customer Type *</label>
+      <div class="form-row" style="gap:10px;">
+        <button id="type-residential" class="status-btn estimate active" style="flex:1;" onclick="setCustomerType('Residential')">🏠 RESIDENTIAL</button>
+        <button id="type-business" class="status-btn sold" style="flex:1;" onclick="setCustomerType('Business')">🏢 BUSINESS</button>
+      </div>
+      <input type="hidden" id="l-type" value="Residential"/>
+    </div>
+    <div class="form-group">
+      <label>Outcome *</label>
+      <div class="status-grid">
+        <button class="status-btn outcome-btn sold" onclick="setStatus('Sold')">✅ SOLD</button>
+        <button class="status-btn outcome-btn estimate" onclick="setStatus('Estimate')">📋 ESTIMATE</button>
+        <button class="status-btn outcome-btn followup" onclick="setStatus('Follow Up')">🔔 FOLLOW UP</button>
+        <button class="status-btn outcome-btn lost" onclick="setStatus('Lost')">❌ NOT INTERESTED</button>
+      </div>
+      <input type="hidden" id="l-status"/>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>First Name *</label><input type="text" id="l-fname" placeholder="John"/></div>
+      <div class="form-group"><label>Last Name *</label><input type="text" id="l-lname" placeholder="Smith"/></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Phone Number *</label><input type="tel" id="l-phone" placeholder="(814) 555-0000"/></div>
+      <div class="form-group"><label>Email *</label>
+        <input type="email" id="l-email" placeholder="john@email.com" oninput="document.getElementById('l-email-na').value='';"/>
+        <select id="l-email-na" onchange="if(this.value){document.getElementById('l-email').value=this.value;}" style="margin-top:4px;background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:8px;padding:8px 12px;color:var(--gray);font-size:0.8rem;width:100%;outline:none;">
+          <option value="">-- No email? Select below --</option>
+          <option value="no-email@noemail.com">No Email Available</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label>Street Address *</label><input type="text" id="l-address" placeholder="123 Main St"/></div>
+    <div class="form-row" style="grid-template-columns:1fr 80px 120px;gap:8px;">
+      <div class="form-group"><label>City *</label><input type="text" id="l-city" placeholder="Erie"/></div>
+      <div class="form-group"><label>State *</label><input type="text" id="l-state" placeholder="PA" maxlength="2" style="text-transform:uppercase;"/></div>
+      <div class="form-group"><label>Zip *</label><input type="text" id="l-zip" placeholder="16501" maxlength="5" oninput="lookupZip(this.value)"/></div>
+    </div>
+    <div class="form-group">
+      <label>Service</label>
+      <div style="background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:8px;padding:10px 12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="svc-check" value="House Washing" style="width:16px;height:16px;"/> House Washing</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="svc-check" value="Mobile Home Washing" style="width:16px;height:16px;"/> Mobile Home</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="svc-check" value="Driveway & Concrete" style="width:16px;height:16px;"/> Driveway & Concrete</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="svc-check" value="Deck & Fence" style="width:16px;height:16px;"/> Deck & Fence</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="svc-check" value="Roof Treatment" style="width:16px;height:16px;"/> Roof Treatment</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="svc-check" value="Gutter Cleaning" style="width:16px;height:16px;"/> Gutter Cleaning</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="svc-check" value="Commercial Cleaning" style="width:16px;height:16px;"/> Commercial</label>
+        </div>
+      </div>
+    </div>
+    <div class="form-group"><label>Amount ($)</label><input type="number" id="l-amount" placeholder="0.00" step="0.01" min="0" oninput="calcTax()"/></div>
+    <div class="tax-box" id="taxBox">
+      <div class="tax-toggle"><input type="checkbox" id="l-taxable" onchange="calcTax()"/><label for="l-taxable">Apply PA Sales Tax (6%)</label></div>
+      <div class="tax-row"><span>Subtotal</span><span id="t-subtotal">$0.00</span></div>
+      <div class="tax-row"><span>PA Tax (6%)</span><span id="t-tax">$0.00</span></div>
+      <div class="tax-row total"><span>TOTAL</span><span id="t-total">$0.00</span></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Job Date *</label><input type="date" id="l-date" oninput="autoFollowUp(this.value)"/></div>
+      <div class="form-group"><label>Follow Up Date</label><input type="date" id="l-followup"/><span class="form-hint" style="font-size:0.68rem;color:var(--gray);">Auto-set to 2 years from job date</span></div>
+    </div>
+    <div class="form-group"><label>Notes</label><textarea id="l-notes" rows="2" placeholder="Notes..."></textarea></div>
+    <button class="btn-submit" onclick="saveCustomer()">💾 SAVE</button>
+    <div class="saving-ind" id="savingInd">⏳ Saving to Google Sheets...</div>
+  </div>
+</div>
+
+<div class="view" id="view-leads">
+  <input class="search-bar" type="text" placeholder="🔍 Search..." oninput="renderLeads(this.value)"/>
+  <div class="filter-pills">
+    <button class="pill all active" onclick="filterBy('All',this)">All Active</button>
+    <button class="pill p-estimate" onclick="filterBy('Estimate',this)">📋 Estimate</button>
+    <button class="pill p-followup" onclick="filterBy('Follow Up',this)">🔔 Follow Up</button>
+    <button class="pill p-lost" onclick="filterBy('Lost',this)">❌ Lost</button>
+    <button class="pill" style="border-color:#6c757d;color:#6c757d" onclick="filterBy('Cancelled',this)">🚫 Cancelled</button>
+  </div>
+  <div class="customer-list" id="leads-list"></div>
+</div>
+
+<div class="view" id="view-jobs">
+  <div class="stats three">
+    <div class="stat-card green"><div class="stat-label">💰 Collected</div><div class="stat-value" id="j-collected">$0</div></div>
+    <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="j-unpaid">$0</div></div>
+    <div class="stat-card"><div class="stat-label">📋 Active Jobs</div><div class="stat-value" id="j-count">0</div></div>
+  </div>
+  <div class="filter-pills">
+    <button class="pill all active" id="jobs-pill-active" onclick="filterJobs('active',this)">🔧 Active</button>
+    <button class="pill p-sold" id="jobs-pill-completed" onclick="filterJobs('completed',this)">✅ Completed</button>
+  </div>
+  <div id="return-visits-due" style="display:none;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:10px;padding:12px 14px;margin-bottom:12px;">
+    <div style="font-size:0.8rem;font-weight:700;color:#a78bfa;margin-bottom:8px;">📅 Return Visits Due Soon</div>
+    <div id="return-visits-list"></div>
+  </div>
+  <input class="search-bar" type="text" placeholder="🔍 Search jobs..." oninput="renderJobs(this.value)"/>
+  <div class="customer-list" id="jobs-list"></div>
+</div>
+
+<!-- COMMERCIAL -->
+<div class="view" id="view-commercial">
+  <div class="stats three">
+    <div class="stat-card green"><div class="stat-label">💰 Collected</div><div class="stat-value" id="c-revenue">$0</div></div>
+    <div class="stat-card"><div class="stat-label">🏢 Accounts</div><div class="stat-value" id="c-count">0</div></div>
+    <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="c-unpaid">0</div></div>
+  </div>
+  <div class="form-card" style="margin-bottom:14px">
+    <h2>🏢 Add Commercial Account</h2>
+    <div class="form-group"><label>Business Name *</label><input type="text" id="c-business" placeholder="ABC Restaurant"/></div>
+    <div class="form-row">
+      <div class="form-group"><label>Contact Name</label><input type="text" id="c-contact" placeholder="John Smith"/></div>
+      <div class="form-group"><label>Phone</label><input type="tel" id="c-phone" placeholder="(814) 555-0000"/></div>
+    </div>
+    <div class="form-group"><label>Address</label><input type="text" id="c-address" placeholder="123 Main St, Erie PA"/></div>
+    <div class="form-group">
+      <label>Service</label>
+      <div style="background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:8px;padding:10px 12px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Parking Lot Cleaning" style="width:16px;height:16px;"/> Parking Lot</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Building Exterior Wash" style="width:16px;height:16px;"/> Building Exterior</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Dumpster Area Cleaning" style="width:16px;height:16px;"/> Dumpster Area</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Sidewalk & Entrance" style="width:16px;height:16px;"/> Sidewalk & Entrance</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Grease Trap Area" style="width:16px;height:16px;"/> Grease Trap Area</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Full Commercial Clean" style="width:16px;height:16px;"/> Full Commercial</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="House Washing" style="width:16px;height:16px;"/> House Washing</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--white);text-transform:none;letter-spacing:0;font-weight:normal;cursor:pointer;"><input type="checkbox" class="c-svc-check" value="Driveway & Concrete" style="width:16px;height:16px;"/> Driveway & Concrete</label>
+        </div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Schedule</label>
+        <select id="c-schedule">
+          <option value="">Select...</option>
+          <option>Daily</option>
+          <option>Weekly</option>
+          <option>Bi-Weekly</option>
+          <option>Monthly</option>
+          <option>Quarterly</option>
+          <option>Yearly</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Amount ($)</label><input type="number" id="c-amount" placeholder="0.00" step="0.01" min="0"/></div>
+    </div>
+    <div class="form-group"><label>Next Service Date</label><input type="date" id="c-nextdate"/></div>
+    <div class="form-group"><label>Notes</label><textarea id="c-notes" rows="2" placeholder="Gate code, special instructions..."></textarea></div>
+    <button class="btn-submit" onclick="saveCommercial()">💾 SAVE ACCOUNT</button>
+    <div class="saving-ind" id="c-savingInd">⏳ Saving to Google Sheets...</div>
+  </div>
+  <div class="form-card">
+    <h2>📋 Commercial Accounts</h2>
+    <input class="search-bar" type="text" placeholder="🔍 Search accounts..." oninput="renderCommercial(this.value)" style="margin-top:8px"/>
+    <div class="customer-list" id="commercial-list"></div>
+  </div>
+</div>
+
+<div class="view" id="view-manager">
+  <div class="section-title">📊 Team Overview</div>
+  <div style="margin-bottom:12px">
+    <a href="/timeclock" style="display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid rgba(0,180,216,0.2);border-radius:10px;padding:14px 16px;color:var(--white);text-decoration:none;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:1.5rem;">⏰</span>
+        <div>
+          <div style="font-size:0.9rem;font-weight:700;">Employee Time Clock</div>
+          <div style="font-size:0.72rem;color:var(--gray);">Track hourly employee hours & overtime</div>
+        </div>
+      </div>
+      <span style="color:var(--blue);font-size:1.2rem;">→</span>
+    </a>
+  </div>
+  <div class="stats">
+    <div class="stat-card green"><div class="stat-label">💰 Total Revenue</div><div class="stat-value" id="m-revenue">$0</div></div>
+    <div class="stat-card"><div class="stat-label">📋 Total Leads</div><div class="stat-value" id="m-leads">0</div></div>
+    <div class="stat-card green"><div class="stat-label">🤝 Total Sold</div><div class="stat-value" id="m-sold">0</div></div>
+    <div class="stat-card yellow"><div class="stat-label">📋 Estimates</div><div class="stat-value" id="m-estimates">0</div></div>
+    <div class="stat-card orange"><div class="stat-label">🔔 Follow Ups</div><div class="stat-value" id="m-followups">0</div></div>
+    <div class="stat-card"><div class="stat-label">✅ Close Rate</div><div class="stat-value" id="m-closerate">0%</div></div>
+  </div>
+  <div class="section-title">👤 Individual Performance</div>
+  <div id="rep-sections"></div>
+
+  <div class="section-title" style="margin-top:14px">💵 Commission Report</div>
+  <div id="commission-report"></div>
+
+  <div class="section-title" style="margin-top:14px">All Leads</div>
+  <div class="filter-pills">
+    <button class="pill all active" onclick="filterMgr('All',this)">All</button>
+    <button class="pill p-sold" onclick="filterMgr('Sold',this)">✅ Sold</button>
+    <button class="pill p-estimate" onclick="filterMgr('Estimate',this)">📋 Estimate</button>
+    <button class="pill p-followup" onclick="filterMgr('Follow Up',this)">🔔 Follow Up</button>
+    <button class="pill p-lost" onclick="filterMgr('Lost',this)">❌ Lost</button>
+  </div>
+  <div class="customer-list" id="mgr-leads-list"></div>
+</div>
+
+<div class="view" id="view-expenses">
+  <div class="stats" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="stat-card green"><div class="stat-label">💰 Revenue</div><div class="stat-value" id="exp-revenue">$0</div></div>
+    <div class="stat-card red"><div class="stat-label">💸 Expenses</div><div class="stat-value" id="exp-total">$0</div></div>
+    <div class="stat-card" id="exp-profit-card"><div class="stat-label">📈 Net Profit</div><div class="stat-value" id="exp-profit">$0</div></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <button class="btn-submit" style="flex:1;background:var(--blue);color:var(--navy);" onclick="document.getElementById('receiptInput').click()">📷 Scan Receipt</button>
+    <button class="btn-submit" style="flex:1;" onclick="showAddExpense()">➕ Add Manual</button>
+  </div>
+  <input type="file" id="receiptInput" accept="image/*" capture="environment" style="display:none" onchange="processReceipt(this)"/>
+  <div id="receiptProcessing" style="display:none;text-align:center;padding:20px;background:var(--card);border-radius:10px;margin-bottom:12px;">
+    <div style="font-size:1.5rem;margin-bottom:8px;">🤖</div>
+    <div style="color:var(--cyan);font-weight:700;">Reading receipt...</div>
+  </div>
+  <div class="section-title">Recent Expenses</div>
+  <div id="expense-list" class="customer-list"></div>
+</div>
+
+<!-- Add Expense Modal -->
+<div id="expenseModal" style="display:none;position:fixed;inset:0;background:rgba(10,22,40,0.95);z-index:9999;overflow-y:auto;padding:20px;">
+  <div style="background:var(--card);border-radius:14px;padding:20px;max-width:400px;margin:0 auto;border:1px solid rgba(0,180,216,0.3);">
+    <h2 style="color:var(--cyan);margin-bottom:16px;">💸 Add Expense</h2>
+    <div id="receiptPreview" style="display:none;margin-bottom:12px;">
+      <img id="receiptImg" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover;" />
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="exp-category" style="width:100%;background:var(--mid);border:1px solid rgba(0,180,216,0.3);border-radius:8px;padding:10px;color:var(--white);font-size:0.9rem;">
+        <option value="Fuel">⛽ Fuel</option>
+        <option value="Supplies">🧴 Supplies</option>
+        <option value="Equipment">🔧 Equipment</option>
+        <option value="Vehicle">🚗 Vehicle</option>
+        <option value="Phone">📱 Phone/Internet</option>
+        <option value="Marketing">📣 Marketing</option>
+        <option value="Other">📦 Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Vendor / Description</label>
+      <input type="text" id="exp-vendor" class="form-input" placeholder="e.g. Sunoco, Home Depot"/>
+    </div>
+    <div class="form-group">
+      <label>Amount</label>
+      <input type="number" id="exp-amount" class="form-input" placeholder="0.00" step="0.01"/>
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="exp-date" class="form-input"/>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <input type="text" id="exp-notes" class="form-input" placeholder="Optional notes"/>
+    </div>
+    <button class="btn-submit" onclick="saveExpense()" style="width:100%;margin-bottom:10px;">💾 Save Expense</button>
+    <button onclick="document.getElementById('expenseModal').style.display='none'" style="width:100%;padding:12px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;cursor:pointer;">Cancel</button>
+  </div>
+</div>
+
+<div class="view" id="view-settings">
+  <div class="settings-card">
+    <h2>⚙️ Rep Management</h2>
+    <div id="rep-pin-list"></div>
+    <button class="btn-submit" onclick="addNewRep()" style="margin-top:12px;background:var(--green);">➕ ADD NEW REP</button>
+  </div>
+  <div class="settings-card">
+    <h2>📄 Tax Forms</h2>
+    <p style="font-size:0.82rem;color:var(--gray);margin-bottom:14px">Download official IRS tax forms for contractors and employees</p>
+    <a href="https://www.irs.gov/pub/irs-pdf/f1099nec.pdf" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:10px;padding:14px 16px;color:var(--white);text-decoration:none;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:1.5rem;">📄</span>
+        <div>
+          <div style="font-size:0.9rem;font-weight:700;">1099-NEC Form</div>
+          <div style="font-size:0.72rem;color:var(--gray);">For independent contractors & 1099 employees</div>
+        </div>
+      </div>
+      <span style="color:var(--blue);font-size:1.2rem;">↓</span>
+    </a>
+    <a href="https://www.irs.gov/pub/irs-pdf/iw9.pdf" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:10px;padding:14px 16px;color:var(--white);text-decoration:none;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:1.5rem;">📄</span>
+        <div>
+          <div style="font-size:0.9rem;font-weight:700;">W-9 Form</div>
+          <div style="font-size:0.72rem;color:var(--gray);">Collect contractor info before issuing 1099</div>
+        </div>
+      </div>
+      <span style="color:var(--blue);font-size:1.2rem;">↓</span>
+    </a>
+  </div>
+  <div class="settings-card">
+    <h2>💰 Commission Rates</h2>
+    <p style="font-size:0.82rem;color:var(--gray);margin-bottom:14px">Set commission percentage for each rep on sold jobs</p>
+    <div id="commission-list"></div>
+  </div>
+  <div class="settings-card">
+    <h2>📊 Google Sheet</h2>
+    <p style="font-size:0.82rem;color:var(--gray);margin-bottom:14px">View all sales data</p>
+    <button class="btn-green" onclick="window.open('https://docs.google.com/spreadsheets/d/1L2ieCAX6EHKWncVMKV_hbuLjrALOHD4gGsKXD9BP_zQ/edit','_blank')">📊 OPEN GOOGLE SHEET</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbxNYUylSfxPrVY8Km0DVUillOMjfipIlSCDFsn0KEfnxymufJTWfKxZ9YTln89TZqIs/exec';
+var currentRep = null;
+var isManager = false;
+var pinMode = '';
+var pendingRep = null;
+var pinValue = '';
+var activeFilter = 'All';
+var mgrFilter = 'All';
+var mgrAllData = [];
+
+// Permanent blacklist - deleted IDs never show even if sheet still has them
+var sd_blacklist = JSON.parse(localStorage.getItem('sd_blacklist') || '[]');
+function blacklistId(id) {
+  id = String(id);
+  if (sd_blacklist.indexOf(id) < 0) { sd_blacklist.push(id); localStorage.setItem('sd_blacklist', JSON.stringify(sd_blacklist)); }
+}
+function isBlacklisted(id) { return sd_blacklist.indexOf(String(id)) >= 0; }
+var commercialSheetData = [];
+var jobsFilter = 'active';
+var sessionTimer = null;
+var SESSION_TIMEOUT = 5 * 60 * 1000; // 5 minutes
+
+function resetSessionTimer() {
+  if (!currentRep) return;
+  clearTimeout(sessionTimer);
+  sessionTimer = setTimeout(function() {
+    showToast('⏰ Session expired — logging out', true);
+    setTimeout(function() { logout(); }, 1500);
+  }, SESSION_TIMEOUT);
+}
+
+function clearSessionTimer() {
+  clearTimeout(sessionTimer);
+  sessionTimer = null;
+}
+
+// Reset timer on any user interaction
+document.addEventListener('touchstart', function() { if (currentRep) resetSessionTimer(); });
+document.addEventListener('click', function() { if (currentRep) resetSessionTimer(); });
+
+function getReps() {
+  try { return JSON.parse(localStorage.getItem('sd_reps') || 'null') || [{name:'Ringo Fry',id:'1001',pin:'1001'},{name:'Brian Lydic',id:'1002',pin:'1002'},{name:'Rob Keller',id:'1003',pin:'1003'}]; }
+  catch(e) { return [{name:'Ringo Fry',id:'1001',pin:'1001'},{name:'Brian Lydic',id:'1002',pin:'1002'},{name:'Rob Keller',id:'1003',pin:'1003'}]; }
+}
+function saveReps(r) { localStorage.setItem('sd_reps', JSON.stringify(r)); }
+function getMgrPin() { return localStorage.getItem('sd_mgr_pin') || '1014'; }
+function saveMgrPin(p) { localStorage.setItem('sd_mgr_pin', p); }
+function getData() { try { return JSON.parse(localStorage.getItem('sd_customers') || '[]'); } catch(e) { return []; } }
+function saveData(d) {
+  // Save primary data
+  localStorage.setItem('sd_customers', JSON.stringify(d));
+  // Always keep a timestamped backup
+  localStorage.setItem('sd_customers_backup', JSON.stringify(d));
+  localStorage.setItem('sd_customers_backup_time', new Date().toISOString());
+}
+function getBackup() { try { return JSON.parse(localStorage.getItem('sd_customers_backup') || '[]'); } catch(e) { return []; } }
+
+// RENDER LOGIN BUTTONS
+function renderLoginButtons() {
+  var reps = getReps();
+  document.getElementById('loginBtns').innerHTML = reps.map(function(r) {
+    return '<button class="rep-btn" onclick="selectRep(\'' + r.name + '\',\'' + r.id + '\')">' + r.name + '</button>';
+  }).join('');
+}
+
+// FINGERPRINT CHECK
+window.addEventListener('load', function() {
+  renderLoginButtons();
+});
+
+function repFingerprint() {
+  try {
+    var fpKey = 'sd_rep_fp_' + (pendingRep ? pendingRep.id : '');
+    var saved = localStorage.getItem(fpKey) ? JSON.parse(localStorage.getItem(fpKey)) : null;
+    if (!saved) { showToast('No fingerprint registered. Log in with PIN first.', true); return; }
+    var challenge = new Uint8Array(32);
+    window.crypto.getRandomValues(challenge);
+    navigator.credentials.get({
+      publicKey: { challenge: challenge, allowCredentials: [{ type: 'public-key', id: new Uint8Array(saved.id) }], userVerification: 'required', timeout: 60000 }
+    }).then(function() {
+      var reps = getReps();
+      var rep = reps.find(function(r) { return r.id === saved.repId; });
+      if (rep) {
+        document.getElementById('pinScreen').classList.remove('show');
+        document.getElementById('loginScreen').style.display = 'none';
+        currentRep = rep; isManager = false;
+        loginSuccess();
+        showToast('👆 Welcome ' + rep.name + '!');
+      } else { showToast('Rep not found — use PIN', true); }
+    }).catch(function() { showToast('Fingerprint failed — use PIN', true); });
+  } catch(e) { showToast('Fingerprint not available', true); }
+}
+
+// MANAGER ACCESS
+function mgrAccess() {
+  var mgrFp = localStorage.getItem('sd_mgr_fp') ? JSON.parse(localStorage.getItem('sd_mgr_fp')) : null;
+  if (mgrFp) {
+    try {
+      var challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      navigator.credentials.get({
+        publicKey: { challenge: challenge, allowCredentials: [{ type: 'public-key', id: new Uint8Array(mgrFp.id) }], userVerification: 'required', timeout: 60000 }
+      }).then(function() {
+        document.getElementById('pinScreen').classList.remove('show');
+        document.getElementById('loginScreen').style.display = 'none';
+        unlockManager();
+        showToast('👆 Manager access granted!');
+      }).catch(function() {
+        showToast('Fingerprint failed — use PIN', true);
+        showPin('manager');
+      });
+    } catch(e) { showPin('manager'); }
+  } else {
+    showPin('manager');
+  }
+}
+
+function selectRep(name, id) {
+  pendingRep = {name:name, id:id};
+  pinMode = 'rep';
+  document.getElementById('pinTitle').textContent = 'Welcome, ' + name;
+  document.getElementById('pinSub').textContent = 'Enter your 4-digit PIN';
+  showPinScreen();
+}
+
+function showPin(mode) {
+  pendingRep = null;
+  pinMode = mode;
+  document.getElementById('pinTitle').textContent = mode === 'manager' ? 'Manager Access' : 'Enter PIN';
+  document.getElementById('pinSub').textContent = 'Enter your 4-digit PIN';
+  showPinScreen();
+}
+
+function showPinScreen() {
+  pinValue = '';
+  updatePinDisplay();
+  document.getElementById('pinError').style.display = 'none';
+  document.getElementById('pinScreen').classList.add('show');
+  var fpBtn = document.getElementById('fpPinBtn');
+  fpBtn.style.display = 'none';
+  try {
+    if (window.PublicKeyCredential) {
+      // Only show fingerprint button if this specific user has registered one
+      var fpKey = pinMode === 'manager' ? 'sd_mgr_fp' : (pendingRep ? 'sd_rep_fp_' + pendingRep.id : null);
+      if (fpKey && localStorage.getItem(fpKey)) fpBtn.style.display = 'block';
+    }
+  } catch(e) {}
+}
+
+function pinFingerprint() {
+  if (pinMode === 'manager') {
+    mgrAccess();
+  } else {
+    repFingerprint();
+  }
+}
+
+function cancelPin() {
+  document.getElementById('pinScreen').classList.remove('show');
+  pinValue = '';
+}
+
+function pinKey(k) {
+  if (pinValue.length < 4) { pinValue += k; updatePinDisplay(); }
+  if (pinValue.length === 4) setTimeout(checkPin, 150);
+}
+function pinBack() { if (pinValue.length > 0) { pinValue = pinValue.slice(0,-1); updatePinDisplay(); } }
+function pinClear() { pinValue = ''; updatePinDisplay(); }
+function updatePinDisplay() {
+  var s = '';
+  for (var i = 0; i < 4; i++) s += (i < pinValue.length ? '●' : '_') + (i < 3 ? ' ' : '');
+  document.getElementById('pinDisplay').textContent = s;
+}
+
+function checkPin() {
+  var reps = getReps();
+  if (pinMode === 'manager') {
+    if (pinValue === getMgrPin()) {
+      document.getElementById('pinScreen').classList.remove('show');
+      // Offer to register manager fingerprint if not done yet
+      var mgrFp = localStorage.getItem('sd_mgr_fp');
+      if (!mgrFp && window.PublicKeyCredential) {
+        if (confirm('Register your fingerprint for faster manager access next time?')) {
+          registerMgrFingerprint();
+          return;
+        }
+      }
+      unlockManager();
+    } else { pinFail(); }
+  } else {
+    var rep = null;
+    for (var i = 0; i < reps.length; i++) {
+      if (reps[i].id === pendingRep.id && reps[i].pin === pinValue) { rep = reps[i]; break; }
+    }
+    if (rep) {
+      document.getElementById('pinScreen').classList.remove('show');
+      // Offer to register rep fingerprint if not done yet
+      var repFp = localStorage.getItem('sd_rep_fp_' + rep.id);
+      if (!repFp && window.PublicKeyCredential) {
+        if (confirm('Register your fingerprint for faster login next time?')) {
+          registerRepFingerprint(rep);
+          return;
+        }
+      }
+      currentRep = rep; isManager = false; loginSuccess();
+    } else { pinFail(); }
+  }
+}
+
+function registerMgrFingerprint() {
+  try {
+    var challenge = new Uint8Array(32);
+    window.crypto.getRandomValues(challenge);
+    navigator.credentials.create({
+      publicKey: {
+        challenge: challenge,
+        rp: { name: 'SunnyDaze Manager', id: location.hostname },
+        user: { id: new TextEncoder().encode('manager'), name: 'manager', displayName: 'Manager' },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        timeout: 60000
+      }
+    }).then(function(cred) {
+      localStorage.setItem('sd_mgr_fp', JSON.stringify({ id: Array.from(new Uint8Array(cred.rawId)) }));
+      document.getElementById('pinScreen').classList.remove('show');
+      showToast('👆 Manager fingerprint registered!');
+      unlockManager();
+    }).catch(function() {
+      document.getElementById('pinScreen').classList.remove('show');
+      unlockManager();
+    });
+  } catch(e) {
+    document.getElementById('pinScreen').classList.remove('show');
+    unlockManager();
+  }
+}
+
+function registerRepFingerprint(rep) {
+  try {
+    var challenge = new Uint8Array(32);
+    window.crypto.getRandomValues(challenge);
+    navigator.credentials.create({
+      publicKey: {
+        challenge: challenge,
+        rp: { name: 'SunnyDaze Sales', id: location.hostname },
+        user: { id: new TextEncoder().encode(rep.id), name: rep.name, displayName: rep.name },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+        timeout: 60000
+      }
+    }).then(function(cred) {
+      var fpKey = 'sd_rep_fp_' + rep.id;
+      localStorage.setItem(fpKey, JSON.stringify({ id: Array.from(new Uint8Array(cred.rawId)), repId: rep.id }));
+      document.getElementById('pinScreen').classList.remove('show');
+      showToast('👆 Fingerprint registered!');
+      currentRep = rep; isManager = false; loginSuccess();
+    }).catch(function() {
+      document.getElementById('pinScreen').classList.remove('show');
+      currentRep = rep; isManager = false; loginSuccess();
+    });
+  } catch(e) {
+    document.getElementById('pinScreen').classList.remove('show');
+    currentRep = rep; isManager = false; loginSuccess();
+  }
+}
+
+function pinFail() {
+  document.getElementById('pinError').style.display = 'block';
+  pinValue = ''; updatePinDisplay();
+}
+
+function unlockManager() {
+  if (!currentRep) {
+    isManager = true;
+    currentRep = {name:'Manager', id:'MGR'};
+    loginSuccess();
+  } else {
+    isManager = true;
+    document.getElementById('headerRep').textContent = '👔 Manager View';
+    document.getElementById('tab-commercial').style.display = 'block';
+    document.getElementById('tab-manager').style.display = 'block';
+    document.getElementById('tab-settings').style.display = 'block';
+    switchTab('manager');
+    showToast('👔 Manager access granted!');
+  }
+}
+
+function loginSuccess() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainHeader').style.display = 'flex';
+  document.getElementById('mainTabs').style.display = 'flex';
+  document.getElementById('headerRep').textContent = isManager ? '👔 Manager View' : 'Rep #' + currentRep.id + ' — ' + currentRep.name;
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  document.getElementById('l-date').value = new Date().toISOString().split('T')[0];
+  autoFollowUp(new Date().toISOString().split('T')[0]);
+  document.getElementById('mgrHeaderBtn').style.display = 'block';
+  if (isManager) {
+    document.getElementById('tab-commercial').style.display = 'block';
+    document.getElementById('tab-manager').style.display = 'block';
+    document.getElementById('tab-settings').style.display = 'block';
+    // Load sheet leads fresh on every manager login
+    fetch(SHEET_URL + '?t=' + Date.now(), {method:'GET', mode:'cors'})
+      .then(function(r){ return r.json(); })
+      .then(function(response){
+        var sheetData = (response.data || []).filter(function(d){ return !isBlacklisted(d.id); });
+        var counter = Date.now();
+        sheetData = sheetData.map(function(d){
+          if (!d.id || isNaN(parseInt(d.id))) d.id = counter--;
+          else d.id = parseInt(d.id);
+          return d;
+        });
+        localStorage.setItem('sd_customers', JSON.stringify(sheetData));
+        mgrAllData = sheetData;
+        renderLeads(''); renderJobs(''); updateDashboard();
+      }).catch(function(){
+        mgrAllData = [];
+        renderLeads(''); renderJobs('');
+      });
+  }
+  switchTab('dashboard');
+  resetSessionTimer();
+}
+
+function logout() {
+  clearSessionTimer();
+  currentRep = null; isManager = false;
+  document.getElementById('mainHeader').style.display = 'none';
+  document.getElementById('mainTabs').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('tab-commercial').style.display = 'none';
+  document.getElementById('tab-manager').style.display = 'none';
+  document.getElementById('tab-expenses').style.display = 'none';
+  document.getElementById('tab-settings').style.display = 'none';
+  document.getElementById('mgrHeaderBtn').style.display = 'none';
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.getElementById('view-dashboard').classList.add('active');
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.getElementById('tab-dashboard').classList.add('active');
+  renderLoginButtons();
+}
+
+function setCustomerType(type) {
+  document.getElementById('l-type').value = type;
+  document.getElementById('type-residential').className = 'status-btn estimate' + (type==='Residential'?' active':'');
+  document.getElementById('type-business').className = 'status-btn sold' + (type==='Business'?' active':'');
+}
+
+function setStatus(s) {
+  document.getElementById('l-status').value = s;
+  document.querySelectorAll('.outcome-btn').forEach(function(b){b.classList.remove('active');});
+  var map = {Sold:'sold',Estimate:'estimate','Follow Up':'followup',Lost:'lost'};
+  document.querySelector('.outcome-btn.' + map[s]).classList.add('active');
+  document.getElementById('taxBox').style.display = (s==='Sold'||s==='Estimate') ? 'block' : 'none';
+}
+
+function calcTax() {
+  var amt = parseFloat(document.getElementById('l-amount').value) || 0;
+  var taxable = document.getElementById('l-taxable').checked;
+  var tax = taxable ? amt*0.06 : 0;
+  document.getElementById('t-subtotal').textContent = '$'+amt.toFixed(2);
+  document.getElementById('t-tax').textContent = '$'+tax.toFixed(2);
+  document.getElementById('t-total').textContent = '$'+(amt+tax).toFixed(2);
+}
+
+function saveCustomer() {
+  var fname = document.getElementById('l-fname').value.trim();
+  var lname = document.getElementById('l-lname').value.trim();
+  var phone = document.getElementById('l-phone').value.trim();
+  var email = document.getElementById('l-email').value.trim() || document.getElementById('l-email-na').value;
+  var address = document.getElementById('l-address').value.trim();
+  var city = document.getElementById('l-city').value.trim();
+  var state = document.getElementById('l-state').value.trim();
+  var zip = document.getElementById('l-zip').value.trim();
+  var status = document.getElementById('l-status').value;
+  var amt = parseFloat(document.getElementById('l-amount').value) || 0;
+  var date = document.getElementById('l-date').value;
+  var checked = document.querySelectorAll('.svc-check:checked');
+  var services = Array.prototype.map.call(checked, function(c){ return c.value; }).join(', ');
+
+  // Only validate all fields for NEW customers, not edits
+  var editId = document.getElementById('l-fname').dataset.editId;
+  if (!editId) {
+    var errors = [];
+    if (!fname) errors.push('First Name');
+    if (!lname) errors.push('Last Name');
+    if (!phone) errors.push('Phone Number');
+    if (!email && document.getElementById('l-email-na').value === '') errors.push('Email (or select "No Email Available")');
+    if (!address) errors.push('Street Address');
+    if (!city) errors.push('City');
+    if (!state) errors.push('State');
+    if (!zip) errors.push('Zip Code');
+    if (!status) errors.push('Outcome (Sold/Estimate/Follow Up/Not Interested)');
+    if (!services) errors.push('Service (select at least one)');
+    if (!amt) errors.push('Amount');
+    if (!date) errors.push('Job Date');
+    if (errors.length > 0) { showToast('⚠️ Please fill in: ' + errors.join(', '), true); return; }
+  } else {
+    if (!fname) { showToast('⚠️ First Name is required', true); return; }
+    if (!status) { showToast('⚠️ Please select an Outcome', true); return; }
+  }
+
+  var taxable = document.getElementById('l-taxable').checked;
+  var tax = taxable ? amt*0.06 : 0;
+  var editId = document.getElementById('l-fname').dataset.editId;
+
+  if (editId) {
+    editId = parseInt(editId);
+    var data = getData();
+    var idx = -1;
+    for (var i=0; i<data.length; i++) { if (parseInt(data[i].id) === editId) { idx = i; break; } }
+
+    // If not in localStorage, pull from mgrAllData and add to localStorage
+    if (idx < 0 && mgrAllData.length > 0) {
+      var sheetC = mgrAllData.find(function(d){ return parseInt(d.id)===editId; });
+      if (sheetC) { data.unshift(JSON.parse(JSON.stringify(sheetC))); idx = 0; }
+    }
+
+    if (idx >= 0) {
+      var oldCustomer = JSON.parse(JSON.stringify(data[idx]));
+      data[idx].fname = fname;
+      data[idx].lname = document.getElementById('l-lname').value.trim();
+      data[idx].phone = document.getElementById('l-phone').value.trim();
+      data[idx].email = document.getElementById('l-email').value.trim();
+      data[idx].address = getFullAddress();
+      data[idx].service = services;
+      data[idx].amount = amt; data[idx].tax = tax; data[idx].total = amt+tax;
+      data[idx].status = status;
+      data[idx].date = document.getElementById('l-date').value;
+      data[idx].followup = document.getElementById('l-followup').value;
+      data[idx].payment = data[idx].payment || ''; // keep existing payment method
+      data[idx].notes = document.getElementById('l-notes').value.trim();
+      saveData(data);
+
+      // Also update mgrAllData
+      var mgrIdx = mgrAllData.findIndex(function(d){ return parseInt(d.id)===editId; });
+      if (mgrIdx >= 0) { mgrAllData[mgrIdx] = JSON.parse(JSON.stringify(data[idx])); }
+
+      // Safe update — save new version to sheet (updateRow matches by ID and updates in place)
+      var updatedCustomer = data[idx];
+      fetch(SHEET_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(Object.assign({}, updatedCustomer, {type:'update', originalFname: oldCustomer.fname, originalLname: oldCustomer.lname||'', originalRepId: oldCustomer.repId}))
+      });
+    }
+    delete document.getElementById('l-fname').dataset.editId;
+    showToast('✅ Customer updated!');
+    renderLeads(''); renderJobs(''); updateDashboard();
+  } else {
+    var custType = document.getElementById('l-type').value || 'Residential';
+    var customer = {
+      id: Date.now(), repId: currentRep.id, repName: currentRep.name,
+      fname: fname, lname: document.getElementById('l-lname').value.trim(),
+      phone: document.getElementById('l-phone').value.trim(),
+      email: document.getElementById('l-email').value.trim(),
+      address: getFullAddress(),
+      service: services, amount: amt, tax: tax, total: amt+tax,
+      taxable: taxable, status: status,
+      custType: custType,
+      date: document.getElementById('l-date').value,
+      followup: document.getElementById('l-followup').value,
+      payment: '',
+      notes: document.getElementById('l-notes').value.trim(), paid: 'No'
+    };
+
+    if (custType === 'Business') {
+      // Route to commercial — save as commercial account
+      var bizAccount = {
+        id: customer.id,
+        business: fname + ' ' + (document.getElementById('l-lname').value.trim()),
+        contact: fname + ' ' + (document.getElementById('l-lname').value.trim()),
+        phone: customer.phone,
+        address: customer.address,
+        service: services,
+        schedule: 'One-Time',
+        amount: amt+tax,
+        nextDate: customer.date,
+        repName: currentRep.name,
+        dateAdded: new Date().toLocaleDateString(),
+        paid: 'No',
+        notes: customer.notes,
+        custType: 'Business',
+        status: status
+      };
+      var bizData = getCommercialData();
+      bizData.unshift(bizAccount);
+      localStorage.setItem('sd_commercial', JSON.stringify(bizData));
+      if (commercialSheetData.length > 0) commercialSheetData.unshift(JSON.parse(JSON.stringify(bizAccount)));
+      fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},bizAccount,{type:'commercial'}))});
+      showToast('✅ Business lead saved to Biz tab!');
+    } else {
+      // Route to residential — leads/jobs
+      var data = getData(); data.unshift(customer); saveData(data);
+      if (mgrAllData.length > 0) { mgrAllData.unshift(JSON.parse(JSON.stringify(customer))); }
+      showToast('✅ Saved!');
+      document.getElementById('savingInd').style.display='block';
+      fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(customer)})
+        .then(function(){document.getElementById('savingInd').style.display='none'; showToast('✅ Saved to Google Sheets!');})
+        .catch(function(){document.getElementById('savingInd').style.display='none';});
+    }
+  }
+
+  ['l-fname','l-lname','l-phone','l-email','l-address','l-city','l-state','l-zip','l-amount','l-notes','l-followup'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value='';
+  });
+  var naEl = document.getElementById('l-email-na'); if(naEl) naEl.value='';
+  document.querySelectorAll('.svc-check').forEach(function(c){c.checked=false;});
+  document.getElementById('l-taxable').checked=false;
+  document.getElementById('l-date').value=new Date().toISOString().split('T')[0];
+  autoFollowUp(new Date().toISOString().split('T')[0]);
+  document.querySelectorAll('.outcome-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('l-status').value='';
+  document.getElementById('taxBox').style.display='none'; calcTax();
+  // Reset type to Residential
+  setCustomerType('Residential');
+  updateDashboard(); renderLeads(''); renderJobs(); renderCommercial('');
+  // Auto switch to correct tab after save
+  var savedType = document.getElementById('l-type') ? document.getElementById('l-type').value : 'Residential';
+  if (custType === 'Business') {
+    setTimeout(function(){ switchTab('commercial'); }, 600);
+  } else if (status === 'Sold') {
+    setTimeout(function(){ switchTab('jobs'); }, 600);
+  } else if (status === 'Estimate' || status === 'Follow Up' || status === 'Lost') {
+    setTimeout(function(){ switchTab('leads'); }, 600);
+  }
+}
+
+function updateDashboard() {
+  if (!currentRep) return;
+  var all = getData();
+  var data = isManager ? all : all.filter(function(d){return d.repId===currentRep.id;});
+  var sold=data.filter(function(d){return d.status==='Sold';}),
+      estimates=data.filter(function(d){return d.status==='Estimate';}),
+      followups=data.filter(function(d){return d.status==='Follow Up';}),
+      lost=data.filter(function(d){return d.status==='Lost';});
+  var revenue=sold.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
+  // Add partial payments to revenue
+  revenue += sold.filter(function(d){return d.paid==='Partial';}).reduce(function(s,d){return s+parseFloat(d.amountPaid||0);},0);
+  var total=sold.length+estimates.length+lost.length;
+  document.getElementById('d-revenue').textContent='$'+revenue.toFixed(0);
+  // Business revenue from commercial accounts
+  var bizData = getCommercialData();
+  var bizRevenue = bizData.filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
+  var bizEl = document.getElementById('d-biz-revenue');
+  var combEl = document.getElementById('d-combined');
+  if (bizEl) bizEl.textContent = '$'+bizRevenue.toFixed(0);
+  if (combEl) combEl.textContent = '$'+(revenue+bizRevenue).toFixed(0);
+  document.getElementById('d-estimates').textContent=estimates.length;
+  document.getElementById('d-followups').textContent=followups.length;
+  document.getElementById('d-closerate').textContent=(total?Math.round((sold.length/total)*100):0)+'%';
+  document.getElementById('d-sold').textContent=sold.length;
+  document.getElementById('d-lost').textContent=lost.length;
+  // Commission for current rep
+  var commission = 0;
+  try {
+    if (!isManager && currentRep && currentRep.id) {
+      commission = sold.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){
+        return s + calcCommission(currentRep.id, d.total||d.amount||0);
+      }, 0);
+    }
+  } catch(e) { commission = 0; }
+  document.getElementById('d-commission').textContent='$'+commission.toFixed(2);
+  var today=new Date().toISOString().split('T')[0];
+  var todayFU=data.filter(function(d){return d.followup===today;});
+  document.getElementById('d-followup-list').innerHTML=todayFU.length?todayFU.map(cardHTML).join(''):'<div class="empty-state"><span>✅</span>No follow ups today!</div>';
+  document.getElementById('d-recent').innerHTML=data.slice(0,5).map(cardHTML).join('')||'<div class="empty-state"><span>📋</span>No activity yet.</div>';
+}
+
+var currentLeadSearch='';
+function renderLeads(search) {
+  search=search||''; currentLeadSearch=search;
+
+  if (isManager) {
+    var list = document.getElementById('leads-list');
+    var all = getData();
+    var data = all.slice();
+    if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold' && d.status!=='Cancelled' && d.status!=='Completed';});
+    else data=data.filter(function(d){return d.status===activeFilter && d.status!=='Completed';});
+    if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
+    list.innerHTML=data.length?data.map(function(c){return cardHTML(c,false,true);}).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
+    return;
+  }
+
+  // Rep sees only their own leads — exclude sold
+  var all=getData();
+  var data=all.filter(function(d){return d.repId===currentRep.id;});
+  if(activeFilter==='All') data=data.filter(function(d){return d.status!=='Sold' && d.status!=='Cancelled' && d.status!=='Completed';});
+  else data=data.filter(function(d){return d.status===activeFilter && d.status!=='Completed';});
+  if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase())||(d.address||'').toLowerCase().includes(search.toLowerCase());});
+  document.getElementById('leads-list').innerHTML=data.length?data.map(cardHTML).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
+}
+
+function filterBy(f,el) {
+  activeFilter=f;
+  document.querySelectorAll('#view-leads .pill').forEach(function(p){p.classList.remove('active');});
+  el.classList.add('active'); renderLeads(currentLeadSearch);
+}
+
+function filterJobs(filter, el) {
+  jobsFilter = filter;
+  document.querySelectorAll('#view-jobs .pill').forEach(function(p){p.classList.remove('active');});
+  el.classList.add('active');
+  renderJobs('');
+}
+
+function renderJobs(search) {
+  search=search||'';
+  var all=getData();
+  if(isManager && mgrAllData.length>0){
+    var localIds=all.map(function(d){return parseInt(d.id);});
+    var sheetOnly=mgrAllData.filter(function(d){return localIds.indexOf(parseInt(d.id))<0;});
+    all=all.concat(sheetOnly);
+  }
+  var sold=(isManager?all:all.filter(function(d){return d.repId===currentRep.id;})).filter(function(d){return d.status==='Sold'||d.status==='Completed';});
+  if(search) sold=sold.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase());});
+
+  // Split active vs completed
+  var activeJobs = sold.filter(function(d){ return d.status!=='Completed'; });
+  var completedJobs = sold.filter(function(d){ return d.status==='Completed'; });
+  var jobs = jobsFilter==='completed' ? completedJobs : activeJobs;
+
+  var collected=activeJobs.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
+  collected+=activeJobs.filter(function(d){return d.paid==='Partial';}).reduce(function(s,d){return s+parseFloat(d.amountPaid||0);},0);
+  // Add completed jobs to collected total
+  collected+=completedJobs.reduce(function(s,d){return s+(d.total||d.amount||0);},0);
+  var unpaid=activeJobs.filter(function(d){return d.paid!=='Yes';}).reduce(function(s,d){return s+parseFloat(d.balance!=null?d.balance:(d.total||d.amount||0));},0);
+
+  document.getElementById('j-collected').textContent='$'+collected.toFixed(0);
+  document.getElementById('j-unpaid').textContent='$'+unpaid.toFixed(0);
+  document.getElementById('j-count').textContent=activeJobs.length;
+  document.getElementById('jobs-list').innerHTML=jobs.length?jobs.map(function(c){return cardHTML(c,jobsFilter!=='completed');}).join(''):
+    '<div class="empty-state"><span>'+(jobsFilter==='completed'?'✅':'🔧')+'</span>'+(jobsFilter==='completed'?'No completed jobs yet.':'No active jobs yet.')+'</div>';
+
+  // Show return visits due within 30 days
+  var now = new Date(); now.setHours(0,0,0,0);
+  var soon = new Date(now); soon.setDate(now.getDate()+30);
+  var returnDue = jobs.filter(function(j){
+    if(!j.returnVisit) return false;
+    var d = new Date(j.returnVisit+'T12:00:00');
+    return d >= now && d <= soon;
+  }).sort(function(a,b){ return new Date(a.returnVisit)-new Date(b.returnVisit); });
+
+  var rvDiv = document.getElementById('return-visits-due');
+  var rvList = document.getElementById('return-visits-list');
+  if(returnDue.length > 0){
+    rvDiv.style.display='block';
+    rvList.innerHTML = returnDue.map(function(j){
+      var d = new Date(j.returnVisit+'T12:00:00');
+      var daysAway = Math.ceil((d-now)/(1000*60*60*24));
+      var label = daysAway===0?'TODAY':daysAway===1?'Tomorrow':'In '+daysAway+' days';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(111,66,193,0.2);font-size:0.8rem;">'+
+        '<div><span style="font-weight:700;color:var(--white);">'+j.fname+' '+(j.lname||'')+'</span>'+(j.phone?'<br><span style="color:var(--gray);">📞 '+j.phone+'</span>':'')+'</div>'+
+        '<div style="text-align:right;"><span style="color:#a78bfa;font-weight:700;">'+label+'</span><br><span style="color:var(--gray);font-size:0.7rem;">'+fmtDate(j.returnVisit)+'</span></div>'+
+        '</div>';
+    }).join('');
+  } else {
+    rvDiv.style.display='none';
+  }
+}
+
+function updateManager() {
+  var data = getData();
+  var reps = getReps();
+  
+  // Show loading state
+  document.getElementById('mgr-leads-list').innerHTML = '<div class="empty-state"><span>⏳</span>Loading all leads from Google Sheets...</div>';
+
+  // Fetch all data from Google Sheets
+  fetch(SHEET_URL + '?t=' + Date.now(), {
+    method: 'GET',
+    mode: 'cors'
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(response) {
+      var sheetData = response.data || [];
+      // Filter blacklisted and assign proper integer IDs
+      var counter = Date.now();
+      sheetData = sheetData.filter(function(d){ return !isBlacklisted(d.id); }).map(function(d){
+        if (!d.id || isNaN(parseInt(d.id))) d.id = counter--;
+        else d.id = parseInt(d.id);
+        return d;
+      });
+      var allData = sheetData.length > 0 ? sheetData : data;
+      
+      var sold = allData.filter(function(d){return d.status==='Sold'||d.status==='Completed';});
+      var estimates = allData.filter(function(d){return d.status==='Estimate';});
+      var followups = allData.filter(function(d){return d.status==='Follow Up';});
+      var lost = allData.filter(function(d){return d.status==='Lost';});
+      var revenue = allData.filter(function(d){return d.status==='Completed';}).reduce(function(s,d){return s+parseFloat(d.total||d.amount||0);},0);
+      var total = sold.length + estimates.length + lost.length;
+
+      document.getElementById('m-revenue').textContent = '$' + revenue.toFixed(0);
+      document.getElementById('m-leads').textContent = allData.length;
+      document.getElementById('m-sold').textContent = sold.length;
+      document.getElementById('m-estimates').textContent = estimates.length;
+      document.getElementById('m-followups').textContent = followups.length;
+      document.getElementById('m-closerate').textContent = (total ? Math.round((sold.length/total)*100) : 0) + '%';
+
+      // Check today's follow ups and alert
+      var today = new Date().toISOString().split('T')[0];
+      var todayFU = allData.filter(function(d){ return d.followup === today && d.status === 'Follow Up'; });
+      if (todayFU.length > 0) {
+        // Show badge on Follow Up pill
+        var fuPill = document.querySelector('#view-manager .p-followup');
+        if (fuPill) fuPill.textContent = '🔔 Follow Up (' + todayFU.length + ' TODAY)';
+        // Show alert
+        setTimeout(function() {
+          showFollowUpAlert(todayFU);
+        }, 500);
+      }
+
+      // Per rep stats
+      document.getElementById('rep-sections').innerHTML = reps.map(function(rep) {
+        var rd = allData.filter(function(d){return d.repId===rep.id;});
+        var rs = rd.filter(function(d){return d.status==='Sold';});
+        var rr = rs.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){return s+(d.total||d.amount||0);},0);
+        var rt = rd.filter(function(d){return ['Sold','Estimate','Lost'].indexOf(d.status)>=0;}).length;
+        var repComm = rs.filter(function(d){return d.paid==='Yes';}).reduce(function(s,d){
+          return s + calcCommission(rep.id, d.total||d.amount||0);
+        }, 0);
+        var commRate = getRepCommission(rep.id);
+        return '<div class="rep-section"><h3>👤 '+rep.name+' <span style="font-size:0.75rem;color:var(--gray)">#'+rep.id+'</span> <span style="font-size:0.7rem;color:#5cb85c;">'+commRate+'% comm</span></h3><div class="rep-stats">'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">$'+rr.toFixed(0)+'</div><div class="rep-stat-lbl">Revenue</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">'+rs.length+'</div><div class="rep-stat-lbl">Sold</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:var(--yellow)">'+rd.filter(function(d){return d.status==="Estimate";}).length+'</div><div class="rep-stat-lbl">Estimates</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:var(--orange)">'+rd.filter(function(d){return d.status==="Follow Up";}).length+'</div><div class="rep-stat-lbl">Follow Ups</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val">'+(rt?Math.round((rs.length/rt)*100):0)+'%</div><div class="rep-stat-lbl">Close Rate</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:#e05a6a">'+rd.filter(function(d){return d.status==="Lost";}).length+'</div><div class="rep-stat-lbl">Lost</div></div>'+
+          '<div class="rep-stat"><div class="rep-stat-val" style="color:#5cb85c">$'+repComm.toFixed(0)+'</div><div class="rep-stat-lbl">Commission</div></div>'+
+          '</div></div>';
+      }).join('');
+
+      mgrAllData = allData;
+      renderCommissionReport(allData);
+      renderMgrLeads('');
+    })
+    .catch(function() {
+      var allData = data;
+      var sold = allData.filter(function(d){return d.status==='Sold'||d.status==='Completed';});
+      var estimates = allData.filter(function(d){return d.status==='Estimate';});
+      var followups = allData.filter(function(d){return d.status==='Follow Up';});
+      var lost = allData.filter(function(d){return d.status==='Lost';});
+      var revenue = allData.filter(function(d){return d.status==='Completed';}).reduce(function(s,d){return s+parseFloat(d.total||d.amount||0);},0);
+      var total = sold.length + estimates.length + lost.length;
+      document.getElementById('m-revenue').textContent = '$' + revenue.toFixed(0);
+      document.getElementById('m-leads').textContent = allData.length;
+      document.getElementById('m-sold').textContent = sold.length;
+      document.getElementById('m-estimates').textContent = estimates.length;
+      document.getElementById('m-followups').textContent = followups.length;
+      document.getElementById('m-closerate').textContent = (total ? Math.round((sold.length/total)*100) : 0) + '%';
+      document.getElementById('rep-sections').innerHTML = '<div class="empty-state"><span>⚠️</span>Could not load sheet data. Showing local data only.</div>';
+      mgrAllData = allData;
+      renderMgrLeads('');
+    });
+}
+
+function showFollowUpAlert(followups) {
+  var existing = document.getElementById('fuAlert');
+  if (existing) existing.remove();
+  
+  var alert = document.createElement('div');
+  alert.id = 'fuAlert';
+  alert.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,22,40,0.95);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;';
+  
+  var names = followups.map(function(f){ return '• ' + f.fname + ' ' + (f.lname||'') + (f.phone?' — 📞 '+f.phone:''); }).join('\n');
+  
+  alert.innerHTML = '<div style="background:var(--card);border:2px solid var(--orange);border-radius:16px;padding:24px;width:100%;max-width:340px;text-align:center;">' +
+    '<div style="font-size:2rem;margin-bottom:8px;">🔔</div>' +
+    '<div style="font-size:1.2rem;font-weight:900;color:var(--orange);margin-bottom:6px;">TODAY\'S FOLLOW UPS</div>' +
+    '<div style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;">You have <strong style="color:var(--white)">'+followups.length+'</strong> follow up'+(followups.length>1?'s':'')+' due today!</div>' +
+    '<div style="background:var(--mid);border-radius:8px;padding:12px;margin-bottom:16px;text-align:left;">' +
+    followups.map(function(f){
+      return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">' +
+        '<div style="font-size:0.9rem;font-weight:700;color:var(--white)">'+f.fname+' '+(f.lname||'')+'</div>' +
+        (f.phone?'<div style="font-size:0.78rem;color:var(--gray)">📞 '+f.phone+'</div>':'') +
+        (f.repName?'<div style="font-size:0.72rem;color:var(--blue)">Rep: '+f.repName+'</div>':'') +
+        '</div>';
+    }).join('') +
+    '</div>' +
+    '<button onclick="document.getElementById(\'fuAlert\').remove(); filterMgr(\'Follow Up\', document.querySelector(\'#view-manager .p-followup\'))" style="width:100%;padding:14px;background:var(--orange);color:white;border:none;border-radius:8px;font-weight:900;font-size:1rem;cursor:pointer;margin-bottom:8px;">VIEW FOLLOW UPS</button>' +
+    '<button onclick="document.getElementById(\'fuAlert\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:0.85rem;cursor:pointer;">Dismiss</button>' +
+    '</div>';
+  
+  document.body.appendChild(alert);
+}
+
+function renderMgrLeads(search) {
+  var data = mgrAllData.length > 0 ? mgrAllData : getData();
+  if(mgrFilter!=='All') data=data.filter(function(d){return d.status===mgrFilter;});
+  if(search) data=data.filter(function(d){return (d.fname+' '+d.lname).toLowerCase().includes(search.toLowerCase());});
+  
+  // Sort follow ups by follow up date ascending
+  if(mgrFilter==='Follow Up') {
+    data = data.sort(function(a,b){
+      var da = a.followup || '9999';
+      var db = b.followup || '9999';
+      return da < db ? -1 : da > db ? 1 : 0;
+    });
+    var today = new Date().toISOString().split('T')[0];
+    var todayFU = data.filter(function(d){ return d.followup === today; });
+    var otherFU = data.filter(function(d){ return d.followup !== today; });
+    var html = '';
+    if(todayFU.length > 0) {
+      html += '<div style="background:rgba(253,126,20,0.15);border:1px solid var(--orange);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:0.75rem;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:0.08em;">🔔 Due Today — ' + todayFU.length + ' Follow Up' + (todayFU.length>1?'s':'') + '</div>';
+      html += todayFU.map(function(c){return cardHTML(c,false,true);}).join('');
+      if(otherFU.length > 0) {
+        html += '<div style="font-size:0.72rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin:12px 0 8px;">Upcoming</div>';
+        html += otherFU.map(function(c){return cardHTML(c,false,true);}).join('');
+      }
+    } else {
+      html = data.length ? data.map(function(c){return cardHTML(c,false,true);}).join('') : '<div class="empty-state"><span>🔔</span>No follow ups found.</div>';
+    }
+    document.getElementById('mgr-leads-list').innerHTML = html;
+    return;
+  }
+  
+  document.getElementById('mgr-leads-list').innerHTML=data.length?data.map(function(c){return cardHTML(c,false,true);}).join(''):'<div class="empty-state"><span>👥</span>No leads found.</div>';
+}
+
+function filterMgr(f,el) {
+  mgrFilter=f;
+  document.querySelectorAll('#view-manager .pill').forEach(function(p){p.classList.remove('active');});
+  el.classList.add('active'); renderMgrLeads('');
+}
+
+function cardHTML(c,showPay,showRep) {
+  // Ensure ID is always a valid integer
+  if (!c.id || isNaN(parseInt(c.id))) c.id = Date.now() - Math.floor(Math.random()*999999);
+  c.id = parseInt(c.id);
+  var sc={Sold:'sold',Estimate:'estimate','Follow Up':'followup',Lost:'lost'}[c.status]||'';
+  var bc={Sold:'badge-sold',Estimate:'badge-estimate','Follow Up':'badge-followup',Lost:'badge-lost',Cancelled:'badge-lost'}[c.status]||'';
+  var statusColor={Sold:'background:var(--green);color:white;border-color:var(--green)',Estimate:'background:var(--yellow);color:var(--navy);border-color:var(--yellow)','Follow Up':'background:var(--orange);color:white;border-color:var(--orange)',Lost:'background:var(--red);color:white;border-color:var(--red)',Cancelled:'background:#6c757d;color:white;border-color:#6c757d',Completed:'background:var(--green);color:white;border-color:var(--green)'}[c.status]||'background:var(--mid);color:var(--white);border-color:var(--blue)';
+  var statusIcon={Sold:'✅',Estimate:'📋','Follow Up':'🔔',Lost:'❌',Cancelled:'🚫',Completed:'✅'}[c.status]||'🔄';
+  var statusLabel = c.status || 'Set Status';
+  var name=c.fname+(c.lname?' '+c.lname:'');
+  var amount=c.total||c.amount||0;
+  var amountPaid=parseFloat(c.amountPaid||0);
+  var balance=parseFloat(c.balance!=null?c.balance:amount);
+  
+  var isCompleted = c.status==='Completed';
+  var isPartial=c.paid==='Partial';
+  var isPaid=(c.paid==='Yes' && !isCompleted) || isCompleted;
+
+  // Payment breakdown for partial payments — only show if there's actually been a payment
+  var paymentInfo='';
+  if(showPay && amount>0 && amountPaid>0 && (isPartial||isPaid)){
+    paymentInfo='<div style="background:var(--mid);border-radius:6px;padding:8px 10px;margin-bottom:8px;font-size:0.78rem;">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:var(--gray);">Total</span><span style="font-weight:700;">$'+parseFloat(amount).toFixed(2)+'</span></div>'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:#5cb85c;">Paid</span><span style="color:#5cb85c;font-weight:700;">$'+amountPaid.toFixed(2)+'</span></div>'+
+      (isPartial?'<div style="display:flex;justify-content:space-between;border-top:1px solid rgba(255,255,255,0.1);padding-top:3px;"><span style="color:var(--orange);">Balance</span><span style="color:var(--orange);font-weight:700;">$'+balance.toFixed(2)+'</span></div>':'')+
+      '</div>';
+  }
+
+  var paidBadge=isPaid?'badge-sold':isPartial?'':'badge-lost';
+  var paidLabel=isPaid?'✅ Paid in Full':isPartial?'💰 Partial — $'+balance.toFixed(2)+' due':'⚠️ Unpaid';
+  var paidBtnLabel = isCompleted ? '↩️ Mark Unpaid' : isPaid ? '↩️ Mark Unpaid' : isPartial ? '💰 Add Payment' : '💰 Mark Paid';
+  var paidBtnAction = (isCompleted || isPaid) ? "'unpaid'" : 'null';
+  var paidBtnAction2 = isPartial ? "'unpaid'" : 'null';
+
+  return '<div class="customer-card '+sc+'">'+
+    '<div class="customer-top"><div><div class="customer-name">'+name+'</div><div class="customer-details">'+
+    (c.phone?'📞 <a href="tel:'+c.phone+'" style="color:inherit;text-decoration:none;">'+c.phone+'</a><br>':'')+(c.email&&c.email!=='no-email@noemail.com'?'✉️ <a href="mailto:'+c.email+'" style="color:inherit;text-decoration:none;">'+c.email+'</a><br>':'')+(c.address?'📍 <a href="https://maps.google.com/maps/search/'+encodeURIComponent((c.fname||'')+' '+(c.lname||'')+' '+c.address)+'" target="_blank" style="color:#00B4D8;text-decoration:none;">'+c.address+'</a> <a href="https://maps.google.com/maps/search/'+encodeURIComponent((c.fname||'')+' '+(c.lname||'')+' '+c.address)+'" target="_blank" style="background:#00B4D8;color:#0A1628;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;text-decoration:none;margin-left:4px;">📌 PIN</a><br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+
+    '</div></div>'+(amount>0?'<div class="customer-amount">$'+parseFloat(amount).toFixed(2)+'</div>':'')+'</div>'+
+    '<div class="badges"><span class="badge '+bc+'">'+c.status+'</span>'+
+    (c.service?'<span class="badge badge-blue">'+c.service+'</span>':'')+
+    (c.payment?'<span class="badge badge-blue">'+c.payment+'</span>':'')+
+    (showRep?'<span class="badge badge-rep">'+c.repName+'</span>':'')+
+    (showPay?'<span class="badge '+(isPaid?'badge-sold':isPartial?'badge-followup':'badge-lost')+'">'+paidLabel+'</span>':'')+
+    '</div>'+
+    paymentInfo+
+    (c.notes?(function(n){ var clean=n.replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim(); return clean?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+clean+'</div>':''; })(c.notes):'')+
+    (c.nextPaymentDate&&c.paid==='Partial'&&!isCompleted?'<div style="font-size:0.75rem;background:rgba(253,126,20,0.15);border:1px solid rgba(253,126,20,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:var(--orange);font-weight:700;">'+
+    (c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?'📅 Payment Plan: $'+c.paymentPlan.monthlyAmount+'/mo · ':'📅 ')+
+    'Next Due: '+c.nextPaymentDate+
+    (c.paymentPlan&&c.paymentPlan.dueDates&&c.paymentPlan.dueDates.length>0?' · '+(c.paymentPlan.dueDates.indexOf(c.nextPaymentDate)+1)+' of '+c.paymentPlan.months+' payments':'')+
+    '</div>':'')+
+    (c.returnVisit&&isCompleted?'<div style="font-size:0.75rem;background:rgba(111,66,193,0.15);border:1px solid rgba(111,66,193,0.4);border-radius:6px;padding:6px 10px;margin-bottom:8px;color:#a78bfa;font-weight:700;">📅 Return Visit: '+fmtDate(c.returnVisit)+'</div>':'')+
+    '<div class="card-actions">'+
+    (showPay?'<button class="action-btn '+(isCompleted?'orange':isPaid?'red':isPartial?'green':'green')+'" onclick="togglePaid('+c.id+','+(isCompleted||isPaid?"'unpaid'":'null')+')">'+paidBtnLabel+'</button>':'')+
+    (showPay&&isPartial?'<button class="action-btn red" onclick="togglePaid('+c.id+',\'unpaid\')">↩️ Reset</button>':'')+
+    '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
+    '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
+    '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
+    '</div></div>';
+}
+
+function editCustomer(id) {
+  id = parseInt(id);
+  var data = getData();
+  var c = null;
+  for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { c = data[i]; break; } }
+  // Also search mgrAllData if not found locally
+  if (!c && mgrAllData.length > 0) {
+    for (var j=0; j<mgrAllData.length; j++) { if (parseInt(mgrAllData[j].id)===id) { c = mgrAllData[j]; break; } }
+  }
+  if (!c) { showToast('Customer not found', true); return; }
+  // Switch to log tab and pre-fill form
+  switchTab('log');
+  document.getElementById('l-fname').value = c.fname || '';
+  document.getElementById('l-lname').value = c.lname || '';
+  document.getElementById('l-phone').value = c.phone || '';
+  setAddressFields(c.address, c.email);
+  document.getElementById('l-amount').value = c.amount || '';
+  document.getElementById('l-date').value = c.date || '';
+  document.getElementById('l-followup').value = c.followup || '';
+  // payment shown on card only
+  document.getElementById('l-notes').value = c.notes || '';
+  // Set status
+  if (c.status) setStatus(c.status);
+  // Set services
+  document.querySelectorAll('.svc-check').forEach(function(cb) { cb.checked = false; });
+  if (c.service) {
+    var svcs = c.service.split(', ');
+    document.querySelectorAll('.svc-check').forEach(function(cb) {
+      if (svcs.indexOf(cb.value) >= 0) cb.checked = true;
+    });
+  }
+  calcTax();
+  // Set customer type
+  setCustomerType(c.custType || 'Residential');
+  // Store editing ID so save updates instead of creates
+  document.getElementById('l-fname').dataset.editId = id;
+  showToast('✏️ Editing customer — make changes and tap Save');
+}
+
+function editCommercial(id) {
+  var accounts = getCommercialData();
+  var a = null;
+  for (var i=0; i<accounts.length; i++) { if (parseInt(accounts[i].id) === id) { a = accounts[i]; break; } }
+  // Also search commercialSheetData if not found locally
+  if (!a && commercialSheetData.length > 0) {
+    for (var j=0; j<commercialSheetData.length; j++) { if (parseInt(commercialSheetData[j].id) === id) { a = commercialSheetData[j]; break; } }
+  }
+  if (!a) { showToast('Account not found', true); return; }
+  switchTab('commercial');
+  document.getElementById('c-business').value = a.business || '';
+  document.getElementById('c-contact').value = a.contact || '';
+  document.getElementById('c-phone').value = a.phone || '';
+  document.getElementById('c-address').value = a.address || '';
+  document.getElementById('c-schedule').value = a.schedule || '';
+  document.getElementById('c-amount').value = a.amount || '';
+  document.getElementById('c-nextdate').value = a.nextDate || '';
+  document.getElementById('c-notes').value = a.notes || '';
+  document.querySelectorAll('.c-svc-check').forEach(function(cb){ cb.checked = false; });
+  if (a.service) {
+    var svcs = a.service.split(', ');
+    document.querySelectorAll('.c-svc-check').forEach(function(cb){
+      if (svcs.indexOf(cb.value) >= 0) cb.checked = true;
+    });
+  }
+  document.getElementById('c-business').dataset.editId = id;
+  showToast('✏️ Editing account — make changes and tap Save');
+}
+
+function togglePaid(id, action) {
+  id = parseInt(id);
+  // action = 'unpaid' means explicitly resetting, otherwise show payment overlay
+
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  var isSheetOnly = false;
+
+  if (!c && mgrAllData.length > 0) {
+    c = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (c) {
+      c = JSON.parse(JSON.stringify(c));
+      data.unshift(c);
+      isSheetOnly = true;
+    }
+  }
+
+  if (!c) { showToast('Customer not found', true); return; }
+
+  var total = parseFloat(c.total||c.amount||0);
+
+  if (action === 'unpaid' || c.paid === 'Yes' || c.status === 'Completed') {
+    if (!confirm('Mark this job as unpaid and move it back to Active?')) return;
+    c.paid = 'No';
+    c.amountPaid = 0;
+    c.balance = total;
+    c.status = 'Sold';
+    c.completedDate = null;
+    c.returnVisit = null;
+    c.nextPaymentDate = null;
+    c.paymentPlan = null;
+    // Clear payment plan info from notes
+    if (c.notes) {
+      c.notes = c.notes
+        .replace(/\s*next payment[:\s]+[0-9\/\-]+/gi, '')
+        .replace(/\s*payment plan[:\s]+[^\n]*/gi, '')
+        .trim();
+    }
+    // Force update the data array entry
+    for (var i=0; i<data.length; i++) {
+      if (parseInt(data[i].id)===id) {
+        data[i] = c; break;
+      }
+    }
+    saveData(data);
+    var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if(mgrC){ 
+      mgrC.paid='No'; mgrC.amountPaid=0; mgrC.balance=total; mgrC.status='Sold'; 
+      mgrC.completedDate=null; mgrC.returnVisit=null; mgrC.nextPaymentDate=null; mgrC.paymentPlan=null;
+      if(mgrC.notes) mgrC.notes = mgrC.notes.replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+    }
+    fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
+    });
+    jobsFilter = 'active';
+    document.querySelectorAll('#view-jobs .pill').forEach(function(p){p.classList.remove('active');});
+    var ap = document.getElementById('jobs-pill-active');
+    if(ap) ap.classList.add('active');
+    // Force fresh data reload
+    var freshData = getData();
+    renderJobs(''); renderLeads(''); updateDashboard();
+    renderJobs(''); updateDashboard();
+    showToast('⚠️ Moved back to Active — marked unpaid');
+  } else {
+    // Show amount entry overlay instead of prompt
+    var existing2 = document.getElementById('amountOverlay');
+    if (existing2) existing2.remove();
+    var total2 = total;
+    var alreadyPaid = parseFloat(c.amountPaid||0);
+    var overlay2 = document.createElement('div');
+    overlay2.id = 'amountOverlay';
+    overlay2.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+    overlay2.innerHTML =
+      '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:320px;border:1px solid rgba(0,180,216,0.3);">'+
+      '<div style="font-size:1rem;font-weight:900;color:var(--blue);margin-bottom:4px;">💰 Record Payment</div>'+
+      '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:12px;">'+c.fname+' '+(c.lname||'')+'</div>'+
+      '<div style="display:flex;justify-content:space-between;background:var(--mid);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:0.82rem;">'+
+      '<span style="color:var(--gray);">Total: <strong style="color:var(--white);">$'+total2.toFixed(2)+'</strong></span>'+
+      '<span style="color:var(--gray);">Paid: <strong style="color:#5cb85c;">$'+alreadyPaid.toFixed(2)+'</strong></span>'+
+      '<span style="color:var(--gray);">Balance: <strong style="color:var(--orange);">$'+(total2-alreadyPaid).toFixed(2)+'</strong></span>'+
+      '</div>'+
+
+      // Full payment button — passes remaining balance through method picker
+      '<button onclick="submitAmountOverlay('+id+','+total2.toFixed(2)+','+(total2-alreadyPaid).toFixed(2)+')" style="width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:10px;text-align:left;">✅ Paid in Full — $'+(total2-alreadyPaid).toFixed(2)+'</button>'+
+
+      // Divider
+      '<div style="text-align:center;font-size:0.72rem;color:var(--gray);margin-bottom:10px;">— OR ENTER PARTIAL AMOUNT —</div>'+
+
+      // Partial amount input
+      '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Amount Received</div>'+
+      '<input type="number" id="amountInput" placeholder="e.g. 100.00" style="width:100%;background:var(--mid);border:1px solid rgba(0,180,216,0.3);border-radius:8px;padding:12px;color:var(--white);font-size:1.1rem;margin-bottom:10px;outline:none;"/>'+
+      '<button onclick="submitAmountOverlay('+id+','+total2.toFixed(2)+',null)" style="width:100%;padding:13px;background:var(--blue);color:var(--navy);border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">💰 Partial Payment → Set Up Plan</button>'+
+      '<button onclick="document.getElementById(\'amountOverlay\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
+      '</div>';
+    document.body.appendChild(overlay2);
+    setTimeout(function(){ var el=document.getElementById('amountInput'); if(el) el.focus(); }, 100);
+  }
+}
+
+function submitAmountOverlay(id, total, fixedAmount) {
+  // fixedAmount = total means full payment button was tapped
+  // fixedAmount = null means partial button was tapped - read from input
+  var amountReceived;
+  if (fixedAmount !== null && fixedAmount !== undefined) {
+    amountReceived = parseFloat(fixedAmount);
+  } else {
+    var input = document.getElementById('amountInput');
+    var val = input ? input.value.trim() : '';
+    if (!val || isNaN(parseFloat(val)) || parseFloat(val) <= 0) {
+      showToast('Please enter a payment amount', true);
+      return;
+    }
+    amountReceived = parseFloat(val);
+  }
+  document.getElementById('amountOverlay').remove();
+  showPaymentPicker(id, total, amountReceived);
+}
+
+function changeStatus(id) {
+  id = parseInt(id);
+
+  // Remove any existing status picker
+  var existing = document.getElementById('statusPicker');
+  if (existing) { existing.remove(); return; }
+
+  var statuses = [
+    {val:'Sold', label:'✅ Sold', color:'var(--green)', text:'white'},
+    {val:'Estimate', label:'📋 Estimate', color:'var(--yellow)', text:'var(--navy)'},
+    {val:'Follow Up', label:'🔔 Follow Up', color:'var(--orange)', text:'white'},
+    {val:'Lost', label:'❌ Lost', color:'var(--red)', text:'white'},
+    {val:'Cancelled', label:'🚫 Cancelled', color:'#6c757d', text:'white'}
+  ];
+
+  var picker = document.createElement('div');
+  picker.id = 'statusPicker';
+  picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.92);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+  picker.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:300px;border:1px solid rgba(0,180,216,0.3);">'+
+    '<div style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;text-align:center;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Change Status</div>'+
+    statuses.map(function(s){
+      return '<button onclick="applyStatus('+id+',\''+s.val+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:'+s.color+';color:'+s.text+';border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;text-align:left;">'+s.label+'</button>';
+    }).join('')+
+    '<button onclick="document.getElementById(\'statusPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(picker);
+}
+
+function scheduleReturn(id) {
+
+  // Build picker overlay
+  var existing = document.getElementById('returnPicker');
+  if (existing) { existing.remove(); return; }
+
+  var now = new Date();
+  var y1 = new Date(now); y1.setFullYear(now.getFullYear()+1);
+  var y15 = new Date(now); y15.setMonth(now.getMonth()+18);
+  var y2 = new Date(now); y2.setFullYear(now.getFullYear()+2);
+
+  function fmtISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function fmtDisplay(d){ return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear(); }
+
+  var picker = document.createElement('div');
+  picker.id = 'returnPicker';
+  picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.95);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+  picker.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:320px;border:1px solid rgba(111,66,193,0.4);">'+
+    '<div style="font-size:1rem;font-weight:900;color:#a78bfa;margin-bottom:4px;">📅 Schedule Return Visit</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:18px;">Set a reminder to follow up with this customer for repeat service</div>'+
+    '<button onclick="applyReturn('+id+',\''+fmtISO(y1)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);color:var(--white);border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 1 Year — '+fmtDisplay(y1)+'</button>'+
+    '<button onclick="applyReturn('+id+',\''+fmtISO(y15)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);color:var(--white);border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 18 Months — '+fmtDisplay(y15)+'</button>'+
+    '<button onclick="applyReturn('+id+',\''+fmtISO(y2)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);color:var(--white);border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 2 Years — '+fmtDisplay(y2)+'</button>'+
+    '<div style="font-size:0.75rem;color:var(--gray);margin:10px 0 6px;">Or pick a custom date:</div>'+
+    '<input type="date" id="returnCustomDate" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:10px 12px;color:var(--white);font-size:0.9rem;margin-bottom:10px;" value="'+fmtISO(y1)+'"/>'+
+    '<button onclick="applyReturn('+id+',document.getElementById(\'returnCustomDate\').value)" style="width:100%;padding:12px;background:#6f42c1;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:8px;">Set Custom Date</button>'+
+    '<button onclick="document.getElementById(\'returnPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(picker);
+}
+
+function applyReturn(id, dateStr) {
+  document.getElementById('returnPicker').remove();
+  if (!dateStr) return;
+
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length > 0) {
+    var sheetC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sheetC) { c = JSON.parse(JSON.stringify(sheetC)); data.unshift(c); }
+  }
+  if (!c) { showToast('Customer not found', true); return; }
+
+  c.returnVisit = dateStr;
+  saveData(data);
+
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) mgrC.returnVisit = dateStr;
+
+  renderJobs('');
+  var d = new Date(dateStr+'T12:00:00');
+  showToast('📅 Return visit set for '+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
+}
+
+function applyStatus(id, newStatus) {
+  document.getElementById('statusPicker').remove();
+  id = parseInt(id);
+
+  // Update localStorage first
+  var localData = getData();
+  var localC = localData.find(function(d){ return parseInt(d.id)===id; });
+  if (!localC && mgrAllData.length > 0) {
+    var sheetC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sheetC) { localC = JSON.parse(JSON.stringify(sheetC)); localData.unshift(localC); }
+  }
+  if (localC) {
+    localC.status = newStatus;
+    if (newStatus === 'Sold') {
+      // Moving TO Sold — reset payment data fresh
+      localC.paid = 'No';
+      localC.amountPaid = 0;
+      localC.balance = parseFloat(localC.total||localC.amount||0);
+      localC.paymentPlan = null;
+      localC.nextPaymentDate = null;
+      localC.completedDate = null;
+      localC.returnVisit = null;
+      if (localC.notes) localC.notes = localC.notes.replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+    } else {
+      // Moving AWAY from Sold — clear all payment data
+      localC.paid = 'No';
+      localC.amountPaid = 0;
+      localC.balance = parseFloat(localC.total||localC.amount||0);
+      localC.paymentPlan = null;
+      localC.nextPaymentDate = null;
+      localC.completedDate = null;
+      localC.returnVisit = null;
+      if (localC.notes) localC.notes = localC.notes.replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+    }
+    saveData(localData);
+  }
+
+  // Update mgrAllData
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) {
+    mgrC.status = newStatus;
+    mgrC.paid = 'No';
+    mgrC.amountPaid = 0;
+    mgrC.balance = parseFloat(mgrC.total||mgrC.amount||0);
+    mgrC.paymentPlan = null;
+    mgrC.nextPaymentDate = null;
+    mgrC.completedDate = null;
+    mgrC.returnVisit = null;
+    if (mgrC.notes) mgrC.notes = mgrC.notes.replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+  }
+
+  // Re-render immediately
+  renderLeads(''); renderJobs(''); updateDashboard();
+  if(isManager && mgrAllData.length>0) renderMgrLeads('');
+  showToast('✅ Status → ' + newStatus);
+
+  // Auto switch to correct tab
+  if (newStatus === 'Sold') {
+    setTimeout(function(){ switchTab('jobs'); }, 600);
+  } else if (newStatus === 'Estimate' || newStatus === 'Follow Up' || newStatus === 'Lost' || newStatus === 'Cancelled') {
+    setTimeout(function(){ switchTab('leads'); }, 600);
+  }
+
+  // Safe update in place — no delete, just update the existing row
+  var c = localC || mgrC;
+  if (c) {
+    fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({}, c, {type:'update', originalFname:c.fname, originalLname:c.lname||'', originalRepId:c.repId}))
+    });
+  }
+}
+
+function deleteCustomer(id) {
+  id = parseInt(id);
+  if (!confirm('Are you sure you want to delete this customer?')) return;
+
+  // Show secure PIN overlay instead of prompt
+  var existing = document.getElementById('deletePinOverlay');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'deletePinOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:28px;width:100%;max-width:300px;border:2px solid var(--red);text-align:center;">' +
+    '<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>' +
+    '<div style="font-size:1rem;font-weight:900;color:var(--red);margin-bottom:6px;">DELETE CUSTOMER</div>' +
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:18px;">Enter Manager PIN to permanently delete this customer from the app and Google Sheets.</div>' +
+    '<div id="delPinDisplay" style="font-size:2rem;letter-spacing:0.4em;color:var(--blue);margin-bottom:16px;font-weight:900;">_ _ _ _</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">' +
+    ['1','2','3','4','5','6','7','8','9','','0','⌫'].map(function(k){
+      return k===''?'<div></div>':'<button onclick="delPinKey(\''+k+'\')" style="padding:16px;background:var(--mid);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--white);font-size:1.2rem;font-weight:700;cursor:pointer;">'+k+'</button>';
+    }).join('') +
+    '</div>' +
+    '<button onclick="confirmDeletePin('+id+')" style="width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">🗑 Confirm Delete</button>' +
+    '<button onclick="document.getElementById(\'deletePinOverlay\').remove();delPinVal=\'\';" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>' +
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+var delPinVal = '';
+function delPinKey(k) {
+  if (k === '⌫') { delPinVal = delPinVal.slice(0,-1); }
+  else if (delPinVal.length < 4) { delPinVal += k; }
+  var display = delPinVal.replace(/./g,'●').padEnd(4,'_').split('').join(' ');
+  document.getElementById('delPinDisplay').textContent = display;
+}
+
+function confirmDeletePin(id) {
+  id = parseInt(id);
+  if (delPinVal !== getMgrPin()) {
+    document.getElementById('delPinDisplay').textContent = '✗ ✗ ✗ ✗';
+    document.getElementById('delPinDisplay').style.color = 'var(--red)';
+    delPinVal = '';
+    setTimeout(function(){
+      document.getElementById('delPinDisplay').textContent = '_ _ _ _';
+      document.getElementById('delPinDisplay').style.color = 'var(--blue)';
+    }, 1000);
+    showToast('❌ Incorrect PIN — deletion cancelled', true);
+    return;
+  }
+  document.getElementById('deletePinOverlay').remove();
+  delPinVal = '';
+  var fnameEl = document.getElementById('l-fname');
+  if (fnameEl) delete fnameEl.dataset.editId;
+
+  // Blacklist this ID permanently so it never comes back from sheet
+  blacklistId(id);
+  var data = getData();
+  var customer = data.find(function(d){return parseInt(d.id)===id;});
+  if (!customer && mgrAllData.length > 0) {
+    customer = mgrAllData.find(function(d){return parseInt(d.id)===id;});
+  }
+  // Also blacklist rowNum if available
+  if (customer && customer.rowNum) blacklistId(customer.rowNum);
+  saveData(data.filter(function(d){return parseInt(d.id)!==id;}));
+  mgrAllData = mgrAllData.filter(function(d){return parseInt(d.id)!==id;});
+  if (customer) {
+    fetch(SHEET_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({type:'delete', id: String(id), rowNum: customer.rowNum||null, repId:customer.repId, fname:customer.fname, lname:customer.lname||'', date:customer.date||''})
+    }).then(function(){
+      showToast('🗑 Customer deleted!');
+    }).catch(function(){ showToast('🗑 Deleted locally', true); });
+  } else {
+    showToast('🗑 Customer deleted!');
+  }
+  // Clear mgrAllData of this customer immediately so it doesn't reappear
+  mgrAllData = mgrAllData.filter(function(d){ return parseInt(d.id)!==id; });
+  renderLeads(''); renderJobs(''); updateDashboard();
+  if(isManager) updateManager();
+}
+
+function getCommissionRates() {
+  try { return JSON.parse(localStorage.getItem('sd_commission') || '{}'); } catch(e) { return {}; }
+}
+function saveCommissionRates(r) { localStorage.setItem('sd_commission', JSON.stringify(r)); }
+function getRepCommission(repId) { return getCommissionRates()[repId] || 0; }
+
+function renderCommissionReport(allData) {
+  var reps = getReps();
+  var rates = getCommissionRates();
+  var totalOwed = 0;
+
+  var html = reps.map(function(rep) {
+    var rate = rates[rep.id] || 0;
+    var sold = allData.filter(function(d){ return d.repId===rep.id && d.status==='Sold'; });
+    var paidJobs = sold.filter(function(d){ return d.paid==='Yes'; });
+    var unpaidJobs = sold.filter(function(d){ return d.paid!=='Yes'; });
+    var paidRevenue = paidJobs.reduce(function(s,d){ return s+(d.total||d.amount||0); }, 0);
+    var unpaidRevenue = unpaidJobs.reduce(function(s,d){ return s+(d.total||d.amount||0); }, 0);
+    var commEarned = (paidRevenue * rate) / 100;
+    var commPending = (unpaidRevenue * rate) / 100;
+    totalOwed += commEarned;
+
+    return '<div style="background:var(--card);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid rgba(0,180,216,0.2);">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'+
+      '<div>'+
+      '<div style="font-size:0.95rem;font-weight:700;">'+rep.name+'</div>'+
+      '<div style="font-size:0.72rem;color:var(--gray);">Commission Rate: <span style="color:var(--blue);font-weight:700;">'+rate+'%</span></div>'+
+      '</div>'+
+      '<div style="text-align:right;">'+
+      '<div style="font-size:1.2rem;font-weight:900;color:#5cb85c;">$'+commEarned.toFixed(2)+'</div>'+
+      '<div style="font-size:0.68rem;color:var(--gray);">OWED NOW</div>'+
+      '</div></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">'+
+      '<div style="background:var(--mid);border-radius:8px;padding:8px;text-align:center;">'+
+      '<div style="font-size:0.9rem;font-weight:700;color:#5cb85c;">$'+paidRevenue.toFixed(0)+'</div>'+
+      '<div style="font-size:0.6rem;color:var(--gray);text-transform:uppercase;">Paid Revenue</div></div>'+
+      '<div style="background:var(--mid);border-radius:8px;padding:8px;text-align:center;">'+
+      '<div style="font-size:0.9rem;font-weight:700;color:var(--yellow);">$'+commPending.toFixed(2)+'</div>'+
+      '<div style="font-size:0.6rem;color:var(--gray);text-transform:uppercase;">Pending (Unpaid Jobs)</div></div>'+
+      '<div style="background:var(--mid);border-radius:8px;padding:8px;text-align:center;">'+
+      '<div style="font-size:0.9rem;font-weight:700;">'+paidJobs.length+' / '+sold.length+'</div>'+
+      '<div style="font-size:0.6rem;color:var(--gray);text-transform:uppercase;">Paid / Total Jobs</div></div>'+
+      '</div>'+
+      (rate === 0 ? '<div style="font-size:0.75rem;color:var(--gray);font-style:italic;">No commission rate set — go to ⚙️ Settings to set rate</div>' : '')+
+      '</div>';
+  }).join('');
+
+  // Total owed banner
+  html = '<div style="background:linear-gradient(135deg,#1a4731,#28a745);border-radius:10px;padding:16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">'+
+    '<div>'+
+    '<div style="font-size:0.75rem;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.08em;">Total Commission Owed</div>'+
+    '<div style="font-size:1.8rem;font-weight:900;color:white;">$'+totalOwed.toFixed(2)+'</div>'+
+    '</div>'+
+    '<div style="font-size:2rem;">💵</div>'+
+    '</div>' + html;
+
+  document.getElementById('commission-report').innerHTML = html;
+}
+
+function renderCommissionList() {
+  var reps = getReps();
+  var rates = getCommissionRates();
+  document.getElementById('commission-list').innerHTML = reps.map(function(rep) {
+    var rate = rates[rep.id] || 0;
+    return '<div class="settings-row">'+
+      '<div><div class="settings-label">'+rep.name+'</div>'+
+      '<div class="settings-val">Current: <span style="color:#5cb85c;font-weight:700;">'+rate+'%</span></div></div>'+
+      '<div style="display:flex;align-items:center;gap:6px">'+
+      '<input type="number" id="comm-'+rep.id+'" value="'+rate+'" min="0" max="100" style="width:60px;background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:6px;padding:6px 8px;color:var(--white);font-size:0.9rem;text-align:center;" placeholder="0"/>'+
+      '<span style="color:var(--gray);font-size:0.85rem;">%</span>'+
+      '<button class="btn-change" onclick="saveCommission(\''+rep.id+'\')">Save</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function saveCommission(repId) {
+  var input = document.getElementById('comm-'+repId);
+  var rate = parseFloat(input.value) || 0;
+  if (rate < 0 || rate > 100) { alert('Commission must be between 0 and 100%'); return; }
+  var rates = getCommissionRates();
+  rates[repId] = rate;
+  saveCommissionRates(rates);
+  renderCommissionList();
+  showToast('✅ Commission updated to ' + rate + '%!');
+}
+
+function calcCommission(repId, amount) {
+  var rate = getRepCommission(repId);
+  return (amount * rate) / 100;
+}
+
+function autoFollowUp(dateVal) {
+  if (!dateVal) return;
+  var d = new Date(dateVal + 'T12:00:00');
+  d.setFullYear(d.getFullYear() + 2);
+  var iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  document.getElementById('l-followup').value = iso;
+}
+
+function showPaymentPlan(id) {
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length>0) c = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (!c) return;
+
+  var total = parseFloat(c.total||c.amount||0);
+  var remaining = parseFloat(c.balance!=null ? c.balance : total);
+
+  var existing = document.getElementById('paymentPlanOverlay');
+  if (existing) existing.remove();
+
+  var today = new Date().toISOString().split('T')[0];
+
+  var overlay = document.createElement('div');
+  overlay.id = 'paymentPlanOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:340px;border:1px solid rgba(111,66,193,0.4);">'+
+    '<div style="font-size:1rem;font-weight:900;color:#a78bfa;margin-bottom:4px;">📅 Payment Plan Setup</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:16px;">'+c.fname+' '+(c.lname||'')+' · Balance: <strong style="color:var(--white);">$'+remaining.toFixed(2)+'</strong></div>'+
+
+    '<div style="font-size:0.7rem;color:var(--gray);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;">Monthly Payment Amount</div>'+
+    '<input id="planAmount" type="number" placeholder="e.g. 100" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:10px 12px;color:var(--white);font-size:1rem;margin-bottom:12px;outline:none;"/>'+
+
+    '<div style="font-size:0.7rem;color:var(--gray);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;">Number of Months</div>'+
+    '<input id="planMonths" type="number" placeholder="e.g. 5" min="1" max="60" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:10px 12px;color:var(--white);font-size:1rem;margin-bottom:12px;outline:none;" oninput="previewPlan()"/>'+
+
+    '<div style="font-size:0.7rem;color:var(--gray);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;">First Payment Date</div>'+
+    '<input id="planStartDate" type="date" value="'+today+'" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:10px 12px;color:var(--white);font-size:1rem;margin-bottom:12px;outline:none;" oninput="previewPlan()"/>'+
+
+    '<div style="font-size:0.7rem;color:var(--gray);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.08em;">Payment Method</div>'+
+    '<select id="planMethod" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:10px 12px;color:var(--white);font-size:0.9rem;margin-bottom:14px;outline:none;">'+
+    '<option>Credit Card</option><option>Cash</option><option>Check</option><option>PayPal</option><option>Venmo</option><option>Zelle</option><option>Other</option>'+
+    '</select>'+
+
+    '<div id="planPreview" style="background:var(--mid);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:0.75rem;color:var(--gray);display:none;"></div>'+
+
+    '<button onclick="applyPaymentPlan('+id+','+total+','+remaining+')" style="width:100%;padding:13px;background:#6f42c1;color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">✅ Set Up Plan</button>'+
+    '<button onclick="document.getElementById(\'paymentPlanOverlay\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function previewPlan() {
+  var months = parseInt(document.getElementById('planMonths').value);
+  var startVal = document.getElementById('planStartDate').value;
+  var amount = parseFloat(document.getElementById('planAmount').value);
+  var preview = document.getElementById('planPreview');
+  if (!months || months < 1 || !startVal) { preview.style.display='none'; return; }
+
+  var dates = [];
+  var start = new Date(startVal + 'T12:00:00');
+  for (var i = 0; i < Math.min(months, 6); i++) {
+    var d = new Date(start);
+    d.setMonth(d.getMonth() + i);
+    dates.push((d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
+  }
+
+  var html = '<div style="color:#a78bfa;font-weight:700;margin-bottom:6px;">Payment Schedule Preview:</div>';
+  dates.forEach(function(d, i) {
+    html += '<div style="display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">'+
+      '<span>Payment '+(i+1)+(months>6&&i===5?' ... ('+months+' total)':'')+'</span>'+
+      '<span style="color:var(--white);font-weight:700;">'+(amount?'$'+amount.toFixed(2)+' · ':'')+d+'</span>'+
+      '</div>';
+  });
+  if (months > 6) html += '<div style="color:var(--gray);margin-top:4px;">...and '+(months-6)+' more payments</div>';
+  preview.innerHTML = html;
+  preview.style.display = 'block';
+}
+
+function applyPaymentPlan(id, total, remaining) {
+  var amount = parseFloat(document.getElementById('planAmount').value);
+  var months = parseInt(document.getElementById('planMonths').value);
+  var startVal = document.getElementById('planStartDate').value;
+  var method = document.getElementById('planMethod').value;
+
+  if (!amount || amount <= 0) { showToast('Enter a monthly amount', true); return; }
+  if (!months || months < 1) { showToast('Enter number of months', true); return; }
+  if (!startVal) { showToast('Enter a start date', true); return; }
+
+  // Build all due dates
+  var dueDates = [];
+  var start = new Date(startVal + 'T12:00:00');
+  for (var i = 0; i < months; i++) {
+    var d = new Date(start);
+    d.setMonth(d.getMonth() + i);
+    dueDates.push((d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
+  }
+
+  document.getElementById('paymentPlanOverlay').remove();
+
+  // Update customer with payment plan
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  var isSheetOnly = false;
+  if (!c && mgrAllData.length>0) {
+    var sc = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sc) { c = JSON.parse(JSON.stringify(sc)); data.unshift(c); isSheetOnly=true; }
+  }
+  if (!c) { showToast('Customer not found', true); return; }
+
+  c.paymentPlan = {
+    monthlyAmount: amount,
+    months: months,
+    method: method,
+    dueDates: dueDates,
+    startDate: startVal,
+    createdDate: new Date().toLocaleDateString()
+  };
+  c.nextPaymentDate = dueDates[0];
+  c.paid = c.paid || 'No';
+
+  // Store plan in notes for Apps Script
+  var notesBase = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+  c.notes = notesBase + (notesBase?'\n':'') + 'Payment plan: $'+amount+'/mo x '+months+' months\nNext payment: '+dueDates[0];
+
+  for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
+  saveData(data);
+
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) { mgrC.paymentPlan=c.paymentPlan; mgrC.nextPaymentDate=c.nextPaymentDate; mgrC.notes=c.notes; }
+
+  // Sync to sheet
+  fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
+  });
+
+  renderJobs('');
+  showToast('✅ Payment plan set! First payment due '+dueDates[0]);
+}
+
+function showPaymentPlan_placeholder() {}
+
+function showPaymentPicker(id, total, amountReceived) {
+  var existing = document.getElementById('paymentPicker');
+  if (existing) existing.remove();
+  var methods = ['Credit Card','Cash','Check','PayPal','Venmo','Zelle','Other'];
+  var picker = document.createElement('div');
+  picker.id = 'paymentPicker';
+  picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.95);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+  picker.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:320px;border:1px solid rgba(0,180,216,0.3);">'+
+    '<div style="font-size:1rem;font-weight:900;color:var(--blue);margin-bottom:6px;">💳 Payment Method</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:16px;">How did they pay? Amount: $'+parseFloat(amountReceived).toFixed(2)+'</div>'+
+    methods.map(function(m){
+      return '<button onclick="applyPayment('+id+',\''+m+'\','+total+','+amountReceived+')" style="width:100%;padding:13px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:8px;color:var(--white);font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">'+m+'</button>';
+    }).join('')+
+    '<button onclick="document.getElementById(\'paymentPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(picker);
+}
+
+function applyPayment(id, method, total, amountReceived) {
+  document.getElementById('paymentPicker').remove();
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length > 0) {
+    var sheetC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sheetC) { c = JSON.parse(JSON.stringify(sheetC)); data.unshift(c); }
+  }
+  if (!c) { showToast('Customer not found', true); return; }
+
+  c.amountPaid = parseFloat((c.amountPaid||0)) + amountReceived;
+  c.balance = Math.max(0, total - c.amountPaid);
+  c.payment = method;
+
+  if (c.balance <= 0) {
+    // PAID IN FULL — auto complete then prompt for return visit
+    c.paid = 'Yes';
+    c.amountPaid = total;
+    c.balance = 0;
+    c.status = 'Completed';
+    c.completedDate = new Date().toLocaleDateString();
+    c.nextPaymentDate = null;
+    for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
+    saveData(data);
+    var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; mgrC.status=c.status; mgrC.payment=method; }
+    fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))
+    });
+    renderJobs(''); updateDashboard();
+    showToast('✅ Paid in full via ' + method + '! Job Complete!');
+    // Prompt for return visit date
+    setTimeout(function(){ showReturnVisitPrompt(id); }, 800);
+  } else {
+    // PARTIAL PAYMENT — show next steps popup
+    c.paid = 'Partial';
+    for (var j=0; j<data.length; j++) { if (parseInt(data[j].id)===id) { data[j]=c; break; } }
+    saveData(data);
+    showNextStepPicker(id, c, method, amountReceived);
+  }
+}
+
+function showReturnVisitPrompt(id) {
+  var now = new Date();
+  var y1 = new Date(now); y1.setFullYear(now.getFullYear()+1);
+  var y18 = new Date(now); y18.setMonth(now.getMonth()+18);
+  var y2 = new Date(now); y2.setFullYear(now.getFullYear()+2);
+
+  function fmtISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function fmtDisplay(d){ return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear(); }
+
+  var existing = document.getElementById('returnPrompt');
+  if (existing) existing.remove();
+
+  var overlay = document.createElement('div');
+  overlay.id = 'returnPrompt';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:320px;border:1px solid rgba(111,66,193,0.4);">'+
+    '<div style="font-size:1.2rem;margin-bottom:8px;text-align:center;">🎉</div>'+
+    '<div style="font-size:1rem;font-weight:900;color:#a78bfa;margin-bottom:4px;text-align:center;">Job Complete!</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:18px;text-align:center;">Schedule a return visit to follow up for repeat business?</div>'+
+    '<button onclick="applyReturnFromPrompt('+id+',\''+fmtISO(y1)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;color:var(--white);font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 1 Year — '+fmtDisplay(y1)+'</button>'+
+    '<button onclick="applyReturnFromPrompt('+id+',\''+fmtISO(y18)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;color:var(--white);font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 18 Months — '+fmtDisplay(y18)+'</button>'+
+    '<button onclick="applyReturnFromPrompt('+id+',\''+fmtISO(y2)+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;color:var(--white);font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">📅 2 Years — '+fmtDisplay(y2)+'</button>'+
+    '<button onclick="document.getElementById(\'returnPrompt\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Skip</button>'+
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+function applyReturnFromPrompt(id, dateStr) {
+  document.getElementById('returnPrompt').remove();
+  if (!dateStr) return;
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length>0) {
+    var sc = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sc) { c = JSON.parse(JSON.stringify(sc)); data.unshift(c); }
+  }
+  if (!c) return;
+  c.returnVisit = dateStr;
+  for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
+  saveData(data);
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) mgrC.returnVisit = dateStr;
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
+  renderJobs('');
+  var d = new Date(dateStr+'T12:00:00');
+  showToast('📅 Return visit set for '+(d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
+}
+
+var pendingPaymentId = null;
+
+function showNextStepPicker(id, c, method, amountReceived) {
+  pendingPaymentId = parseInt(id);
+
+  // Auto-set next payment date to 1 month from job date or today
+  var baseDate = new Date();
+  if (c.date) {
+    // Handle both YYYY-MM-DD and MM/DD/YYYY formats
+    var dateParts = c.date.indexOf('-') > -1 ? c.date.split('-') : null;
+    if (dateParts && dateParts.length === 3) {
+      baseDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1])-1, parseInt(dateParts[2]));
+    }
+  }
+  baseDate.setMonth(baseDate.getMonth() + 1);
+  var autoNextDate = baseDate.getFullYear() + '-' + String(baseDate.getMonth()+1).padStart(2,'0') + '-' + String(baseDate.getDate()).padStart(2,'0');
+
+  var today = new Date().toISOString().split('T')[0];
+  var hasPlan = c.paymentPlan && c.paymentPlan.dueDates;
+
+  var picker = document.createElement('div');
+  picker.id = 'nextStepPicker';
+  picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto;';
+  picker.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:340px;border:1px solid rgba(0,180,216,0.3);">'+
+    '<div style="font-size:1rem;font-weight:900;color:var(--blue);margin-bottom:4px;">💰 $'+parseFloat(amountReceived||0).toFixed(2)+' received via '+method+'</div>'+
+    '<div style="font-size:0.82rem;color:var(--orange);font-weight:700;margin-bottom:16px;">Balance Remaining: $'+parseFloat(c.balance||0).toFixed(2)+'</div>'+
+
+    // Option 1 - Set single next date
+    '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Next Payment Due Date</div>'+
+    '<input type="date" id="nextPayDate" value="'+autoNextDate+'" style="width:100%;background:var(--mid);border:1px solid rgba(0,180,216,0.3);border-radius:8px;padding:10px 12px;color:var(--white);font-size:0.95rem;margin-bottom:10px;outline:none;"/>'+
+    '<button onclick="applySingleNextDate()" style="width:100%;padding:13px;background:var(--blue);color:var(--navy);border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:14px;">📅 Set Next Payment Date</button>'+
+
+    '<div style="border-top:1px solid rgba(255,255,255,0.08);margin-bottom:14px;"></div>'+
+
+    // Option 2 - Set up full payment plan
+    '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Or Set Up Full Payment Plan</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'+
+    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Monthly Amount</div>'+
+    '<input type="number" id="quickPlanAmt" placeholder="$100" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" oninput="quickPlanPreview()"/></div>'+
+    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Months</div>'+
+    '<input type="number" id="quickPlanMonths" placeholder="5" min="1" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" oninput="quickPlanPreview()"/></div>'+
+    '</div>'+
+    '<div id="quickPlanPreview" style="font-size:0.72rem;color:#a78bfa;margin-bottom:10px;"></div>'+
+    '<button onclick="applyQuickPlan()" style="width:100%;padding:13px;background:#6f42c1;color:white;border:none;border-radius:8px;font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:14px;">💳 Set Up Payment Plan</button>'+
+    '<button onclick="applyNoNextDate()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.82rem;cursor:pointer;">Skip — Set Date Later</button>'+
+    '</div>';
+  document.body.appendChild(picker);
+}
+
+function quickPlanPreview() {
+  var amt = parseFloat(document.getElementById('quickPlanAmt').value);
+  var months = parseInt(document.getElementById('quickPlanMonths').value);
+  var prev = document.getElementById('quickPlanPreview');
+  if (!amt || !months) { prev.textContent=''; return; }
+  var total = amt * months;
+  prev.textContent = months+' payments of $'+amt.toFixed(2)+' = $'+total.toFixed(2)+' total';
+}
+
+function applySingleNextDate() {
+  var id = pendingPaymentId;
+  if (!id) { showToast('No customer selected', true); return; }
+  // Read date BEFORE removing picker
+  var dateEl = document.getElementById('nextPayDate');
+  var dateVal = dateEl ? dateEl.value : '';
+  var picker = document.getElementById('nextStepPicker');
+  if (picker) picker.remove();
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c) return;
+  if (dateVal) {
+    var d = new Date(dateVal+'T12:00:00');
+    c.nextPaymentDate = (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+    var nb = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').trim();
+    c.notes = nb + (nb?'\n':'') + 'Next payment: '+c.nextPaymentDate;
+  }
+  for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
+  saveData(data);
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; mgrC.nextPaymentDate=c.nextPaymentDate; }
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
+  renderJobs(''); updateDashboard();
+  showToast('💰 $'+parseFloat(c.amountPaid).toFixed(2)+' paid — $'+c.balance.toFixed(2)+' remaining'+(c.nextPaymentDate?' · Next due: '+c.nextPaymentDate:''));
+}
+
+function applyNoNextDate() {
+  var id = pendingPaymentId;
+  if (!id) { showToast('No customer selected', true); return; }
+  document.getElementById('nextStepPicker').remove();
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (c) {
+    for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
+    saveData(data);
+    var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (mgrC) { mgrC.paid=c.paid; mgrC.amountPaid=c.amountPaid; mgrC.balance=c.balance; }
+    fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
+  }
+  renderJobs(''); updateDashboard();
+  showToast('💰 Payment recorded — set due date later');
+}
+
+function applyQuickPlan() {
+  var id = pendingPaymentId;
+  if (!id) { showToast('No customer selected', true); return; }
+  // Read values BEFORE removing the picker (removing destroys the inputs)
+  var amtEl = document.getElementById('quickPlanAmt');
+  var monthsEl = document.getElementById('quickPlanMonths');
+  var amt = amtEl ? parseFloat(amtEl.value) : 0;
+  var months = monthsEl ? parseInt(monthsEl.value) : 0;
+
+  if (!amt || amt<=0) { showToast('Enter monthly amount', true); return; }
+  if (!months || months<1) { showToast('Enter number of months', true); return; }
+
+  // NOW remove the picker
+  var picker = document.getElementById('nextStepPicker');
+  if (picker) picker.remove();
+
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length>0) {
+    var sc = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+    if (sc) { c = JSON.parse(JSON.stringify(sc)); data.unshift(c); }
+  }
+  if (!c) { showToast('Customer not found', true); return; }
+
+  // Build due dates starting next month
+  var start = new Date(); start.setMonth(start.getMonth()+1); start.setDate(1);
+  var dueDates = [];
+  for (var i=0; i<months; i++) {
+    var d = new Date(start);
+    d.setMonth(d.getMonth()+i);
+    dueDates.push((d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
+  }
+
+  c.paymentPlan = { monthlyAmount:amt, months:months, method:c.payment||'', dueDates:dueDates, startDate:start.toISOString().split('T')[0], createdDate:new Date().toLocaleDateString() };
+  c.nextPaymentDate = dueDates[0];
+  c.paid = c.paid || 'Partial'; // ensure paid status is set
+  var nb = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
+  c.notes = nb+(nb?'\n':'')+'Payment plan: $'+amt+'/mo x '+months+' months\nNext payment: '+dueDates[0];
+
+  // Make sure data array is updated
+  var found = false;
+  for (var j=0; j<data.length; j++) { if (parseInt(data[j].id)===id) { data[j]=c; found=true; break; } }
+  if (!found) data.unshift(c);
+  saveData(data);
+
+  var mgrC = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (mgrC) { mgrC.paymentPlan=c.paymentPlan; mgrC.nextPaymentDate=c.nextPaymentDate; mgrC.notes=c.notes; mgrC.paid=c.paid; }
+
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
+  renderJobs(''); updateDashboard();
+  showToast('💳 Plan set! $'+amt+'/mo x '+months+' months. First due '+dueDates[0]);
+}
+
+function lookupZip(zip) {
+  if (zip.length !== 5 || isNaN(zip)) return;
+  fetch('https://api.zippopotam.us/us/' + zip)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.places && data.places.length > 0) {
+        document.getElementById('l-city').value = data.places[0]['place name'];
+        document.getElementById('l-state').value = data.places[0]['state abbreviation'];
+      }
+    }).catch(function(){});
+}
+
+function getFullAddress() {
+  var street = document.getElementById('l-address').value.trim();
+  var city = document.getElementById('l-city').value.trim();
+  var state = document.getElementById('l-state').value.trim();
+  var zip = document.getElementById('l-zip').value.trim();
+  var parts = [street];
+  if (city) parts.push(city);
+  if (state) parts.push(state);
+  if (zip) parts.push(zip);
+  return parts.join(', ');
+}
+
+function clearAddressFields() {
+  ['l-address','l-city','l-state','l-zip','l-email'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+}
+
+function setAddressFields(address, email) {
+  // Parse stored address back into fields
+  var el = document.getElementById('l-address');
+  var cityEl = document.getElementById('l-city');
+  var stateEl = document.getElementById('l-state');
+  var zipEl = document.getElementById('l-zip');
+  var emailEl = document.getElementById('l-email');
+  if (emailEl) emailEl.value = email || '';
+  if (!address) return;
+  // Try to parse "Street, City, State Zip" format
+  var parts = address.split(',').map(function(p){ return p.trim(); });
+  if (el) el.value = parts[0] || '';
+  if (parts.length >= 2 && cityEl) cityEl.value = parts[1] || '';
+  if (parts.length >= 3) {
+    var stateZip = parts[2].trim().split(' ');
+    if (stateEl) stateEl.value = stateZip[0] || '';
+    if (zipEl) zipEl.value = stateZip[1] || '';
+  }
+}
+
+function renderRepList() {
+  var reps=getReps();
+  document.getElementById('rep-pin-list').innerHTML=reps.map(function(rep){
+    return '<div class="settings-row"><div><div class="settings-label">'+rep.name+'</div>'+
+      '<div class="settings-val">Rep #'+rep.id+' &nbsp;|&nbsp; PIN: <span style="color:var(--blue);font-weight:700;letter-spacing:0.1em;">'+rep.pin+'</span></div></div>'+
+      '<div style="display:flex;gap:6px">'+
+      '<button class="btn-change" onclick="changePin(\''+rep.name+'\',\''+rep.id+'\')">Change</button>'+
+      '<button class="btn-change" style="background:var(--red)" onclick="removeRep(\''+rep.id+'\')">✕</button>'+
+      '</div></div>';
+  }).join('')+
+  '<div class="settings-row"><div><div class="settings-label">Manager PIN</div>'+
+  '<div class="settings-val">PIN: <span style="color:var(--blue);font-weight:700;letter-spacing:0.1em;">'+getMgrPin()+'</span></div></div>'+
+  '<button class="btn-change" onclick="changeMgrPin()">Change</button></div>';
+}
+
+function addNewRep() {
+  var name=prompt('Enter new rep full name:');
+  if(!name||!name.trim()) return;
+  var pin=prompt('Enter 4-digit PIN for '+name+':');
+  if(!pin||pin.length!==4||isNaN(pin)){alert('PIN must be 4 digits.'); return;}
+  var reps=getReps();
+  var maxId=reps.reduce(function(m,r){return Math.max(m,parseInt(r.id));},1000);
+  reps.push({name:name.trim(),id:String(maxId+1),pin:pin});
+  saveReps(reps); renderRepList(); renderLoginButtons();
+  showToast('✅ '+name+' added!');
+}
+
+function removeRep(id) {
+  var reps = getReps();
+  var rep = reps.find(function(r){return r.id===id;});
+  if (!rep) return;
+  
+  // Protection 1 — cant remove yourself
+  if (currentRep && currentRep.id === id) {
+    alert('You cannot remove yourself while logged in!');
+    return;
+  }
+  
+  // Protection 2 — cant remove last rep
+  if (reps.length <= 1) {
+    alert('Cannot remove the last rep. Add a new rep first!');
+    return;
+  }
+  
+  // Protection 3 — double confirm
+  if (!confirm('Are you sure you want to remove ' + rep.name + '?\n\nThis cannot be undone!')) return;
+  if (!confirm('FINAL CONFIRMATION: Remove ' + rep.name + ' permanently?')) return;
+  
+  saveReps(reps.filter(function(r){return r.id!==id;}));
+  renderRepList(); renderLoginButtons(); showToast('🗑 ' + rep.name + ' removed');
+}
+
+function changePin(name,id) {
+  var p=prompt('Enter new 4-digit PIN for '+name+':');
+  if(!p||p.trim().length!==4||isNaN(p.trim())){alert('PIN must be 4 digits.'); return;}
+  p = p.trim();
+  var reps=getReps(), rep=reps.find(function(r){return r.id===id;});
+  if(rep) rep.pin=p;
+  saveReps(reps); renderRepList(); renderLoginButtons(); showToast('✅ PIN updated to '+p+'!');
+}
+
+function changeMgrPin() {
+  var p=prompt('Enter new 4-digit Manager PIN:');
+  if(!p||p.trim().length!==4||isNaN(p.trim())){alert('PIN must be 4 digits.'); return;}
+  p = p.trim();
+  saveMgrPin(p); renderRepList(); showToast('✅ Manager PIN updated to '+p+'!');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('view-'+tab).classList.add('active');
+  if(tab==='dashboard') updateDashboard();
+  if(tab==='leads') { 
+    if(isManager) {
+      // Re-fetch from sheet to pick up any new website leads
+      fetch(SHEET_URL + '?t=' + Date.now(), {method:'GET', mode:'cors'})
+        .then(function(r){ return r.json(); })
+        .then(function(response){
+          var sheetData = (response.data || []).filter(function(d){ return !isBlacklisted(d.id); });
+          var counter = Date.now();
+          sheetData = sheetData.map(function(d){
+            if (!d.id || isNaN(parseInt(d.id))) d.id = counter--;
+            else d.id = parseInt(d.id);
+            return d;
+          });
+          localStorage.setItem('sd_customers', JSON.stringify(sheetData));
+          mgrAllData = sheetData;
+          renderLeads('');
+        }).catch(function(){ renderLeads(''); });
+    } else {
+      renderLeads('');
+    }
+  }
+  if(tab==='jobs') renderJobs('');
+  if(tab==='manager') updateManager();
+  if(tab==='settings') { renderRepList(); renderCommissionList(); }
+  if(tab==='commercial') { renderCommercial(''); updateCommercialStats(); }
+  if(tab==='expenses') { renderExpenses(); }
+}
+
+function saveCommercial() {
+  var business = document.getElementById('c-business').value.trim();
+  if (!business) { alert('Please enter a business name.'); return; }
+  var cChecked = document.querySelectorAll('.c-svc-check:checked');
+  var cServices = Array.prototype.map.call(cChecked, function(c){ return c.value; }).join(', ');
+  var account = {
+    id: Date.now(), type: 'commercial',
+    business: business,
+    contact: document.getElementById('c-contact').value.trim(),
+    phone: document.getElementById('c-phone').value.trim(),
+    address: document.getElementById('c-address').value.trim(),
+    service: cServices,
+    schedule: document.getElementById('c-schedule').value,
+    amount: parseFloat(document.getElementById('c-amount').value) || 0,
+    nextDate: document.getElementById('c-nextdate').value,
+    notes: document.getElementById('c-notes').value.trim(),
+    repName: currentRep.name, paid: 'No'
+  };
+  var accounts = getCommercialData();
+  accounts.unshift(account);
+  localStorage.setItem('sd_commercial', JSON.stringify(accounts));
+  ['c-business','c-contact','c-phone','c-address','c-amount','c-notes','c-nextdate'].forEach(function(id){document.getElementById(id).value='';});
+  document.querySelectorAll('.c-svc-check').forEach(function(c){c.checked=false;});
+  document.getElementById('c-schedule').value='';
+  showToast('✅ Account saved!');
+  document.getElementById('c-savingInd').style.display='block';
+  fetch(SHEET_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(account)})
+    .then(function(){ document.getElementById('c-savingInd').style.display='none'; showToast('✅ Saved to Google Sheets!'); })
+    .catch(function(){ document.getElementById('c-savingInd').style.display='none'; });
+  renderCommercial('');
+  updateCommercialStats();
+}
+
+function getCommercialData() {
+  try { return JSON.parse(localStorage.getItem('sd_commercial') || '[]'); } catch(e) { return []; }
+}
+
+function updateCommercialStats() {
+  var accounts = getCommercialData();
+  var collected = accounts.filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
+  var unpaid = accounts.filter(function(a){ return a.paid !== 'Yes'; }).length;
+  var unpaidAmt = accounts.filter(function(a){ return a.paid !== 'Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
+  document.getElementById('c-revenue').textContent = '$'+collected.toFixed(0);
+  document.getElementById('c-count').textContent = accounts.length;
+  document.getElementById('c-unpaid').textContent = unpaid;
+}
+
+function renderCommercial(search) {
+  search = search || '';
+  var list = document.getElementById('commercial-list');
+  list.innerHTML = '<div class="empty-state"><span>⏳</span>Loading from Google Sheets...</div>';
+  
+  fetch(SHEET_URL + '?action=commercial&t=' + Date.now(), { method: 'GET', mode: 'cors' })
+    .then(function(r) { return r.json(); })
+    .then(function(response) {
+      var accounts = response.data || [];
+      commercialSheetData = accounts;
+      if (search) accounts = accounts.filter(function(a){ return a.business.toLowerCase().includes(search.toLowerCase())||(a.address||'').toLowerCase().includes(search.toLowerCase()); });
+      if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
+      var collected = accounts.filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
+      var unpaid = accounts.filter(function(a){ return a.paid !== 'Yes'; }).length;
+      document.getElementById('c-revenue').textContent = '$'+collected.toFixed(0);
+      document.getElementById('c-count').textContent = accounts.length;
+      document.getElementById('c-unpaid').textContent = unpaid;
+      list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
+    })
+    .catch(function() {
+      var accounts = getCommercialData();
+      if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
+      list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
+    });
+}
+
+function commercialCardHTML(a) {
+  var isPaid = a.paid === 'Yes';
+  var status = a.status || 'Estimate';
+  var statusColor = {Sold:'background:var(--green);color:white;border-color:var(--green)',Estimate:'background:var(--yellow);color:var(--navy);border-color:var(--yellow)','Follow Up':'background:var(--orange);color:white;border-color:var(--orange)',Lost:'background:var(--red);color:white;border-color:var(--red)',Cancelled:'background:#6c757d;color:white;border-color:#6c757d'}[status]||'background:var(--mid);color:var(--white);border-color:var(--blue)';
+  var statusIcon = {Sold:'✅',Estimate:'📋','Follow Up':'🔔',Lost:'❌',Cancelled:'🚫'}[status]||'🔄';
+  return '<div class="customer-card" style="border-left-color:#00B4D8">'+
+    '<div class="customer-top"><div><div class="customer-name">'+a.business+'</div>'+
+    '<div class="customer-details">'+
+    (a.contact?'👤 '+a.contact+'<br>':'')+
+    (a.phone?'📞 '+a.phone+'<br>':'')+
+    (a.address?'📍 <a href="https://maps.google.com/?q='+encodeURIComponent(a.address)+'" target="_blank" style="color:#00B4D8;text-decoration:none;">'+a.address+'</a><br>':'')+
+    (a.nextDate?'📅 Next: '+fmtDate(a.nextDate):'')+'</div></div>'+
+    '<div class="customer-amount">$'+parseFloat(a.amount||0).toFixed(2)+'</div></div>'+
+    '<div class="badges">'+
+    '<span class="badge '+(isPaid?'badge-sold':'badge-lost')+'">'+(isPaid?'✅ Paid':'⚠️ Unpaid')+'</span>'+
+    (a.schedule?'<span class="badge badge-blue">'+a.schedule+'</span>':'')+
+    (a.service?'<span class="badge badge-blue">'+a.service+'</span>':'')+
+    '</div>'+
+    (a.notes?'<div style="font-size:0.75rem;color:var(--gray);margin-bottom:6px">📝 '+a.notes+'</div>':'')+
+    '<div class="card-actions">'+
+    (status==='Sold'?'<button class="action-btn '+(isPaid?'red':'green')+'" onclick="toggleCommercialPaid(\''+a.id+'\')">'+(isPaid?'↩️ Mark Unpaid':'💰 Mark Paid')+'</button>':'')+
+    '<button class="action-btn blue" onclick="editCommercial(\''+a.id+'\')">✏️ Edit</button>'+
+    '<button onclick="changeCommercialStatus(\''+a.id+'\')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+status+'</button>'+
+    '<button class="action-btn red" onclick="deleteCommercial(\''+a.id+'\')">🗑</button>'+
+    '</div></div>';
+}
+
+function changeCommercialStatus(id) {
+  var existing = document.getElementById('bizStatusPicker');
+  if (existing) { existing.remove(); return; }
+  var statuses = [
+    {val:'Sold', label:'✅ Sold', color:'var(--green)', text:'white'},
+    {val:'Estimate', label:'📋 Estimate', color:'var(--yellow)', text:'var(--navy)'},
+    {val:'Follow Up', label:'🔔 Follow Up', color:'var(--orange)', text:'white'},
+    {val:'Lost', label:'❌ Lost', color:'var(--red)', text:'white'},
+    {val:'Cancelled', label:'🚫 Cancelled', color:'#6c757d', text:'white'}
+  ];
+  var picker = document.createElement('div');
+  picker.id = 'bizStatusPicker';
+  picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.92);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+  picker.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:300px;border:1px solid rgba(0,180,216,0.3);">'+
+    '<div style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;text-align:center;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;">Change Status</div>'+
+    statuses.map(function(s){
+      return '<button onclick="applyCommercialStatus(\''+id+'\',\''+s.val+'\')" style="width:100%;padding:14px;margin-bottom:8px;background:'+s.color+';color:'+s.text+';border:none;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;text-align:left;">'+s.label+'</button>';
+    }).join('')+
+    '<button onclick="document.getElementById(\'bizStatusPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(picker);
+}
+
+function applyCommercialStatus(id, newStatus) {
+  document.getElementById('bizStatusPicker').remove();
+  var accounts = getCommercialData();
+  var a = accounts.find(function(x){ return String(x.id)===String(id); });
+  if (!a && commercialSheetData.length>0) {
+    var sa = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
+    if (sa) { a = JSON.parse(JSON.stringify(sa)); accounts.unshift(a); }
+  }
+  if (!a) { showToast('Account not found', true); return; }
+  a.status = newStatus;
+  // Clear paid if moving away from Sold
+  if (newStatus !== 'Sold') { a.paid = 'No'; }
+  localStorage.setItem('sd_commercial', JSON.stringify(accounts));
+  var mgrA = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
+  if (mgrA) { mgrA.status = newStatus; if(newStatus!=='Sold') mgrA.paid='No'; }
+  fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({},a,{type:'commercial'}))
+  });
+  renderCommercial(''); updateCommercialStats(); updateDashboard();
+  showToast('✅ Status → ' + newStatus);
+}
+
+function toggleCommercialPaid(id) {
+  var accounts = getCommercialData();
+  var a = accounts.find(function(x){ return x.id===id; });
+  if (!a) {
+    // Check sheet data
+    var sheetA = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
+    if (sheetA) { a = JSON.parse(JSON.stringify(sheetA)); accounts.unshift(a); }
+  }
+  if (!a) { showToast('Account not found', true); return; }
+
+  if (a.paid === 'Yes') {
+    a.paid = 'No';
+    localStorage.setItem('sd_commercial', JSON.stringify(accounts));
+    // Sync to sheet
+    fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({},a,{type:'commercial'}))
+    });
+    renderCommercial(''); updateCommercialStats();
+    showToast('⚠️ Marked unpaid');
+  } else {
+    // Show payment method picker
+    var existing = document.getElementById('commercialPayPicker');
+    if (existing) existing.remove();
+    var methods = ['Credit Card','Cash','Check','PayPal','Venmo','Zelle','Other'];
+    var picker = document.createElement('div');
+    picker.id = 'commercialPayPicker';
+    picker.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.95);z-index:9998;display:flex;align-items:center;justify-content:center;padding:24px;';
+    picker.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:320px;border:1px solid rgba(0,180,216,0.3);">'+
+      '<div style="font-size:1rem;font-weight:900;color:var(--blue);margin-bottom:6px;">💳 Payment Method</div>'+
+      '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:16px;">'+a.business+' — $'+parseFloat(a.amount||0).toFixed(2)+'</div>'+
+      methods.map(function(m){
+        return '<button onclick="applyCommercialPaid(\''+id+'\',\''+m+'\')" style="width:100%;padding:13px;margin-bottom:8px;background:var(--mid);border:1px solid rgba(0,180,216,0.2);border-radius:8px;color:var(--white);font-size:0.95rem;font-weight:700;cursor:pointer;text-align:left;">'+m+'</button>';
+      }).join('')+
+      '<button onclick="document.getElementById(\'commercialPayPicker\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:4px;">Cancel</button>'+
+      '</div>';
+    document.body.appendChild(picker);
+  }
+}
+
+function applyCommercialPaid(id, method) {
+  document.getElementById('commercialPayPicker').remove();
+  var accounts = getCommercialData();
+  var a = accounts.find(function(x){ return String(x.id)===String(id); });
+  if (!a) {
+    var sheetA = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
+    if (sheetA) { a = JSON.parse(JSON.stringify(sheetA)); accounts.unshift(a); }
+  }
+  if (!a) { showToast('Account not found', true); return; }
+  a.paid = 'Yes';
+  a.payment = method;
+  localStorage.setItem('sd_commercial', JSON.stringify(accounts));
+  fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({},a,{type:'commercial'}))
+  });
+  renderCommercial(''); updateCommercialStats();
+  showToast('✅ Paid via ' + method + '!');
+}
+
+function deleteCommercial(id) {
+  if (!confirm('Are you sure you want to delete this account?')) return;
+
+  // Require manager PIN
+  var existing = document.getElementById('commercialDelOverlay');
+  if (existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'commercialDelOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:28px;width:100%;max-width:300px;border:2px solid var(--red);text-align:center;">'+
+    '<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>'+
+    '<div style="font-size:1rem;font-weight:900;color:var(--red);margin-bottom:6px;">DELETE ACCOUNT</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:18px;">Enter Manager PIN to permanently delete this commercial account.</div>'+
+    '<div id="comDelPinDisplay" style="font-size:2rem;letter-spacing:0.4em;color:var(--blue);margin-bottom:16px;font-weight:900;">_ _ _ _</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">'+
+    ['1','2','3','4','5','6','7','8','9','','0','⌫'].map(function(k){
+      return k===''?'<div></div>':'<button onclick="comDelPinKey(\''+k+'\')" style="padding:16px;background:var(--mid);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--white);font-size:1.2rem;font-weight:700;cursor:pointer;">'+k+'</button>';
+    }).join('')+
+    '</div>'+
+    '<button onclick="confirmComDelPin(\''+id+'\')" style="width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">🗑 Confirm Delete</button>'+
+    '<button onclick="document.getElementById(\'commercialDelOverlay\').remove();comDelPinVal=\'\';" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(overlay);
+}
+
+var comDelPinVal = '';
+function comDelPinKey(k) {
+  if (k === '⌫') { comDelPinVal = comDelPinVal.slice(0,-1); }
+  else if (comDelPinVal.length < 4) { comDelPinVal += k; }
+  var display = comDelPinVal.replace(/./g,'●').padEnd(4,'_').split('').join(' ');
+  document.getElementById('comDelPinDisplay').textContent = display;
+}
+
+function confirmComDelPin(id) {
+  if (comDelPinVal !== getMgrPin()) {
+    document.getElementById('comDelPinDisplay').textContent = '✗ ✗ ✗ ✗';
+    document.getElementById('comDelPinDisplay').style.color = 'var(--red)';
+    comDelPinVal = '';
+    setTimeout(function(){
+      document.getElementById('comDelPinDisplay').textContent = '_ _ _ _';
+      document.getElementById('comDelPinDisplay').style.color = 'var(--blue)';
+    }, 1000);
+    showToast('❌ Incorrect PIN — deletion cancelled', true);
+    return;
+  }
+  document.getElementById('commercialDelOverlay').remove();
+  comDelPinVal = '';
+  localStorage.setItem('sd_commercial', JSON.stringify(getCommercialData().filter(function(a){ return String(a.id)!==String(id); })));
+  // Delete from Google Sheets
+  fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({type:'delete_commercial', id:id})
+  });
+  renderCommercial(''); updateCommercialStats();
+  showToast('🗑 Account deleted!');
+}
+
+function fmtDate(d) { if(!d) return ''; var p=d.split('-'); return p[1]+'/'+p[2]+'/'+p[0]; }
+
+function showToast(msg,isError) {
+  var t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(isError?' error':'');
+  setTimeout(function(){t.classList.remove('show');},2500);
+}
+
+// ── EXPENSES ──
+function getExpenses() { try { return JSON.parse(localStorage.getItem('sd_expenses')||'[]'); } catch(e){ return []; } }
+function saveExpenses(e) { localStorage.setItem('sd_expenses', JSON.stringify(e)); }
+
+function renderExpenses() {
+  var expenses = getExpenses();
+  var revenue = getCompletedRevenue();
+  var total = expenses.reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
+  var profit = revenue - total;
+  document.getElementById('exp-revenue').textContent = '$'+revenue.toFixed(0);
+  document.getElementById('exp-total').textContent = '$'+total.toFixed(0);
+  document.getElementById('exp-profit').textContent = '$'+profit.toFixed(0);
+  var card = document.getElementById('exp-profit-card');
+  card.style.borderColor = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  var list = document.getElementById('expense-list');
+  if (!expenses.length) { list.innerHTML='<div class="empty-state"><span>💸</span>No expenses yet. Scan a receipt or add manually!</div>'; return; }
+  list.innerHTML = expenses.sort(function(a,b){ return new Date(b.date)-new Date(a.date); }).map(function(e){
+    var icons = {Fuel:'⛽',Supplies:'🧴',Equipment:'🔧',Vehicle:'🚗',Phone:'📱',Marketing:'📣',Other:'📦'};
+    return '<div class="customer-card">'+
+      '<div class="customer-top">'+
+      '<div><div class="customer-name">'+(icons[e.category]||'📦')+' '+e.vendor+'</div>'+
+      '<div class="customer-details">'+e.category+' · '+e.date+(e.notes?' · '+e.notes:'')+'</div></div>'+
+      '<div class="customer-amount" style="color:var(--red);">-$'+parseFloat(e.amount).toFixed(2)+'</div>'+
+      '</div>'+
+      '<div class="card-actions">'+
+      '<button class="action-btn red" onclick="deleteExpense('+e.id+')">🗑 Delete</button>'+
+      '</div></div>';
+  }).join('');
+  // Sync to sheet
+  syncExpensesToSheet(expenses, revenue, total, profit);
+}
+
+function getCompletedRevenue() {
+  var data = getData();
+  var res = data.filter(function(d){ return d.status==='Completed'; }).reduce(function(s,d){ return s+parseFloat(d.total||d.amount||0); }, 0);
+  var biz = getCommercialData().filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+parseFloat(a.amount||0); }, 0);
+  return res + biz;
+}
+
+function showAddExpense() {
+  document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('exp-vendor').value = '';
+  document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-notes').value = '';
+  document.getElementById('receiptPreview').style.display = 'none';
+  document.getElementById('expenseModal').style.display = 'block';
+}
+
+function saveExpense() {
+  var vendor = document.getElementById('exp-vendor').value.trim();
+  var amount = parseFloat(document.getElementById('exp-amount').value);
+  var date = document.getElementById('exp-date').value;
+  if (!vendor) { showToast('Enter vendor name', true); return; }
+  if (!amount || amount <= 0) { showToast('Enter amount', true); return; }
+  if (!date) { showToast('Enter date', true); return; }
+  var expense = {
+    id: Date.now(),
+    category: document.getElementById('exp-category').value,
+    vendor: vendor,
+    amount: amount,
+    date: date,
+    notes: document.getElementById('exp-notes').value.trim()
+  };
+  var expenses = getExpenses();
+  expenses.unshift(expense);
+  saveExpenses(expenses);
+  document.getElementById('expenseModal').style.display = 'none';
+  showToast('✅ Expense saved!');
+  renderExpenses();
+}
+
+function deleteExpense(id) {
+  if (!confirm('Delete this expense?')) return;
+  var expenses = getExpenses().filter(function(e){ return String(e.id) !== String(id); });
+  saveExpenses(expenses);
+  renderExpenses();
+  showToast('🗑 Expense deleted');
+}
+
+function processReceipt(input) {
+  var file = input.files[0];
+  if (!file) return;
+  document.getElementById('receiptProcessing').style.display = 'block';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result.split(',')[1];
+    var mediaType = file.type || 'image/jpeg';
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: 'This is a receipt. Extract the following and respond ONLY with a JSON object, no markdown: { "vendor": "store/business name", "amount": total amount as number, "date": "YYYY-MM-DD format", "category": one of [Fuel, Supplies, Equipment, Vehicle, Phone, Marketing, Other], "notes": "brief description of what was purchased" }' }
+          ]
+        }]
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      document.getElementById('receiptProcessing').style.display = 'none';
+      var text = data.content && data.content[0] ? data.content[0].text : '';
+      try {
+        var clean = text.replace(/```json|```/g, '').trim();
+        var receipt = JSON.parse(clean);
+        // Pre-fill form
+        document.getElementById('exp-vendor').value = receipt.vendor || '';
+        document.getElementById('exp-amount').value = receipt.amount || '';
+        document.getElementById('exp-date').value = receipt.date || new Date().toISOString().split('T')[0];
+        document.getElementById('exp-notes').value = receipt.notes || '';
+        if (receipt.category) {
+          var sel = document.getElementById('exp-category');
+          for (var i=0; i<sel.options.length; i++) {
+            if (sel.options[i].value === receipt.category) { sel.selectedIndex = i; break; }
+          }
+        }
+        // Show receipt image preview
+        document.getElementById('receiptImg').src = e.target.result;
+        document.getElementById('receiptPreview').style.display = 'block';
+        document.getElementById('expenseModal').style.display = 'block';
+        showToast('✅ Receipt scanned! Review and save.');
+      } catch(ex) {
+        showToast('Could not read receipt — please fill in manually', true);
+        showAddExpense();
+      }
+    })
+    .catch(function(){
+      document.getElementById('receiptProcessing').style.display = 'none';
+      showToast('Could not read receipt — please fill in manually', true);
+      showAddExpense();
+    });
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function syncExpensesToSheet(expenses, revenue, total, profit) {
+  fetch(SHEET_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ type: 'sync_expenses', expenses: expenses, revenue: revenue, total: total, profit: profit })
+  });
+}
+// ── END EXPENSES ──
+
+</script>
+</body>
+</html>
