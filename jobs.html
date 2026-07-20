@@ -2882,17 +2882,17 @@ function processReceipt(input) {
     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
     var base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
     
-    fetch(SHEET_URL, {
+    // Call secure proxy - API key stored safely in Vercel environment variables
+    fetch('https://sunnydaze-receipt-proxy.vercel.app/api/scan', {
       method: 'POST',
-      mode: 'cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ type: 'scan_receipt', imageData: base64, mediaType: 'image/jpeg' })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageData: base64, mediaType: 'image/jpeg' })
     })
     .then(function(r){ return r.json(); })
     .then(function(data){
       document.getElementById('receiptProcessing').style.display = 'none';
       if (data.error) { showToast('Scan error: ' + data.error, true); showAddExpense(); return; }
-      var text = data.result || '';
+      var text = data.content && data.content[0] ? data.content[0].text : (data.result || '');
       try {
         var clean = text.replace(/```json|```/g, '').trim();
         var receipt = JSON.parse(clean);
