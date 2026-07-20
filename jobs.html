@@ -420,10 +420,13 @@
 </div>
 
 <div class="view" id="view-expenses">
-  <div class="stats" style="grid-template-columns:1fr 1fr 1fr;">
+  <div class="stats" style="grid-template-columns:1fr 1fr;">
     <div class="stat-card green"><div class="stat-label">💰 Revenue</div><div class="stat-value" id="exp-revenue">$0</div></div>
     <div class="stat-card red"><div class="stat-label">💸 Expenses</div><div class="stat-value" id="exp-total">$0</div></div>
-    <div class="stat-card" id="exp-profit-card"><div class="stat-label">📈 Net Profit</div><div class="stat-value" id="exp-profit">$0</div></div>
+  </div>
+  <div class="stats" style="grid-template-columns:1fr 1fr;">
+    <div class="stat-card" id="exp-profit-card"><div class="stat-label">📈 Net Profit</div><div class="stat-value" id="exp-profit">$0</div><div style="font-size:0.65rem;color:var(--gray);margin-top:2px;">Before Payroll</div></div>
+    <div class="stat-card" id="exp-profit2-card"><div class="stat-label">💵 Net Profit</div><div class="stat-value" id="exp-profit2">$0</div><div style="font-size:0.65rem;color:var(--gray);margin-top:2px;">After Payroll</div></div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:12px;">
     <button class="btn-submit" style="flex:1;background:var(--blue);color:var(--navy);" onclick="document.getElementById('receiptInput').click()">📷 Scan Receipt</button>
@@ -2760,11 +2763,18 @@ function renderExpenses() {
   var revenue = getCompletedRevenue();
   var total = expenses.reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
   var profit = revenue - total;
+  // Calculate payroll from time clock wages
+  var payroll = getPayrollTotal();
+  var profitAfterPayroll = profit - payroll;
+
   document.getElementById('exp-revenue').textContent = '$'+revenue.toFixed(0);
   document.getElementById('exp-total').textContent = '$'+total.toFixed(0);
   document.getElementById('exp-profit').textContent = '$'+profit.toFixed(0);
+  document.getElementById('exp-profit2').textContent = '$'+profitAfterPayroll.toFixed(0);
   var card = document.getElementById('exp-profit-card');
   card.style.borderColor = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  var card2 = document.getElementById('exp-profit2-card');
+  card2.style.borderColor = profitAfterPayroll >= 0 ? 'var(--green)' : 'var(--red)';
   var list = document.getElementById('expense-list');
   if (!expenses.length) { list.innerHTML='<div class="empty-state"><span>💸</span>No expenses yet. Scan a receipt or add manually!</div>'; return; }
   list.innerHTML = expenses.sort(function(a,b){ return new Date(b.date)-new Date(a.date); }).map(function(e){
@@ -2780,7 +2790,29 @@ function renderExpenses() {
       '</div></div>';
   }).join('');
   // Sync to sheet
-  syncExpensesToSheet(expenses, revenue, total, profit);
+  syncExpensesToSheet(expenses, revenue, total, profit, payroll, profitAfterPayroll);
+}
+
+function getPayrollTotal() {
+  // Get total wages from time clock entries this month
+  var entries = JSON.parse(localStorage.getItem('tc_entries') || '[]');
+  var wages = JSON.parse(localStorage.getItem('tc_wages') || '{}');
+  var emps = JSON.parse(localStorage.getItem('tc_employees') || '[]');
+  var now = new Date();
+  var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  var total = 0;
+  emps.forEach(function(emp) {
+    var wage = parseFloat(wages[emp.id] || emp.wage || 0);
+    if (!wage) return;
+    var empEntries = entries.filter(function(e) {
+      if (String(e.empId) !== String(emp.id) && String(e.empName||'').toLowerCase() !== String(emp.name||'').toLowerCase()) return false;
+      var d = new Date(e.date);
+      return !isNaN(d.getTime()) && d >= monthStart;
+    });
+    var minutes = empEntries.reduce(function(s,e){ return s+(e.totalMinutes||0); }, 0);
+    total += (minutes/60) * wage;
+  });
+  return total;
 }
 
 function getCompletedRevenue() {
@@ -2834,27 +2866,35 @@ function processReceipt(input) {
   var file = input.files[0];
   if (!file) return;
   document.getElementById('receiptProcessing').style.display = 'block';
-  var reader = new FileReader();
-  reader.onload = function(e) {
-    var base64 = e.target.result.split(',')[1];
-    var mediaType = file.type || 'image/jpeg';
+  
+  // Resize image to max 800px before sending to keep payload small
+  var img = new Image();
+  var originalUrl = URL.createObjectURL(file);
+  img.onload = function() {
+    var canvas = document.createElement('canvas');
+    var maxSize = 800;
+    var w = img.width, h = img.height;
+    if (w > maxSize || h > maxSize) {
+      if (w > h) { h = Math.round(h * maxSize/w); w = maxSize; }
+      else { w = Math.round(w * maxSize/h); h = maxSize; }
+    }
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    var base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
+    
     fetch(SHEET_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'scan_receipt',
-        imageData: base64,
-        mediaType: mediaType
-      })
+      body: JSON.stringify({ type: 'scan_receipt', imageData: base64, mediaType: 'image/jpeg' })
     })
     .then(function(r){ return r.json(); })
     .then(function(data){
       document.getElementById('receiptProcessing').style.display = 'none';
-      var text = data.result || (data.content && data.content[0] ? data.content[0].text : '');
+      if (data.error) { showToast('Scan error: ' + data.error, true); showAddExpense(); return; }
+      var text = data.result || '';
       try {
         var clean = text.replace(/```json|```/g, '').trim();
         var receipt = JSON.parse(clean);
-        // Pre-fill form
         document.getElementById('exp-vendor').value = receipt.vendor || '';
         document.getElementById('exp-amount').value = receipt.amount || '';
         document.getElementById('exp-date').value = receipt.date || new Date().toISOString().split('T')[0];
@@ -2865,31 +2905,35 @@ function processReceipt(input) {
             if (sel.options[i].value === receipt.category) { sel.selectedIndex = i; break; }
           }
         }
-        // Show receipt image preview
-        document.getElementById('receiptImg').src = e.target.result;
+        document.getElementById('receiptImg').src = originalUrl;
         document.getElementById('receiptPreview').style.display = 'block';
         document.getElementById('expenseModal').style.display = 'block';
         showToast('✅ Receipt scanned! Review and save.');
       } catch(ex) {
-        showToast('Could not read receipt — please fill in manually', true);
+        showToast('Could not read receipt — fill in manually', true);
         showAddExpense();
       }
     })
-    .catch(function(){
+    .catch(function(err){
       document.getElementById('receiptProcessing').style.display = 'none';
-      showToast('Could not read receipt — please fill in manually', true);
+      showToast('Could not reach server — fill in manually', true);
       showAddExpense();
     });
   };
-  reader.readAsDataURL(file);
+  img.onerror = function() {
+    document.getElementById('receiptProcessing').style.display = 'none';
+    showToast('Could not load image', true);
+    showAddExpense();
+  };
+  img.src = originalUrl;
   input.value = '';
 }
 
-function syncExpensesToSheet(expenses, revenue, total, profit) {
+function syncExpensesToSheet(expenses, revenue, total, profit, payroll, profitAfterPayroll) {
   fetch(SHEET_URL, {
     method: 'POST', mode: 'no-cors',
     headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ type: 'sync_expenses', expenses: expenses, revenue: revenue, total: total, profit: profit })
+    body: JSON.stringify({ type: 'sync_expenses', expenses: expenses, revenue: revenue, total: total, profit: profit, payroll: payroll||0, profitAfterPayroll: profitAfterPayroll||0 })
   });
 }
 // ── END EXPENSES ──
