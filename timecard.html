@@ -910,9 +910,8 @@ function renderMgrEntries() {
         list.innerHTML = '<div class="empty-state"><span>⚠️</span>No entries found in sheet.</div>';
         return;
       }
-      var filtered = filterByDate(sheetEntries, mgrFilter);
-      list.innerHTML = filtered.length ? filtered.map(function(e){ return entryCardHTML(e, true); }).join('') :
-        '<div class="empty-state"><span>📋</span>No entries for this period.</div>';
+      // Debug - show first entry
+      list.innerHTML = '<div style="padding:10px;color:var(--cyan);font-size:0.75rem;word-break:break-all;">' + JSON.stringify(sheetEntries[0]) + '</div>';
     })
     .catch(function(err){
       list.innerHTML = '<div class="empty-state"><span>⚠️</span>Sheet fetch failed — showing local only. Deploy Apps Script as new version.</div>';
