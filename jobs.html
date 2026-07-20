@@ -1229,16 +1229,18 @@ function renderBreakdown() {
     return data.filter(function(d){
       if (d.status !== 'Completed') return false;
       var dt = new Date(d.date);
-      if (isDay) return d.date === todayStr;
-      return !isNaN(dt.getTime()) && dt >= start;
+      if (isNaN(dt.getTime())) return false;
+      if (isDay) return dt.toLocaleDateString() === todayStr;
+      return dt >= start;
     }).reduce(function(s,d){ return s+parseFloat(d.total||d.amount||0); }, 0);
   }
 
   function expInPeriod(start, isDay) {
     return expenses.filter(function(e){
-      if (isDay) return e.date === todayStr || new Date(e.date).toLocaleDateString() === todayStr;
-      var dt = new Date(e.date);
-      return !isNaN(dt.getTime()) && dt >= start;
+      var d = new Date(e.date);
+      if (isNaN(d.getTime())) return false;
+      if (isDay) return d.toLocaleDateString() === todayStr;
+      return d >= start;
     }).reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
   }
 
