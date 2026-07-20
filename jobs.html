@@ -1461,7 +1461,7 @@ function cardHTML(c,showPay,showRep) {
 
   return '<div class="customer-card '+sc+'">'+
     '<div class="customer-top"><div><div class="customer-name">'+name+'</div><div class="customer-details">'+
-    (c.phone?'📞 <a href="tel:'+c.phone+'" style="color:inherit;text-decoration:none;">'+c.phone+'</a><br>':'')+(c.email&&c.email!=='no-email@noemail.com'?'✉️ <a href="mailto:'+c.email+'" style="color:inherit;text-decoration:none;">'+c.email+'</a><br>':'')+(c.address?'📍 <a href="https://maps.google.com/maps/search/'+encodeURIComponent((c.fname||'')+' '+(c.lname||'')+' '+c.address)+'" target="_blank" style="color:#00B4D8;text-decoration:none;">'+c.address+'</a> <a href="https://maps.google.com/maps/search/'+encodeURIComponent((c.fname||'')+' '+(c.lname||'')+' '+c.address)+'" target="_blank" style="background:#00B4D8;color:#0A1628;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;text-decoration:none;margin-left:4px;">📌 PIN</a><br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+
+    (c.phone?'📞 <a href="tel:'+c.phone+'" style="color:inherit;text-decoration:none;">'+c.phone+'</a><br>':'')+(c.email&&c.email!=='no-email@noemail.com'?'✉️ <a href="mailto:'+c.email+'" style="color:inherit;text-decoration:none;">'+c.email+'</a><br>':'')+(c.address?'📍 <a href="https://maps.google.com/maps/search/'+encodeURIComponent((c.fname||'')+' '+(c.lname||'')+' '+c.address)+'" target="_blank" style="color:#00B4D8;text-decoration:none;">'+c.address+'</a> <a href="https://maps.google.com/maps/search/'+encodeURIComponent((c.fname||'')+' '+(c.lname||'')+' '+c.address)+'" target="_blank" style="background:#00B4D8;color:#0A1628;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;text-decoration:none;margin-left:4px;">📌 PIN</a><br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+(c.soldDate?'<br>🤝 Sold: '+fmtDate(c.soldDate):'')+(c.paidDate?'<br>💰 Paid: '+fmtDate(c.paidDate):'')+
     '</div></div>'+(amount>0?'<div class="customer-amount">$'+parseFloat(amount).toFixed(2)+'</div>':'')+'</div>'+
     '<div class="badges"><span class="badge '+bc+'">'+c.status+'</span>'+
     (c.service?'<span class="badge badge-blue">'+c.service+'</span>':'')+
@@ -1768,7 +1768,10 @@ function applyStatus(id, newStatus) {
   if (localC) {
     localC.status = newStatus;
     if (newStatus === 'Sold') {
-      // Moving TO Sold — reset payment data fresh
+      // Auto set job date to today when moved to Sold
+      localC.date = new Date().toLocaleDateString();
+      localC.soldDate = new Date().toLocaleDateString();
+      // Reset payment data fresh
       localC.paid = 'No';
       localC.amountPaid = 0;
       localC.balance = parseFloat(localC.total||localC.amount||0);
@@ -2180,6 +2183,7 @@ function applyPayment(id, method, total, amountReceived) {
     c.balance = 0;
     c.status = 'Completed';
     c.completedDate = new Date().toLocaleDateString();
+    c.paidDate = new Date().toLocaleDateString();
     c.nextPaymentDate = null;
     for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
     saveData(data);
