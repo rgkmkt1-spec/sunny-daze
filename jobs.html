@@ -2884,7 +2884,8 @@ function processReceipt(input) {
     
     fetch(SHEET_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      mode: 'cors',
+      headers: { 'Content-Type': 'text/plain' },
       body: JSON.stringify({ type: 'scan_receipt', imageData: base64, mediaType: 'image/jpeg' })
     })
     .then(function(r){ return r.json(); })
