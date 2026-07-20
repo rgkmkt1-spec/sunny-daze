@@ -804,6 +804,7 @@ function unlockManager() {
     document.getElementById('headerRep').textContent = '👔 Manager View';
     document.getElementById('tab-commercial').style.display = 'block';
     document.getElementById('tab-manager').style.display = 'block';
+    document.getElementById('tab-expenses').style.display = 'block';
     document.getElementById('tab-settings').style.display = 'block';
     switchTab('manager');
     showToast('👔 Manager access granted!');
@@ -822,6 +823,7 @@ function loginSuccess() {
   if (isManager) {
     document.getElementById('tab-commercial').style.display = 'block';
     document.getElementById('tab-manager').style.display = 'block';
+    document.getElementById('tab-expenses').style.display = 'block';
     document.getElementById('tab-settings').style.display = 'block';
     // Load sheet leads fresh on every manager login
     fetch(SHEET_URL + '?t=' + Date.now(), {method:'GET', mode:'cors'})
