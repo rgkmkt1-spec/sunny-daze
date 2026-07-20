@@ -906,18 +906,11 @@ function renderMgrEntries() {
     })
     .then(function(response){
       var sheetEntries = response.data || [];
-      showToast('Found ' + sheetEntries.length + ' punches in sheet');
       if (sheetEntries.length === 0) {
-        list.innerHTML = '<div class="empty-state"><span>⚠️</span>No sheet data found — make sure Apps Script is deployed as a new version with getTimecardEntries.</div>';
+        list.innerHTML = '<div class="empty-state"><span>⚠️</span>No entries found in sheet.</div>';
         return;
       }
-      var localEntries = getEntries();
-      var localIds = localEntries.map(function(e){ return String(e.empId)+String(e.date); });
-      var sheetOnly = sheetEntries.filter(function(e){
-        return localIds.indexOf(String(e.empId)+String(e.date)) < 0;
-      });
-      var allEntries = localEntries.concat(sheetOnly);
-      var filtered = filterByDate(allEntries, mgrFilter);
+      var filtered = filterByDate(sheetEntries, mgrFilter);
       list.innerHTML = filtered.length ? filtered.map(function(e){ return entryCardHTML(e, true); }).join('') :
         '<div class="empty-state"><span>📋</span>No entries for this period.</div>';
     })
