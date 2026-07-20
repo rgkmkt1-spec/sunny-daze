@@ -906,6 +906,7 @@ function renderMgrEntries() {
     })
     .then(function(response){
       var sheetEntries = response.data || [];
+      showToast('Found ' + sheetEntries.length + ' punches in sheet');
       if (sheetEntries.length === 0) {
         list.innerHTML = '<div class="empty-state"><span>⚠️</span>No sheet data found — make sure Apps Script is deployed as a new version with getTimecardEntries.</div>';
         return;
