@@ -1222,14 +1222,29 @@ function renderBreakdown() {
   var expenses = getExpenses();
   var now = new Date();
   var todayStr = now.toLocaleDateString();
-  var weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+  var weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0);
   var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  function parseLocalDate(str) {
+    if (!str) return null;
+    // Handle YYYY-MM-DD — parse as local not UTC
+    if (str.indexOf('-') > -1) {
+      var p = str.split('-');
+      if (p.length === 3) return new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+    }
+    // Handle M/D/YYYY
+    if (str.indexOf('/') > -1) {
+      var p2 = str.split('/');
+      if (p2.length === 3) return new Date(parseInt(p2[2]), parseInt(p2[0])-1, parseInt(p2[1]));
+    }
+    return new Date(str);
+  }
 
   function revInPeriod(start, isDay) {
     return data.filter(function(d){
       if (d.status !== 'Completed') return false;
-      var dt = new Date(d.date);
-      if (isNaN(dt.getTime())) return false;
+      var dt = parseLocalDate(d.date);
+      if (!dt || isNaN(dt.getTime())) return false;
       if (isDay) return dt.toLocaleDateString() === todayStr;
       return dt >= start;
     }).reduce(function(s,d){ return s+parseFloat(d.total||d.amount||0); }, 0);
@@ -1237,8 +1252,8 @@ function renderBreakdown() {
 
   function expInPeriod(start, isDay) {
     return expenses.filter(function(e){
-      var d = new Date(e.date);
-      if (isNaN(d.getTime())) return false;
+      var d = parseLocalDate(e.date);
+      if (!d || isNaN(d.getTime())) return false;
       if (isDay) return d.toLocaleDateString() === todayStr;
       return d >= start;
     }).reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
