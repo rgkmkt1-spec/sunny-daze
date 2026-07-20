@@ -2891,7 +2891,12 @@ function processReceipt(input) {
     .then(function(r){ return r.json(); })
     .then(function(data){
       document.getElementById('receiptProcessing').style.display = 'none';
-      if (data.error) { showToast('Scan error: ' + data.error, true); showAddExpense(); return; }
+      if (data.error) { 
+        document.getElementById('receiptProcessing').style.display = 'none';
+        showToast('Server error: ' + data.error, true); 
+        showAddExpense(); 
+        return; 
+      }
       var text = data.content && data.content[0] ? data.content[0].text : (data.result || '');
       try {
         var clean = text.replace(/```json|```/g, '').trim();
@@ -2917,7 +2922,7 @@ function processReceipt(input) {
     })
     .catch(function(err){
       document.getElementById('receiptProcessing').style.display = 'none';
-      showToast('Could not reach server — fill in manually', true);
+      showToast('Error: ' + (err.message || 'Could not reach server'), true);
       showAddExpense();
     });
   };
