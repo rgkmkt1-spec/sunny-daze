@@ -920,14 +920,6 @@ function renderMgrEntries() {
       list.innerHTML = filtered.length ? filtered.map(function(e){ return entryCardHTML(e, true); }).join('') :
         '<div class="empty-state"><span>📋</span>No time entries found.</div>';
     });
-    .catch(function(err){
-      list.innerHTML = '<div class="empty-state"><span>⚠️</span>Sheet fetch failed — showing local only. Deploy Apps Script as new version.</div>';
-      var entries = filterByDate(getEntries(), mgrFilter);
-      setTimeout(function(){
-        list.innerHTML = entries.length ? entries.map(function(e){ return entryCardHTML(e, true); }).join('') :
-          '<div class="empty-state"><span>📋</span>No local entries found.</div>';
-      }, 2000);
-    });
 }
 
 function entryCardHTML(e, showEmp) {
