@@ -732,7 +732,7 @@ function updatePinDisplay() {
 function checkPin() {
   var reps = getReps();
   if (pinMode === 'manager') {
-    if (pinValue === getMgrPin()) {
+    if (String(pinValue) === String(getMgrPin())) {
       document.getElementById('pinScreen').classList.remove('show');
       // Offer to register manager fingerprint if not done yet
       var mgrFp = localStorage.getItem('sd_mgr_fp');
@@ -747,7 +747,7 @@ function checkPin() {
   } else {
     var rep = null;
     for (var i = 0; i < reps.length; i++) {
-      if (reps[i].id === pendingRep.id && reps[i].pin === pinValue) { rep = reps[i]; break; }
+      if (reps[i].id === pendingRep.id && String(reps[i].pin) === String(pinValue)) { rep = reps[i]; break; }
     }
     if (rep) {
       document.getElementById('pinScreen').classList.remove('show');
@@ -1884,7 +1884,7 @@ function delPinKey(k) {
 
 function confirmDeletePin(id) {
   id = parseInt(id);
-  if (delPinVal !== getMgrPin()) {
+  if (String(delPinVal) !== String(getMgrPin())) {
     document.getElementById('delPinDisplay').textContent = '✗ ✗ ✗ ✗';
     document.getElementById('delPinDisplay').style.color = 'var(--red)';
     delPinVal = '';
@@ -2817,7 +2817,7 @@ function comDelPinKey(k) {
 }
 
 function confirmComDelPin(id) {
-  if (comDelPinVal !== getMgrPin()) {
+  if (String(comDelPinVal) !== String(getMgrPin())) {
     document.getElementById('comDelPinDisplay').textContent = '✗ ✗ ✗ ✗';
     document.getElementById('comDelPinDisplay').style.color = 'var(--red)';
     comDelPinVal = '';
