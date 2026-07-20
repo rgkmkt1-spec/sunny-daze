@@ -2883,7 +2883,7 @@ function processReceipt(input) {
     var base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
     
     // Call secure proxy - API key stored safely in Vercel environment variables
-    fetch('https://sunnydaze-receipt-proxy.vercel.app/api/scan', {
+    fetch('https://sunnydaze-receipt-proxy-three.vercel.app/api/scan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageData: base64, mediaType: 'image/jpeg' })
