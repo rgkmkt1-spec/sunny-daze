@@ -199,6 +199,7 @@
   <button class="tab" id="tab-jobs" onclick="switchTab('jobs')">🔧 Jobs</button>
   <button class="tab" id="tab-commercial" onclick="switchTab('commercial')" style="display:none">🏢 Biz</button>
   <button class="tab" id="tab-manager" onclick="switchTab('manager')" style="display:none">👔 Mgr</button>
+  <button class="tab" id="tab-expenses" onclick="switchTab('expenses')" style="display:none">💸 Expenses</button>
   <button class="tab" id="tab-settings" onclick="switchTab('settings')" style="display:none">⚙️</button>
 </div>
 
@@ -416,6 +417,65 @@
     <button class="pill p-lost" onclick="filterMgr('Lost',this)">❌ Lost</button>
   </div>
   <div class="customer-list" id="mgr-leads-list"></div>
+</div>
+
+<div class="view" id="view-expenses">
+  <div class="stats" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="stat-card green"><div class="stat-label">💰 Revenue</div><div class="stat-value" id="exp-revenue">$0</div></div>
+    <div class="stat-card red"><div class="stat-label">💸 Expenses</div><div class="stat-value" id="exp-total">$0</div></div>
+    <div class="stat-card" id="exp-profit-card"><div class="stat-label">📈 Net Profit</div><div class="stat-value" id="exp-profit">$0</div></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <button class="btn-submit" style="flex:1;background:var(--blue);color:var(--navy);" onclick="document.getElementById('receiptInput').click()">📷 Scan Receipt</button>
+    <button class="btn-submit" style="flex:1;" onclick="showAddExpense()">➕ Add Manual</button>
+  </div>
+  <input type="file" id="receiptInput" accept="image/*" capture="environment" style="display:none" onchange="processReceipt(this)"/>
+  <div id="receiptProcessing" style="display:none;text-align:center;padding:20px;background:var(--card);border-radius:10px;margin-bottom:12px;">
+    <div style="font-size:1.5rem;margin-bottom:8px;">🤖</div>
+    <div style="color:var(--cyan);font-weight:700;">Reading receipt...</div>
+  </div>
+  <div class="section-title">Recent Expenses</div>
+  <div id="expense-list" class="customer-list"></div>
+</div>
+
+<!-- Add Expense Modal -->
+<div id="expenseModal" style="display:none;position:fixed;inset:0;background:rgba(10,22,40,0.95);z-index:9999;overflow-y:auto;padding:20px;">
+  <div style="background:var(--card);border-radius:14px;padding:20px;max-width:400px;margin:0 auto;border:1px solid rgba(0,180,216,0.3);">
+    <h2 style="color:var(--cyan);margin-bottom:16px;">💸 Add Expense</h2>
+    <div id="receiptPreview" style="display:none;margin-bottom:12px;">
+      <img id="receiptImg" style="width:100%;border-radius:8px;max-height:200px;object-fit:cover;" />
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="exp-category" style="width:100%;background:var(--mid);border:1px solid rgba(0,180,216,0.3);border-radius:8px;padding:10px;color:var(--white);font-size:0.9rem;">
+        <option value="Fuel">⛽ Fuel</option>
+        <option value="Supplies">🧴 Supplies</option>
+        <option value="Equipment">🔧 Equipment</option>
+        <option value="Vehicle">🚗 Vehicle</option>
+        <option value="Phone">📱 Phone/Internet</option>
+        <option value="Marketing">📣 Marketing</option>
+        <option value="Other">📦 Other</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Vendor / Description</label>
+      <input type="text" id="exp-vendor" class="form-input" placeholder="e.g. Sunoco, Home Depot"/>
+    </div>
+    <div class="form-group">
+      <label>Amount</label>
+      <input type="number" id="exp-amount" class="form-input" placeholder="0.00" step="0.01"/>
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="exp-date" class="form-input"/>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <input type="text" id="exp-notes" class="form-input" placeholder="Optional notes"/>
+    </div>
+    <button class="btn-submit" onclick="saveExpense()" style="width:100%;margin-bottom:10px;">💾 Save Expense</button>
+    <button onclick="document.getElementById('expenseModal').style.display='none'" style="width:100%;padding:12px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;cursor:pointer;">Cancel</button>
+  </div>
 </div>
 
 <div class="view" id="view-settings">
@@ -794,6 +854,7 @@ function logout() {
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('tab-commercial').style.display = 'none';
   document.getElementById('tab-manager').style.display = 'none';
+  document.getElementById('tab-expenses').style.display = 'none';
   document.getElementById('tab-settings').style.display = 'none';
   document.getElementById('mgrHeaderBtn').style.display = 'none';
   document.querySelectorAll('.view').forEach(function(v){v.classList.remove('active');});
@@ -2417,6 +2478,7 @@ function switchTab(tab) {
   if(tab==='manager') updateManager();
   if(tab==='settings') { renderRepList(); renderCommissionList(); }
   if(tab==='commercial') { renderCommercial(''); updateCommercialStats(); }
+  if(tab==='expenses') { renderExpenses(); }
 }
 
 function saveCommercial() {
@@ -2686,6 +2748,156 @@ function showToast(msg,isError) {
   t.textContent=msg; t.className='toast show'+(isError?' error':'');
   setTimeout(function(){t.classList.remove('show');},2500);
 }
+
+// ── EXPENSES ──
+function getExpenses() { try { return JSON.parse(localStorage.getItem('sd_expenses')||'[]'); } catch(e){ return []; } }
+function saveExpenses(e) { localStorage.setItem('sd_expenses', JSON.stringify(e)); }
+
+function renderExpenses() {
+  var expenses = getExpenses();
+  var revenue = getCompletedRevenue();
+  var total = expenses.reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
+  var profit = revenue - total;
+  document.getElementById('exp-revenue').textContent = '$'+revenue.toFixed(0);
+  document.getElementById('exp-total').textContent = '$'+total.toFixed(0);
+  document.getElementById('exp-profit').textContent = '$'+profit.toFixed(0);
+  var card = document.getElementById('exp-profit-card');
+  card.style.borderColor = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  var list = document.getElementById('expense-list');
+  if (!expenses.length) { list.innerHTML='<div class="empty-state"><span>💸</span>No expenses yet. Scan a receipt or add manually!</div>'; return; }
+  list.innerHTML = expenses.sort(function(a,b){ return new Date(b.date)-new Date(a.date); }).map(function(e){
+    var icons = {Fuel:'⛽',Supplies:'🧴',Equipment:'🔧',Vehicle:'🚗',Phone:'📱',Marketing:'📣',Other:'📦'};
+    return '<div class="customer-card">'+
+      '<div class="customer-top">'+
+      '<div><div class="customer-name">'+(icons[e.category]||'📦')+' '+e.vendor+'</div>'+
+      '<div class="customer-details">'+e.category+' · '+e.date+(e.notes?' · '+e.notes:'')+'</div></div>'+
+      '<div class="customer-amount" style="color:var(--red);">-$'+parseFloat(e.amount).toFixed(2)+'</div>'+
+      '</div>'+
+      '<div class="card-actions">'+
+      '<button class="action-btn red" onclick="deleteExpense('+e.id+')">🗑 Delete</button>'+
+      '</div></div>';
+  }).join('');
+  // Sync to sheet
+  syncExpensesToSheet(expenses, revenue, total, profit);
+}
+
+function getCompletedRevenue() {
+  var data = getData();
+  var res = data.filter(function(d){ return d.status==='Completed'; }).reduce(function(s,d){ return s+parseFloat(d.total||d.amount||0); }, 0);
+  var biz = getCommercialData().filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+parseFloat(a.amount||0); }, 0);
+  return res + biz;
+}
+
+function showAddExpense() {
+  document.getElementById('exp-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('exp-vendor').value = '';
+  document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-notes').value = '';
+  document.getElementById('receiptPreview').style.display = 'none';
+  document.getElementById('expenseModal').style.display = 'block';
+}
+
+function saveExpense() {
+  var vendor = document.getElementById('exp-vendor').value.trim();
+  var amount = parseFloat(document.getElementById('exp-amount').value);
+  var date = document.getElementById('exp-date').value;
+  if (!vendor) { showToast('Enter vendor name', true); return; }
+  if (!amount || amount <= 0) { showToast('Enter amount', true); return; }
+  if (!date) { showToast('Enter date', true); return; }
+  var expense = {
+    id: Date.now(),
+    category: document.getElementById('exp-category').value,
+    vendor: vendor,
+    amount: amount,
+    date: date,
+    notes: document.getElementById('exp-notes').value.trim()
+  };
+  var expenses = getExpenses();
+  expenses.unshift(expense);
+  saveExpenses(expenses);
+  document.getElementById('expenseModal').style.display = 'none';
+  showToast('✅ Expense saved!');
+  renderExpenses();
+}
+
+function deleteExpense(id) {
+  if (!confirm('Delete this expense?')) return;
+  var expenses = getExpenses().filter(function(e){ return String(e.id) !== String(id); });
+  saveExpenses(expenses);
+  renderExpenses();
+  showToast('🗑 Expense deleted');
+}
+
+function processReceipt(input) {
+  var file = input.files[0];
+  if (!file) return;
+  document.getElementById('receiptProcessing').style.display = 'block';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result.split(',')[1];
+    var mediaType = file.type || 'image/jpeg';
+    fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: 'This is a receipt. Extract the following and respond ONLY with a JSON object, no markdown: { "vendor": "store/business name", "amount": total amount as number, "date": "YYYY-MM-DD format", "category": one of [Fuel, Supplies, Equipment, Vehicle, Phone, Marketing, Other], "notes": "brief description of what was purchased" }' }
+          ]
+        }]
+      })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      document.getElementById('receiptProcessing').style.display = 'none';
+      var text = data.content && data.content[0] ? data.content[0].text : '';
+      try {
+        var clean = text.replace(/```json|```/g, '').trim();
+        var receipt = JSON.parse(clean);
+        // Pre-fill form
+        document.getElementById('exp-vendor').value = receipt.vendor || '';
+        document.getElementById('exp-amount').value = receipt.amount || '';
+        document.getElementById('exp-date').value = receipt.date || new Date().toISOString().split('T')[0];
+        document.getElementById('exp-notes').value = receipt.notes || '';
+        if (receipt.category) {
+          var sel = document.getElementById('exp-category');
+          for (var i=0; i<sel.options.length; i++) {
+            if (sel.options[i].value === receipt.category) { sel.selectedIndex = i; break; }
+          }
+        }
+        // Show receipt image preview
+        document.getElementById('receiptImg').src = e.target.result;
+        document.getElementById('receiptPreview').style.display = 'block';
+        document.getElementById('expenseModal').style.display = 'block';
+        showToast('✅ Receipt scanned! Review and save.');
+      } catch(ex) {
+        showToast('Could not read receipt — please fill in manually', true);
+        showAddExpense();
+      }
+    })
+    .catch(function(){
+      document.getElementById('receiptProcessing').style.display = 'none';
+      showToast('Could not read receipt — please fill in manually', true);
+      showAddExpense();
+    });
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function syncExpensesToSheet(expenses, revenue, total, profit) {
+  fetch(SHEET_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ type: 'sync_expenses', expenses: expenses, revenue: revenue, total: total, profit: profit })
+  });
+}
+// ── END EXPENSES ──
+
 </script>
 </body>
 </html>
