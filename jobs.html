@@ -402,7 +402,32 @@
     <div class="stat-card orange"><div class="stat-label">🔔 Follow Ups</div><div class="stat-value" id="m-followups">0</div></div>
     <div class="stat-card"><div class="stat-label">✅ Close Rate</div><div class="stat-value" id="m-closerate">0%</div></div>
   </div>
-  <div class="section-title">👤 Individual Performance</div>
+  <div class="section-title" style="margin-top:14px">📈 Revenue & Profit Breakdown</div>
+  <div style="background:var(--card);border-radius:12px;border:1px solid rgba(0,180,216,0.2);overflow:hidden;margin-bottom:14px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;background:var(--mid);padding:8px 12px;font-size:0.65rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:0.05em;">
+      <div></div><div style="text-align:right;">Daily</div><div style="text-align:right;">Weekly</div><div style="text-align:right;">Monthly</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.05);">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--green);">💰 Revenue</div>
+      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--green);" id="bp-rev-day">$0</div>
+      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--green);" id="bp-rev-week">$0</div>
+      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--green);" id="bp-rev-month">$0</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.05);">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--red);">💸 Expenses</div>
+      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--red);" id="bp-exp-day">$0</div>
+      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--red);" id="bp-exp-week">$0</div>
+      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--red);" id="bp-exp-month">$0</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.05);">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--cyan);">📈 Net Profit</div>
+      <div style="text-align:right;font-size:0.78rem;font-weight:700;" id="bp-profit-day">$0</div>
+      <div style="text-align:right;font-size:0.78rem;font-weight:700;" id="bp-profit-week">$0</div>
+      <div style="text-align:right;font-size:0.78rem;font-weight:700;" id="bp-profit-month">$0</div>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top:14px">👤 Individual Performance</div>
   <div id="rep-sections"></div>
 
   <div class="section-title" style="margin-top:14px">💵 Commission Report</div>
@@ -1190,6 +1215,49 @@ function renderJobs(search) {
   } else {
     rvDiv.style.display='none';
   }
+}
+
+function renderBreakdown() {
+  var data = getData();
+  var expenses = getExpenses();
+  var now = new Date();
+  var todayStr = now.toLocaleDateString();
+  var weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay());
+  var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  function revInPeriod(start, isDay) {
+    return data.filter(function(d){
+      if (d.status !== 'Completed') return false;
+      var dt = new Date(d.date);
+      if (isDay) return d.date === todayStr;
+      return !isNaN(dt.getTime()) && dt >= start;
+    }).reduce(function(s,d){ return s+parseFloat(d.total||d.amount||0); }, 0);
+  }
+
+  function expInPeriod(start, isDay) {
+    return expenses.filter(function(e){
+      if (isDay) return e.date === todayStr || new Date(e.date).toLocaleDateString() === todayStr;
+      var dt = new Date(e.date);
+      return !isNaN(dt.getTime()) && dt >= start;
+    }).reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
+  }
+
+  var periods = [
+    { suffix:'day', start: null, isDay: true },
+    { suffix:'week', start: weekStart, isDay: false },
+    { suffix:'month', start: monthStart, isDay: false }
+  ];
+
+  periods.forEach(function(p) {
+    var rev = revInPeriod(p.start, p.isDay);
+    var exp = expInPeriod(p.start, p.isDay);
+    var profit = rev - exp;
+    document.getElementById('bp-rev-'+p.suffix).textContent = '$'+rev.toFixed(2);
+    document.getElementById('bp-exp-'+p.suffix).textContent = '$'+exp.toFixed(2);
+    var el = document.getElementById('bp-profit-'+p.suffix);
+    el.textContent = '$'+profit.toFixed(2);
+    el.style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  });
 }
 
 function updateManager() {
@@ -2484,7 +2552,7 @@ function switchTab(tab) {
     }
   }
   if(tab==='jobs') renderJobs('');
-  if(tab==='manager') updateManager();
+  if(tab==='manager') { updateManager(); renderBreakdown(); }
   if(tab==='settings') { renderRepList(); renderCommissionList(); }
   if(tab==='commercial') { renderCommercial(''); updateCommercialStats(); }
   if(tab==='expenses') { renderExpenses(); }
