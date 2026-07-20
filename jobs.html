@@ -2763,18 +2763,18 @@ function renderExpenses() {
   var revenue = getCompletedRevenue();
   var total = expenses.reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
   var profit = revenue - total;
-  // Calculate payroll from time clock wages
-  var payroll = getPayrollTotal();
-  var profitAfterPayroll = profit - payroll;
 
   document.getElementById('exp-revenue').textContent = '$'+revenue.toFixed(2);
   document.getElementById('exp-total').textContent = '$'+total.toFixed(2);
   document.getElementById('exp-profit').textContent = '$'+profit.toFixed(2);
-  document.getElementById('exp-profit2').textContent = '$'+profitAfterPayroll.toFixed(2);
-  var card = document.getElementById('exp-profit-card');
-  card.style.borderColor = profit >= 0 ? 'var(--green)' : 'var(--red)';
-  var card2 = document.getElementById('exp-profit2-card');
-  card2.style.borderColor = profitAfterPayroll >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('exp-profit-card').style.borderColor = profit >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Get payroll async from sheet
+  getPayrollTotal(function(payroll) {
+    var profitAfterPayroll = profit - payroll;
+    document.getElementById('exp-profit2').textContent = '$'+profitAfterPayroll.toFixed(2);
+    document.getElementById('exp-profit2-card').style.borderColor = profitAfterPayroll >= 0 ? 'var(--green)' : 'var(--red)';
+  });
   var list = document.getElementById('expense-list');
   if (!expenses.length) { list.innerHTML='<div class="empty-state"><span>💸</span>No expenses yet. Scan a receipt or add manually!</div>'; return; }
   list.innerHTML = expenses.sort(function(a,b){ return new Date(b.date)-new Date(a.date); }).map(function(e){
@@ -2790,30 +2790,33 @@ function renderExpenses() {
       '<button class="action-btn red" onclick="deleteExpense('+e.id+')">🗑 Delete</button>'+
       '</div></div>';
   }).join('');
-  // Sync to sheet
-  syncExpensesToSheet(expenses, revenue, total, profit, payroll, profitAfterPayroll);
+  // Only sync to sheet when explicitly saving/deleting, not on every render
 }
 
-function getPayrollTotal() {
-  // Get total wages from time clock entries this month
-  var entries = JSON.parse(localStorage.getItem('tc_entries') || '[]');
-  var wages = JSON.parse(localStorage.getItem('tc_wages') || '{}');
-  var emps = JSON.parse(localStorage.getItem('tc_employees') || '[]');
-  var now = new Date();
-  var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  var total = 0;
-  emps.forEach(function(emp) {
-    var wage = parseFloat(wages[emp.id] || emp.wage || 0);
-    if (!wage) return;
-    var empEntries = entries.filter(function(e) {
-      if (String(e.empId) !== String(emp.id) && String(e.empName||'').toLowerCase() !== String(emp.name||'').toLowerCase()) return false;
-      var d = new Date(e.date);
-      return !isNaN(d.getTime()) && d >= monthStart;
-    });
-    var minutes = empEntries.reduce(function(s,e){ return s+(e.totalMinutes||0); }, 0);
-    total += (minutes/60) * wage;
-  });
-  return total;
+function getPayrollTotal(callback) {
+  // Fetch time clock entries from sheet
+  fetch(SHEET_URL + '?action=timecard&t=' + Date.now(), {method:'GET', mode:'cors'})
+    .then(function(r){ return r.json(); })
+    .then(function(response){
+      var entries = response.data || [];
+      var wages = JSON.parse(localStorage.getItem('tc_wages') || '{}');
+      var emps = JSON.parse(localStorage.getItem('tc_employees') || '[]');
+      var now = new Date();
+      var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      var total = 0;
+      emps.forEach(function(emp) {
+        var wage = parseFloat(wages[emp.id] || emp.wage || 0);
+        if (!wage) return;
+        var empEntries = entries.filter(function(e) {
+          if (String(e.empId) !== String(emp.id) && String(e.empName||'').toLowerCase() !== String(emp.name||'').toLowerCase()) return false;
+          var d = new Date(e.date);
+          return !isNaN(d.getTime()) && d >= monthStart;
+        });
+        var minutes = empEntries.reduce(function(s,e){ return s+(e.totalMinutes||0); }, 0);
+        total += (minutes/60) * wage;
+      });
+      if (callback) callback(total);
+    }).catch(function(){ if (callback) callback(0); });
 }
 
 function getCompletedRevenue() {
@@ -2867,6 +2870,7 @@ function saveExpense() {
   document.getElementById('expenseModal').style.display = 'none';
   showToast('✅ Expense saved!');
   renderExpenses();
+  syncExpensesToSheet();
 }
 
 function editExpense(id) {
@@ -2891,6 +2895,7 @@ function deleteExpense(id) {
   var expenses = getExpenses().filter(function(e){ return String(e.id) !== String(id); });
   saveExpenses(expenses);
   renderExpenses();
+  syncExpensesToSheet();
   showToast('🗑 Expense deleted');
 }
 
@@ -2967,11 +2972,18 @@ function processReceipt(input) {
   input.value = '';
 }
 
-function syncExpensesToSheet(expenses, revenue, total, profit, payroll, profitAfterPayroll) {
-  fetch(SHEET_URL, {
-    method: 'POST', mode: 'no-cors',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ type: 'sync_expenses', expenses: expenses, revenue: revenue, total: total, profit: profit, payroll: payroll||0, profitAfterPayroll: profitAfterPayroll||0 })
+function syncExpensesToSheet() {
+  var expenses = getExpenses();
+  var revenue = getCompletedRevenue();
+  var total = expenses.reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
+  var profit = revenue - total;
+  getPayrollTotal(function(payroll) {
+    var profitAfterPayroll = profit - payroll;
+    fetch(SHEET_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ type: 'sync_expenses', expenses: expenses, revenue: revenue, total: total, profit: profit, payroll: payroll, profitAfterPayroll: profitAfterPayroll })
+    });
   });
 }
 // ── END EXPENSES ──
