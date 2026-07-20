@@ -2838,25 +2838,19 @@ function processReceipt(input) {
   reader.onload = function(e) {
     var base64 = e.target.result.split(',')[1];
     var mediaType = file.type || 'image/jpeg';
-    fetch('https://api.anthropic.com/v1/messages', {
+    fetch(SHEET_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text', text: 'This is a receipt. Extract the following and respond ONLY with a JSON object, no markdown: { "vendor": "store/business name", "amount": total amount as number, "date": "YYYY-MM-DD format", "category": one of [Fuel, Supplies, Equipment, Vehicle, Phone, Marketing, Other], "notes": "brief description of what was purchased" }' }
-          ]
-        }]
+        type: 'scan_receipt',
+        imageData: base64,
+        mediaType: mediaType
       })
     })
     .then(function(r){ return r.json(); })
     .then(function(data){
       document.getElementById('receiptProcessing').style.display = 'none';
-      var text = data.content && data.content[0] ? data.content[0].text : '';
+      var text = data.result || (data.content && data.content[0] ? data.content[0].text : '');
       try {
         var clean = text.replace(/```json|```/g, '').trim();
         var receipt = JSON.parse(clean);
