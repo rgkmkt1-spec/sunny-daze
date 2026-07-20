@@ -2783,7 +2783,7 @@ function renderExpenses() {
       '<div class="customer-top">'+
       '<div><div class="customer-name">'+(icons[e.category]||'📦')+' '+e.vendor+'</div>'+
       '<div class="customer-details">'+e.category+' · '+e.date+(e.notes?' · '+e.notes:'')+'</div></div>'+
-      '<div class="customer-amount" style="color:var(--red);">-$'+parseFloat(e.amount).toFixed(2)+'</div>'
+      '<div class="customer-amount" style="color:var(--red);">-$'+parseFloat(e.amount).toFixed(2)+'</div>'+
       '</div>'+
       '<div class="card-actions">'+
       '<button class="action-btn blue" onclick="editExpense('+e.id+')">✏️ Edit</button>'+
