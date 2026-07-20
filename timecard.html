@@ -911,8 +911,11 @@ function renderMgrEntries() {
         return;
       }
       var filtered = filterByDate(sheetEntries, mgrFilter);
-      list.innerHTML = filtered.length ? filtered.map(function(e){ return entryCardHTML(e, true); }).join('') :
-        '<div class="empty-state"><span>📋</span>No entries for this period.</div>';
+      var html = '';
+      filtered.forEach(function(e) {
+        try { html += entryCardHTML(e, true); } catch(ex) { html += '<div class="entry-card"><div class="entry-date">Error rendering entry: ' + (e.empName||'') + ' ' + (e.date||'') + '</div></div>'; }
+      });
+      list.innerHTML = html || '<div class="empty-state"><span>📋</span>No entries for this period.</div>';
     })
     .catch(function(){
       var entries = getEntries();
@@ -944,8 +947,8 @@ function entryCardHTML(e, showEmp) {
     '⬇️ Out: '+safeTime(e.clockOut)+
     (e.overtimeMinutes>0?'<br>⚠️ Overtime: '+fmtHours(e.overtimeMinutes):'')+'</div>'+
     (isManager?'<div class="entry-actions">'+
-      '<button class="action-btn blue" onclick="openEditModal(this)" data-id="'+e.id.toString().replace(/"/g,'&quot;')+'">✏️ Adjust</button>'+
-      '<button class="action-btn red" onclick="deleteEntry(this)" data-id="'+e.id.toString().replace(/"/g,'&quot;')+'">🗑 Delete</button>'+
+      '<button class="action-btn blue" onclick="openEditModal(this)" data-id="'+(e.id||'').toString().replace(/"/g,'&quot;').replace(/'/g,'&#39;')+'">✏️ Adjust</button>'+
+      '<button class="action-btn red" onclick="deleteEntry(this)" data-id="'+(e.id||'').toString().replace(/"/g,'&quot;').replace(/'/g,'&#39;')+'">🗑 Delete</button>'+
       '</div>':'')+
     '</div>';
 }
