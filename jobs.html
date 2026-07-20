@@ -2783,9 +2783,10 @@ function renderExpenses() {
       '<div class="customer-top">'+
       '<div><div class="customer-name">'+(icons[e.category]||'📦')+' '+e.vendor+'</div>'+
       '<div class="customer-details">'+e.category+' · '+e.date+(e.notes?' · '+e.notes:'')+'</div></div>'+
-      '<div class="customer-amount" style="color:var(--red);">-$'+parseFloat(e.amount).toFixed(2)+'</div>'+
+      '<div class="customer-amount" style="color:var(--red);">-$'+parseFloat(e.amount).toFixed(2)+'</div>'
       '</div>'+
       '<div class="card-actions">'+
+      '<button class="action-btn blue" onclick="editExpense('+e.id+')">✏️ Edit</button>'+
       '<button class="action-btn red" onclick="deleteExpense('+e.id+')">🗑 Delete</button>'+
       '</div></div>';
   }).join('');
@@ -2833,25 +2834,56 @@ function showAddExpense() {
 
 function saveExpense() {
   var vendor = document.getElementById('exp-vendor').value.trim();
-  var amount = parseFloat(document.getElementById('exp-amount').value);
+  var amount = parseFloat(parseFloat(document.getElementById('exp-amount').value).toFixed(2));
   var date = document.getElementById('exp-date').value;
   if (!vendor) { showToast('Enter vendor name', true); return; }
   if (!amount || amount <= 0) { showToast('Enter amount', true); return; }
   if (!date) { showToast('Enter date', true); return; }
-  var expense = {
-    id: Date.now(),
-    category: document.getElementById('exp-category').value,
-    vendor: vendor,
-    amount: amount,
-    date: date,
-    notes: document.getElementById('exp-notes').value.trim()
-  };
+  var editId = document.getElementById('expenseModal').dataset.editId;
   var expenses = getExpenses();
-  expenses.unshift(expense);
+  if (editId) {
+    // Update existing
+    var idx = expenses.findIndex(function(e){ return String(e.id)===String(editId); });
+    if (idx > -1) {
+      expenses[idx].category = document.getElementById('exp-category').value;
+      expenses[idx].vendor = vendor;
+      expenses[idx].amount = amount;
+      expenses[idx].date = date;
+      expenses[idx].notes = document.getElementById('exp-notes').value.trim();
+    }
+    delete document.getElementById('expenseModal').dataset.editId;
+  } else {
+    var expense = {
+      id: Date.now(),
+      category: document.getElementById('exp-category').value,
+      vendor: vendor,
+      amount: amount,
+      date: date,
+      notes: document.getElementById('exp-notes').value.trim()
+    };
+    expenses.unshift(expense);
+  }
   saveExpenses(expenses);
   document.getElementById('expenseModal').style.display = 'none';
   showToast('✅ Expense saved!');
   renderExpenses();
+}
+
+function editExpense(id) {
+  var expenses = getExpenses();
+  var e = expenses.find(function(x){ return String(x.id)===String(id); });
+  if (!e) return;
+  document.getElementById('exp-date').value = e.date || '';
+  document.getElementById('exp-vendor').value = e.vendor || '';
+  document.getElementById('exp-amount').value = e.amount || '';
+  document.getElementById('exp-notes').value = e.notes || '';
+  document.getElementById('receiptPreview').style.display = 'none';
+  var sel = document.getElementById('exp-category');
+  for (var i=0; i<sel.options.length; i++) {
+    if (sel.options[i].value === e.category) { sel.selectedIndex = i; break; }
+  }
+  document.getElementById('expenseModal').dataset.editId = id;
+  document.getElementById('expenseModal').style.display = 'block';
 }
 
 function deleteExpense(id) {
