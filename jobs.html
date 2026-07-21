@@ -456,6 +456,7 @@
   <div style="display:flex;gap:8px;margin-bottom:12px;">
     <button class="btn-submit" style="flex:1;background:var(--blue);color:var(--navy);" onclick="document.getElementById('receiptInput').click()">📷 Scan Receipt</button>
     <button class="btn-submit" style="flex:1;" onclick="showAddExpense()">➕ Add Manual</button>
+    <button class="btn-submit" style="flex:1;background:var(--mid);color:var(--cyan);border:1px solid var(--cyan);" onclick="loadExpensesFromSheet(true)">🔄 Refresh</button>
   </div>
   <input type="file" id="receiptInput" accept="image/*" capture="environment" style="display:none" onchange="processReceipt(this)"/>
   <div id="receiptProcessing" style="display:none;text-align:center;padding:20px;background:var(--card);border-radius:10px;margin-bottom:12px;">
@@ -871,6 +872,15 @@ function loginSuccess() {
         localStorage.setItem('sd_customers', JSON.stringify(sheetData));
         mgrAllData = sheetData;
         renderLeads(''); renderJobs(''); updateDashboard();
+        // Also load expenses from sheet
+        fetch(SHEET_URL + '?action=expenses&t=' + Date.now(), {method:'GET', mode:'cors'})
+          .then(function(r){ return r.json(); })
+          .then(function(res){
+            var sheetExpenses = res.data || [];
+            if (sheetExpenses.length > 0) {
+              localStorage.setItem('sd_expenses', JSON.stringify(sheetExpenses));
+            }
+          }).catch(function(){});
       }).catch(function(){
         mgrAllData = [];
         renderLeads(''); renderJobs('');
@@ -2308,10 +2318,17 @@ function showNextStepPicker(id, c, method, amountReceived) {
 
     // Option 2 - Set up full payment plan
     '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Or Set Up Full Payment Plan</div>'+
+    '<div style="margin-bottom:10px;">'+
+    '<div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Payment Frequency</div>'+
+    '<select id="quickPlanFreq" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" onchange="quickPlanPreview()">'+
+    '<option value="weekly">Weekly</option>'+
+    '<option value="biweekly">Every 2 Weeks</option>'+
+    '<option value="monthly" selected>Monthly</option>'+
+    '</select></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'+
-    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Monthly Amount</div>'+
+    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Payment Amount</div>'+
     '<input type="number" id="quickPlanAmt" placeholder="$100" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" oninput="quickPlanPreview()"/></div>'+
-    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Months</div>'+
+    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Number of Payments</div>'+
     '<input type="number" id="quickPlanMonths" placeholder="5" min="1" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" oninput="quickPlanPreview()"/></div>'+
     '</div>'+
     '<div id="quickPlanPreview" style="font-size:0.72rem;color:#a78bfa;margin-bottom:10px;"></div>'+
@@ -2323,11 +2340,13 @@ function showNextStepPicker(id, c, method, amountReceived) {
 
 function quickPlanPreview() {
   var amt = parseFloat(document.getElementById('quickPlanAmt').value);
-  var months = parseInt(document.getElementById('quickPlanMonths').value);
+  var payments = parseInt(document.getElementById('quickPlanMonths').value);
+  var freq = document.getElementById('quickPlanFreq') ? document.getElementById('quickPlanFreq').value : 'monthly';
   var prev = document.getElementById('quickPlanPreview');
-  if (!amt || !months) { prev.textContent=''; return; }
-  var total = amt * months;
-  prev.textContent = months+' payments of $'+amt.toFixed(2)+' = $'+total.toFixed(2)+' total';
+  if (!amt || !payments) { prev.textContent=''; return; }
+  var total = amt * payments;
+  var freqLabel = {weekly:'weekly', biweekly:'every 2 weeks', monthly:'monthly'}[freq];
+  prev.textContent = payments+' payments of $'+amt.toFixed(2)+' '+freqLabel+' = $'+total.toFixed(2)+' total';
 }
 
 function applySingleNextDate() {
@@ -2379,11 +2398,13 @@ function applyQuickPlan() {
   // Read values BEFORE removing the picker (removing destroys the inputs)
   var amtEl = document.getElementById('quickPlanAmt');
   var monthsEl = document.getElementById('quickPlanMonths');
+  var freqEl = document.getElementById('quickPlanFreq');
   var amt = amtEl ? parseFloat(amtEl.value) : 0;
   var months = monthsEl ? parseInt(monthsEl.value) : 0;
+  var freq = freqEl ? freqEl.value : 'monthly';
 
-  if (!amt || amt<=0) { showToast('Enter monthly amount', true); return; }
-  if (!months || months<1) { showToast('Enter number of months', true); return; }
+  if (!amt || amt<=0) { showToast('Enter payment amount', true); return; }
+  if (!months || months<1) { showToast('Enter number of payments', true); return; }
 
   // NOW remove the picker
   var picker = document.getElementById('nextStepPicker');
@@ -2397,20 +2418,28 @@ function applyQuickPlan() {
   }
   if (!c) { showToast('Customer not found', true); return; }
 
-  // Build due dates starting next month
-  var start = new Date(); start.setMonth(start.getMonth()+1); start.setDate(1);
+  // Build due dates based on frequency
+  var daysToAdd = { weekly: 7, biweekly: 14, monthly: 0 };
+  var start = new Date();
+  // First payment based on frequency
+  if (freq === 'weekly') start.setDate(start.getDate() + 7);
+  else if (freq === 'biweekly') start.setDate(start.getDate() + 14);
+  else { start.setMonth(start.getMonth()+1); start.setDate(1); }
+
   var dueDates = [];
   for (var i=0; i<months; i++) {
     var d = new Date(start);
-    d.setMonth(d.getMonth()+i);
+    if (freq === 'monthly') d.setMonth(d.getMonth()+i);
+    else d.setDate(d.getDate() + (daysToAdd[freq] * i));
     dueDates.push((d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
   }
 
-  c.paymentPlan = { monthlyAmount:amt, months:months, method:c.payment||'', dueDates:dueDates, startDate:start.toISOString().split('T')[0], createdDate:new Date().toLocaleDateString() };
+  var freqLabel = {weekly:'Weekly', biweekly:'Every 2 Weeks', monthly:'Monthly'}[freq];
+  c.paymentPlan = { amount:amt, payments:months, frequency:freq, freqLabel:freqLabel, method:c.payment||'', dueDates:dueDates, startDate:start.toISOString().split('T')[0], createdDate:new Date().toLocaleDateString() };
   c.nextPaymentDate = dueDates[0];
   c.paid = c.paid || 'Partial'; // ensure paid status is set
   var nb = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
-  c.notes = nb+(nb?'\n':'')+'Payment plan: $'+amt+'/mo x '+months+' months\nNext payment: '+dueDates[0];
+  c.notes = nb+(nb?'\n':'')+'Payment plan: $'+amt+' '+freqLabel+' x '+months+' payments\nNext payment: '+dueDates[0];
 
   // Make sure data array is updated
   var found = false;
@@ -2423,7 +2452,7 @@ function applyQuickPlan() {
 
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
   renderJobs(''); updateDashboard();
-  showToast('💳 Plan set! $'+amt+'/mo x '+months+' months. First due '+dueDates[0]);
+  showToast('💳 Plan set! $'+amt+' '+freqLabel+' x '+months+' payments. First due '+dueDates[0]);
 }
 
 function lookupZip(zip) {
@@ -2576,7 +2605,7 @@ function switchTab(tab) {
   if(tab==='manager') { updateManager(); renderBreakdown(); }
   if(tab==='settings') { renderRepList(); renderCommissionList(); }
   if(tab==='commercial') { renderCommercial(''); updateCommercialStats(); }
-  if(tab==='expenses') { renderExpenses(); }
+  if(tab==='expenses') { loadExpensesFromSheet(false); }
 }
 
 function saveCommercial() {
@@ -2850,6 +2879,30 @@ function showToast(msg,isError) {
 // ── EXPENSES ──
 function getExpenses() { try { return JSON.parse(localStorage.getItem('sd_expenses')||'[]'); } catch(e){ return []; } }
 function saveExpenses(e) { localStorage.setItem('sd_expenses', JSON.stringify(e)); }
+
+function loadExpensesFromSheet(showToastMsg) {
+  fetch(SHEET_URL + '?action=expenses&t=' + Date.now(), {method:'GET', mode:'cors'})
+    .then(function(r){ return r.json(); })
+    .then(function(response){
+      var sheetExpenses = response.data || [];
+      if (sheetExpenses.length > 0) {
+        // Merge with local — sheet is source of truth for existing, local may have new unsaved ones
+        var local = getExpenses();
+        var sheetIds = sheetExpenses.map(function(e){ return String(e.id); });
+        var localOnly = local.filter(function(e){ return sheetIds.indexOf(String(e.id)) < 0; });
+        var merged = sheetExpenses.concat(localOnly);
+        saveExpenses(merged);
+        renderExpenses();
+        if (showToastMsg) showToast('✅ Expenses refreshed from sheet!');
+      } else {
+        if (showToastMsg) showToast('No expenses found in sheet');
+        renderExpenses();
+      }
+    }).catch(function(){
+      if (showToastMsg) showToast('Could not reach sheet', true);
+      renderExpenses();
+    });
+}
 
 function renderExpenses() {
   var expenses = getExpenses();
