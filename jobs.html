@@ -2749,7 +2749,7 @@ function applyCommercialStatus(id, newStatus) {
   if (mgrA) { mgrA.status = newStatus; if(newStatus!=='Sold') mgrA.paid='No'; }
   // Use update type not commercial to avoid creating duplicate row
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(Object.assign({},a,{type:'update_commercial'}))
+    body:JSON.stringify(Object.assign({},a,{type:'update_commercial', rowNum: a.rowNum||a.id}))
   });
   renderCommercial(''); updateCommercialStats(); updateDashboard();
   showToast('✅ Status → ' + newStatus);
