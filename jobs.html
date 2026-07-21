@@ -328,7 +328,7 @@
   <div class="stats three">
     <div class="stat-card green"><div class="stat-label">💰 Collected</div><div class="stat-value" id="c-revenue">$0</div></div>
     <div class="stat-card"><div class="stat-label">🏢 Accounts</div><div class="stat-value" id="c-count">0</div></div>
-    <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="c-unpaid">0</div></div>
+    <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="c-unpaid">$0</div></div>
   </div>
   <div class="form-card" style="margin-bottom:14px">
     <h2>🏢 Add Commercial Account</h2>
@@ -2670,18 +2670,21 @@ function renderCommercial(search) {
       if (search) accounts = accounts.filter(function(a){ return a.business.toLowerCase().includes(search.toLowerCase())||(a.address||'').toLowerCase().includes(search.toLowerCase()); });
       if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
       var collected = accounts.filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
-      var unpaid = accounts.filter(function(a){ return a.paid !== 'Yes'; }).length;
-      document.getElementById('c-revenue').textContent = '$'+collected.toFixed(0);
+      var unpaid = accounts.filter(function(a){ return a.status==='Sold' && a.paid !== 'Yes'; }).length;
+      var unpaidAmt = accounts.filter(function(a){ return a.status==='Sold' && a.paid !== 'Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
+      document.getElementById('c-revenue').textContent = '$'+collected.toFixed(2);
       document.getElementById('c-count').textContent = accounts.length;
-      document.getElementById('c-unpaid').textContent = unpaid;
+      document.getElementById('c-unpaid').textContent = '$'+unpaidAmt.toFixed(2);
       var html = '';
       accounts.forEach(function(a){ try { html += commercialCardHTML(a); } catch(ex) { console.log('Card error',ex,a); html += '<div class="customer-card"><div class="customer-name">⚠️ '+a.business+'</div></div>'; } });
       list.innerHTML = html || '<div class="empty-state"><span>🏢</span>No accounts loaded.</div>';
     })
-    .catch(function() {
-      var accounts = getCommercialData();
-      if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
-      list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
+    .catch(function(err) {
+      list.innerHTML = '<div class="empty-state"><span>⚠️</span>Could not load from sheet: '+(err?err.message:'unknown')+'</div>';
+      setTimeout(function(){
+        var accounts = getCommercialData();
+        list.innerHTML = accounts.length ? (function(){ var h=''; accounts.forEach(function(a){ try{h+=commercialCardHTML(a);}catch(e){} }); return h; })() : '<div class="empty-state"><span>🏢</span>No commercial accounts found.</div>';
+      }, 2000);
     });
 }
 
@@ -2714,7 +2717,7 @@ function commercialCardHTML(a) {
 
 function changeCommercialStatus(id) {
   var existing = document.getElementById('bizStatusPicker');
-  if (existing) { existing.remove(); return; }
+  if (existing) existing.remove();
   var statuses = [
     {val:'Sold', label:'✅ Sold', color:'var(--green)', text:'white'},
     {val:'Estimate', label:'📋 Estimate', color:'var(--yellow)', text:'var(--navy)'},
