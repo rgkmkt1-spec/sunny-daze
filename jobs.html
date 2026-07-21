@@ -2674,7 +2674,9 @@ function renderCommercial(search) {
       document.getElementById('c-revenue').textContent = '$'+collected.toFixed(0);
       document.getElementById('c-count').textContent = accounts.length;
       document.getElementById('c-unpaid').textContent = unpaid;
-      list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
+      var html = '';
+      accounts.forEach(function(a){ try { html += commercialCardHTML(a); } catch(ex) { console.log('Card error',ex,a); html += '<div class="customer-card"><div class="customer-name">⚠️ '+a.business+'</div></div>'; } });
+      list.innerHTML = html || '<div class="empty-state"><span>🏢</span>No accounts loaded.</div>';
     })
     .catch(function() {
       var accounts = getCommercialData();
