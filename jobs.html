@@ -2737,17 +2737,17 @@ function applyCommercialStatus(id, newStatus) {
   var a = accounts.find(function(x){ return String(x.id)===String(id); });
   if (!a && commercialSheetData.length>0) {
     var sa = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
-    if (sa) { a = JSON.parse(JSON.stringify(sa)); accounts.unshift(a); }
+    if (sa) { a = JSON.parse(JSON.stringify(sa)); accounts.push(a); }
   }
   if (!a) { showToast('Account not found', true); return; }
   a.status = newStatus;
-  // Clear paid if moving away from Sold
   if (newStatus !== 'Sold') { a.paid = 'No'; }
   localStorage.setItem('sd_commercial', JSON.stringify(accounts));
   var mgrA = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
   if (mgrA) { mgrA.status = newStatus; if(newStatus!=='Sold') mgrA.paid='No'; }
+  // Use update type not commercial to avoid creating duplicate row
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(Object.assign({},a,{type:'commercial'}))
+    body:JSON.stringify(Object.assign({},a,{type:'update_commercial'}))
   });
   renderCommercial(''); updateCommercialStats(); updateDashboard();
   showToast('✅ Status → ' + newStatus);
