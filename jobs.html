@@ -877,6 +877,8 @@ function loginSuccess() {
           .then(function(r){ return r.json(); })
           .then(function(res){
             var sheetExpenses = res.data || [];
+            var deletedExpenseIds = JSON.parse(localStorage.getItem('sd_deleted_expenses')||'[]');
+            sheetExpenses = sheetExpenses.filter(function(e){ return deletedExpenseIds.indexOf(String(e.id)) < 0; });
             if (sheetExpenses.length > 0) {
               localStorage.setItem('sd_expenses', JSON.stringify(sheetExpenses));
             }
@@ -2872,11 +2874,13 @@ function loadExpensesFromSheet(showToastMsg) {
     .then(function(r){ return r.json(); })
     .then(function(response){
       var sheetExpenses = response.data || [];
+      var deletedExpenseIds = JSON.parse(localStorage.getItem('sd_deleted_expenses')||'[]');
+      sheetExpenses = sheetExpenses.filter(function(e){ return deletedExpenseIds.indexOf(String(e.id)) < 0; });
       if (sheetExpenses.length > 0) {
         // Merge with local — sheet is source of truth for existing, local may have new unsaved ones
         var local = getExpenses();
         var sheetIds = sheetExpenses.map(function(e){ return String(e.id); });
-        var localOnly = local.filter(function(e){ return sheetIds.indexOf(String(e.id)) < 0; });
+        var localOnly = local.filter(function(e){ return sheetIds.indexOf(String(e.id)) < 0 && deletedExpenseIds.indexOf(String(e.id)) < 0; });
         var merged = sheetExpenses.concat(localOnly);
         saveExpenses(merged);
         renderExpenses();
@@ -3042,7 +3046,8 @@ function showDeletePinOverlay(id, type) {
     '<div id="gdp-display" style="font-size:2rem;letter-spacing:0.5em;text-align:center;margin-bottom:20px;min-height:40px;color:var(--white);">____</div>'+
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">'+
     [1,2,3,4,5,6,7,8,9,'',0,'←'].map(function(n){
-      return '<button onclick="gdpKey(\''+n+'\')" style="padding:16px;background:var(--mid);color:var(--white);border:none;border-radius:8px;font-size:1.2rem;font-weight:700;cursor:pointer;">'+(n===''?'':n)+'</button>';
+      if (n === '') return '<div></div>';
+      return '<button onclick="gdpKey(\''+n+'\')" style="padding:16px;background:var(--mid);color:var(--white);border:none;border-radius:8px;font-size:1.2rem;font-weight:700;cursor:pointer;">'+n+'</button>';
     }).join('')+
     '</div>'+
     '<button onclick="confirmGenericDelete()" style="width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:12px;">🗑 Confirm Delete</button>'+
@@ -3078,7 +3083,12 @@ function deleteExpense(id) {
 }
 
 function confirmExpenseDelete(id) {
-  var expenses = getExpenses().filter(function(e){ return String(e.id) !== String(id); });
+  var expenses = getExpenses();
+  // Mark as deleted so sheet sync can handle it
+  var deletedExpenseIds = JSON.parse(localStorage.getItem('sd_deleted_expenses')||'[]');
+  deletedExpenseIds.push(String(id));
+  localStorage.setItem('sd_deleted_expenses', JSON.stringify(deletedExpenseIds));
+  expenses = expenses.filter(function(e){ return String(e.id) !== String(id); });
   saveExpenses(expenses);
   renderExpenses();
   syncExpensesToSheet();
