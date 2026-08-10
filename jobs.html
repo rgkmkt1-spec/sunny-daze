@@ -3193,7 +3193,6 @@ function syncExpensesToSheet() {
 
 // ── INVOICE GENERATOR ──
 function generateInvoice(id) {
-  try {
   id = parseInt(id);
   var data = getData();
   var c = data.find(function(d){ return parseInt(d.id)===id; });
@@ -3209,130 +3208,120 @@ function generateInvoice(id) {
   var balance = isPartial ? (parseFloat(total) - parseFloat(amtPaid)).toFixed(2) : total;
   var custEmail = (c.email && c.email !== 'no-email@noemail.com' && c.email.trim() !== '') ? c.email.trim() : '';
   var statusText = isPaid ? 'Paid in Full' : isPartial ? 'Partial Payment' : 'Unpaid';
-  var statusClass = isPaid ? 'paid' : isPartial ? 'partial' : 'unpaid';
-  var statusLabel = isPaid ? '\u2705 PAID IN FULL' : isPartial ? '\u26a0\ufe0f PARTIAL PAYMENT' : '\u274c UNPAID';
+  var statusBg = isPaid ? '#dcfce7' : isPartial ? '#fef3c7' : '#fee2e2';
+  var statusColor = isPaid ? '#166534' : isPartial ? '#92400e' : '#991b1b';
+  var statusLabel = isPaid ? '✅ PAID IN FULL' : isPartial ? '⚠️ PARTIAL' : '❌ UNPAID';
   var services = c.service ? c.service.split(', ') : ['Pressure Washing Services'];
   var jobDate = c.date ? new Date(c.date).toLocaleDateString() : today;
-  var invoiceData = {
+
+  // Store invoice data for email sending
+  window._invoiceData = {
     type:'send_invoice', invoiceNum:invoiceNum, fname:c.fname||'', repName:c.repName||'',
-    service:c.service||'', amount:parseFloat(c.amount||0).toFixed(2), tax:parseFloat(c.tax||0).toFixed(2),
-    total:total, date:jobDate, today:today, notes:(c.notes||'').substring(0,200),
-    isPaid:isPaid, isPartial:isPartial, amtPaid:parseFloat(c.amountPaid||0).toFixed(2), balance:balance
+    service:c.service||'', amount:parseFloat(c.amount||0).toFixed(2),
+    tax:parseFloat(c.tax||0).toFixed(2), total:total, date:jobDate, today:today,
+    notes:(c.notes||'').substring(0,200), isPaid:isPaid, isPartial:isPartial,
+    amtPaid:parseFloat(c.amountPaid||0).toFixed(2), balance:balance
   };
 
-  var win = window.open('', '_blank');
-  if (!win) { showToast('Please allow popups for this site', true); return; }
+  // Pre-fill email
+  document.getElementById('invEmail').value = custEmail;
 
-  var d = win.document;
-  d.open();
-  d.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice ' + invoiceNum + '</title>');
-  d.write('<style>');
-  d.write('*{box-sizing:border-box;margin:0;padding:0;}');
-  d.write('body{font-family:Arial,sans-serif;background:#e8edf2;min-height:100vh;padding:20px;}');
-  d.write('.btn-bar{max-width:800px;margin:0 auto 16px;display:flex;gap:10px;flex-wrap:wrap;}');
-  d.write('.btn-bar button{padding:14px 24px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;border:none;}');
-  d.write('.wrap{background:#fff;max-width:800px;width:100%;margin:0 auto;padding:40px;border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,0.15);}');
-  d.write('.hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #00B4D8;padding-bottom:20px;margin-bottom:24px;}');
-  d.write('.logo h1{font-size:32px;color:#0A1628;}.logo h1 span{color:#00B4D8;}.logo p{font-size:14px;color:#475569;margin-top:6px;line-height:1.7;}');
-  d.write('.inv-info{text-align:right;}.inv-info h2{font-size:38px;color:#00B4D8;letter-spacing:0.05em;}.inv-info p{font-size:14px;color:#475569;margin-top:4px;}');
-  d.write('.badge{display:inline-block;padding:5px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-top:10px;}');
-  d.write('.paid{background:#dcfce7;color:#166534;}.unpaid{background:#fee2e2;color:#991b1b;}.partial{background:#fef3c7;color:#92400e;}');
-  d.write('.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;}');
-  d.write('.box{background:#f8fafc;padding:16px;border-radius:8px;border-left:4px solid #00B4D8;}');
-  d.write('.box h3{font-size:11px;text-transform:uppercase;color:#64748b;letter-spacing:0.08em;margin-bottom:8px;}');
-  d.write('.box p{font-size:14px;margin-bottom:4px;color:#1a1a2e;}');
-  d.write('table{width:100%;border-collapse:collapse;margin-bottom:20px;}');
-  d.write('th{background:#0A1628;color:#00B4D8;padding:11px 14px;text-align:left;font-size:12px;text-transform:uppercase;}');
-  d.write('td{padding:11px 14px;border-bottom:1px solid #e2e8f0;font-size:14px;}');
-  d.write('tr:nth-child(even) td{background:#f8fafc;}');
-  d.write('.totals{width:280px;margin-left:auto;}');
-  d.write('.totals td{border:none;padding:7px 14px;font-size:14px;}');
-  d.write('.totals td:last-child{text-align:right;font-weight:700;}');
-  d.write('.grand td{border-top:2px solid #0A1628;font-size:17px;padding-top:10px;}');
-  d.write('.footer{margin-top:30px;padding-top:20px;border-top:1px solid #e2e8f0;text-align:center;font-size:13px;color:#64748b;line-height:1.8;}');
-  d.write('.email-section{margin-top:24px;padding:20px;background:#f0f9ff;border-radius:10px;border:1px solid #00B4D8;}');
-  d.write('.email-section h3{font-size:16px;font-weight:700;color:#0A1628;margin-bottom:12px;}');
-  d.write('.email-row{display:flex;gap:10px;}');
-  d.write('.email-row input{flex:1;padding:13px;border:2px solid #ccc;border-radius:8px;font-size:16px;outline:none;}');
-  d.write('.send-btn{background:#22C55E;color:white;border:none;padding:13px 22px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap;}');
-  d.write('@media print{body{background:#fff;padding:0;}.wrap{box-shadow:none;padding:20px;}.btn-bar,.email-section{display:none;}}');
-  d.write('</style></head><body>');
+  var h = '';
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #00B4D8;padding-bottom:20px;margin-bottom:24px;">';
+  h += '<div><h1 style="font-size:32px;color:#0A1628;font-family:Arial;">SUNNY<span style="color:#00B4D8;">DAZE</span></h1>';
+  h += '<p style="font-size:14px;color:#475569;margin-top:6px;line-height:1.7;">Pressure Washing<br>(814) 853-0641<br>sunnydazepressurewashing26@gmail.com<br>sunnydazepressurewashing.com</p></div>';
+  h += '<div style="text-align:right;">';
+  h += '<h2 style="font-size:38px;color:#00B4D8;letter-spacing:0.05em;">INVOICE</h2>';
+  h += '<p style="font-size:14px;color:#475569;margin-top:4px;"><strong>Invoice #:</strong> '+invoiceNum+'</p>';
+  h += '<p style="font-size:14px;color:#475569;margin-top:4px;"><strong>Date:</strong> '+today+'</p>';
+  h += '<p style="font-size:14px;color:#475569;margin-top:4px;"><strong>Rep:</strong> '+(c.repName||'')+'</p>';
+  h += '<span style="display:inline-block;padding:5px 16px;border-radius:20px;font-size:13px;font-weight:700;margin-top:10px;background:'+statusBg+';color:'+statusColor+';">'+statusLabel+'</span>';
+  h += '</div></div>';
 
-  d.write('<div class="btn-bar">');
-  d.write('<button onclick="window.print()" style="background:#0A1628;color:#00B4D8;border:2px solid #00B4D8;">Print / Save PDF</button>');
-  d.write('<button onclick="window.close()" style="background:#f1f5f9;color:#475569;">Close</button>');
-  d.write('</div>');
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">';
+  h += '<div style="background:#f8fafc;padding:16px;border-radius:8px;border-left:4px solid #00B4D8;">';
+  h += '<h3 style="font-size:11px;text-transform:uppercase;color:#64748b;letter-spacing:0.08em;margin-bottom:8px;">Bill To</h3>';
+  h += '<p style="font-size:15px;font-weight:700;margin-bottom:4px;">'+(c.fname||'')+' '+(c.lname||'')+'</p>';
+  h += '<p style="font-size:14px;color:#475569;margin-bottom:4px;">'+(c.address||'')+'</p>';
+  h += '<p style="font-size:14px;color:#475569;margin-bottom:4px;">'+(c.phone||'')+'</p>';
+  if (custEmail) h += '<p style="font-size:14px;color:#475569;">'+custEmail+'</p>';
+  h += '</div>';
+  h += '<div style="background:#f8fafc;padding:16px;border-radius:8px;border-left:4px solid #00B4D8;">';
+  h += '<h3 style="font-size:11px;text-transform:uppercase;color:#64748b;letter-spacing:0.08em;margin-bottom:8px;">Job Details</h3>';
+  h += '<p style="font-size:14px;margin-bottom:4px;"><strong>Job Date:</strong> '+jobDate+'</p>';
+  if (c.soldDate) h += '<p style="font-size:14px;margin-bottom:4px;"><strong>Sold:</strong> '+c.soldDate+'</p>';
+  if (c.paidDate) h += '<p style="font-size:14px;margin-bottom:4px;"><strong>Paid:</strong> '+c.paidDate+'</p>';
+  if (c.payment) h += '<p style="font-size:14px;margin-bottom:4px;"><strong>Payment:</strong> '+c.payment+'</p>';
+  h += '</div></div>';
 
-  d.write('<div class="wrap">');
-  d.write('<div class="hdr">');
-  d.write('<div class="logo"><h1>SUNNY<span>DAZE</span></h1>');
-  d.write('<p>Pressure Washing<br>(814) 853-0641<br>sunnydazepressurewashing26@gmail.com<br>sunnydazepressurewashing.com</p></div>');
-  d.write('<div class="inv-info"><h2>INVOICE</h2>');
-  d.write('<p><strong>Invoice #:</strong> ' + invoiceNum + '</p>');
-  d.write('<p><strong>Date:</strong> ' + today + '</p>');
-  d.write('<p><strong>Rep:</strong> ' + (c.repName||'') + '</p>');
-  d.write('<span class="badge ' + statusClass + '">' + statusLabel + '</span>');
-  d.write('</div></div>');
+  h += '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">';
+  h += '<thead><tr><th style="background:#0A1628;color:#00B4D8;padding:11px 14px;text-align:left;font-size:12px;text-transform:uppercase;">Service</th>';
+  h += '<th style="background:#0A1628;color:#00B4D8;padding:11px 14px;text-align:right;font-size:12px;text-transform:uppercase;">Amount</th></tr></thead><tbody>';
+  services.forEach(function(s,i){ 
+    h += '<tr style="background:'+(i%2===0?'#fff':'#f8fafc')+'"><td style="padding:11px 14px;border-bottom:1px solid #e2e8f0;font-size:14px;">'+s.trim()+'</td>';
+    h += '<td style="padding:11px 14px;border-bottom:1px solid #e2e8f0;font-size:14px;text-align:right;">—</td></tr>';
+  });
+  h += '</tbody></table>';
 
-  d.write('<div class="grid">');
-  d.write('<div class="box"><h3>Bill To</h3>');
-  d.write('<p><strong>' + (c.fname||'') + ' ' + (c.lname||'') + '</strong></p>');
-  d.write('<p>' + (c.address||'') + '</p>');
-  d.write('<p>' + (c.phone||'') + '</p>');
-  if (custEmail) d.write('<p>' + custEmail + '</p>');
-  d.write('</div>');
-  d.write('<div class="box"><h3>Job Details</h3>');
-  d.write('<p><strong>Job Date:</strong> ' + jobDate + '</p>');
-  if (c.soldDate) d.write('<p><strong>Sold:</strong> ' + c.soldDate + '</p>');
-  if (c.paidDate) d.write('<p><strong>Paid:</strong> ' + c.paidDate + '</p>');
-  if (c.payment) d.write('<p><strong>Payment:</strong> ' + c.payment + '</p>');
-  d.write('</div></div>');
+  h += '<table style="width:280px;margin-left:auto;border-collapse:collapse;">';
+  h += '<tr><td style="padding:7px 14px;font-size:14px;color:#475569;">Subtotal</td><td style="padding:7px 14px;font-size:14px;font-weight:700;text-align:right;">$'+parseFloat(c.amount||0).toFixed(2)+'</td></tr>';
+  if (parseFloat(c.tax||0)>0) h += '<tr><td style="padding:7px 14px;font-size:14px;color:#475569;">Tax</td><td style="padding:7px 14px;font-size:14px;font-weight:700;text-align:right;">$'+parseFloat(c.tax||0).toFixed(2)+'</td></tr>';
+  h += '<tr style="border-top:2px solid #0A1628;"><td style="padding:10px 14px;font-size:17px;font-weight:700;">Total</td><td style="padding:10px 14px;font-size:17px;font-weight:700;text-align:right;">$'+total+'</td></tr>';
+  if (isPartial) h += '<tr><td style="padding:7px 14px;font-size:14px;color:#166534;">Amount Paid</td><td style="padding:7px 14px;font-size:14px;color:#166534;font-weight:700;text-align:right;">$'+amtPaid+'</td></tr>';
+  if (isPartial) h += '<tr><td style="padding:7px 14px;font-size:14px;color:#991b1b;font-weight:700;">Balance Due</td><td style="padding:7px 14px;font-size:14px;color:#991b1b;font-weight:700;text-align:right;">$'+balance+'</td></tr>';
+  h += '</table>';
 
-  d.write('<table><thead><tr><th>Service</th><th style="text-align:right">Amount</th></tr></thead><tbody>');
-  services.forEach(function(s){ d.write('<tr><td>' + s.trim() + '</td><td style="text-align:right">—</td></tr>'); });
-  d.write('</tbody></table>');
+  if (c.notes) h += '<div style="padding:12px;background:#f8fafc;border-radius:6px;font-size:13px;margin:20px 0;"><strong>Notes:</strong> '+c.notes+'</div>';
 
-  d.write('<table class="totals">');
-  d.write('<tr><td>Subtotal</td><td>$' + parseFloat(c.amount||0).toFixed(2) + '</td></tr>');
-  if (parseFloat(c.tax||0) > 0) d.write('<tr><td>Tax</td><td>$' + parseFloat(c.tax||0).toFixed(2) + '</td></tr>');
-  d.write('<tr class="grand"><td><strong>Total</strong></td><td><strong>$' + total + '</strong></td></tr>');
-  if (isPartial) d.write('<tr><td style="color:#166534;">Paid</td><td style="color:#166534;">$' + amtPaid + '</td></tr>');
-  if (isPartial) d.write('<tr><td style="color:#991b1b;font-weight:700;">Balance Due</td><td style="color:#991b1b;font-weight:700;">$' + balance + '</td></tr>');
-  d.write('</table>');
+  h += '<div style="margin-top:30px;padding-top:20px;border-top:1px solid #e2e8f0;text-align:center;font-size:13px;color:#64748b;line-height:1.8;">';
+  h += '<p><strong>Thank you for choosing SunnyDaze Pressure Washing!</strong></p>';
+  h += '<p>Hand Brushed · 100% Guaranteed · Free Estimates</p>';
+  h += '<p>(814) 853-0641 · sunnydazepressurewashing.com</p></div>';
 
-  if (c.notes) d.write('<div style="padding:12px;background:#f8fafc;border-radius:6px;font-size:13px;margin-bottom:20px;"><strong>Notes:</strong> ' + c.notes + '</div>');
-
-  d.write('<div class="footer">');
-  d.write('<p><strong>Thank you for choosing SunnyDaze Pressure Washing!</strong></p>');
-  d.write('<p>Hand Brushed · 100% Guaranteed · Free Estimates</p>');
-  d.write('<p>(814) 853-0641 · sunnydazepressurewashing.com</p>');
-  d.write('</div>');
-
-  d.write('<div class="email-section">');
-  d.write('<h3>Email This Invoice to Customer</h3>');
-  d.write('<div class="email-row">');
-  d.write('<input type="email" id="invEmail" placeholder="Customer email" value="' + custEmail + '">');
-  d.write('<button class="send-btn" id="sendBtn">Send</button>');
-  d.write('</div></div></div>');
-
-  d.write('<script>');
-  d.write('var SD="https://script.google.com/macros/s/AKfycbxNYUylSfxPrVY8Km0DVUillOMjfipIlSCDFsn0KEfnxymufJTWfKxZ9YTln89TZqIs/exec";');
-  d.write('var ID=' + JSON.stringify(invoiceData).replace('<', '\x3c') + ';');
-  d.write('document.getElementById("sendBtn").onclick=function(){');
-  d.write('var em=document.getElementById("invEmail").value.trim();');
-  d.write('if(!em||em.indexOf("@")<0){alert("Enter a valid email.");return;}');
-  d.write('var btn=this;btn.textContent="Sending...";btn.disabled=true;');
-  d.write('ID.email=em;');
-  d.write('fetch(SD,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify(ID)})');
-  d.write('.then(function(){btn.textContent="Sent!";btn.style.background="#166534";btn.disabled=false;})');
-  d.write('.catch(function(e){btn.textContent="Error";btn.disabled=false;alert(""+e);});');
-  d.write('};');
-  d.write('<\/script></body></html>');
-  d.close();
-  } catch(err) { alert('Invoice error: ' + err.message); }
+  document.getElementById('invoiceContent').innerHTML = h;
+  document.getElementById('invoiceModal').style.display = 'block';
+  window.scrollTo(0,0);
 }
+
+function sendInvoiceEmail() {
+  var em = document.getElementById('invEmail').value.trim();
+  if (!em || em.indexOf('@') < 0) { showToast('Enter a valid email address', true); return; }
+  var btn = document.getElementById('invSendBtn');
+  btn.textContent = 'Sending...'; btn.disabled = true;
+  var data = window._invoiceData;
+  data.email = em;
+  fetch(SHEET_URL, {method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)})
+    .then(function(){ btn.textContent = '✅ Sent!'; btn.style.background = '#166534'; btn.disabled = false; })
+    .catch(function(e){ btn.textContent = '❌ Error'; btn.disabled = false; showToast('Error: '+e, true); });
+}
+
 // ── END INVOICE ──
 
 </script>
+
+<!-- INVOICE MODAL -->
+<div id="invoiceModal" style="display:none;position:fixed;inset:0;background:#e8edf2;z-index:99999;overflow-y:auto;padding:20px;">
+  <div style="max-width:800px;margin:0 auto;">
+    <div class="no-print" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+      <button onclick="window.print()" style="background:#0A1628;color:#00B4D8;border:2px solid #00B4D8;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;">🖨️ Print / Save PDF</button>
+      <button onclick="document.getElementById('invoiceModal').style.display='none'" style="background:#f1f5f9;color:#475569;border:none;padding:14px 24px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;">✕ Close</button>
+    </div>
+    <div id="invoiceContent" style="background:#fff;padding:40px;border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,0.15);"></div>
+    <div class="no-print" style="margin-top:20px;padding:20px;background:#f0f9ff;border-radius:10px;border:1px solid #00B4D8;">
+      <p style="font-size:16px;font-weight:700;color:#0A1628;margin-bottom:12px;">📧 Email This Invoice to Customer</p>
+      <div style="display:flex;gap:10px;">
+        <input type="email" id="invEmail" placeholder="Customer email address" style="flex:1;padding:13px;border:2px solid #ccc;border-radius:8px;font-size:16px;outline:none;">
+        <button id="invSendBtn" onclick="sendInvoiceEmail()" style="background:#22C55E;color:white;border:none;padding:13px 22px;border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap;">📧 Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+@media print {
+  body > *:not(#invoiceModal) { display: none !important; }
+  #invoiceModal { position:static !important; background:#fff !important; padding:0 !important; }
+  .no-print { display: none !important; }
+}
+</style>
 </body>
 </html>
