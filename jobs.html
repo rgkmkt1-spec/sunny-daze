@@ -3330,7 +3330,7 @@ function generateInvoice(id) {
   });
 
   html += '<script>';
-  html += 'var SURL="'+sheet_url+'";';
+  html += 'var SURL="'+SHEET_URL+'";';
   html += 'var IDATA='+invoiceData+';';
   html += 'document.getElementById("sendBtn").onclick=function(){';
   html += '  var em=document.getElementById("sendEmail").value.trim();';
