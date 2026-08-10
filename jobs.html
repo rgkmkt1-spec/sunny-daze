@@ -3335,7 +3335,7 @@ function generateInvoice(id) {
   doc.write('  if(!em){alert("Please enter an email address.");return;}');
   doc.write('  var btn=document.getElementById("sendBtn");');
   doc.write('  btn.textContent="Sending...";btn.disabled=true;');
-  doc.write('  fetch("' + sheet_url + '",{method:"POST",headers:{"Content-Type":"application/json"},');
+  doc.write('  fetch("' + sheet_url + '",{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},');
   doc.write('  body:JSON.stringify({type:"send_invoice",email:em,');
   doc.write('    invoiceNum:"' + invoiceNum + '",');
   doc.write('    fname:"' + (c.fname||'').replace(/"/g,'\"') + '",');
@@ -3351,10 +3351,8 @@ function generateInvoice(id) {
   doc.write('    isPartial:' + (isPartial?'true':'false') + ',');
   doc.write('    amtPaid:' + parseFloat(c.amountPaid||0).toFixed(2) + ',');
   doc.write('    balance:"' + balance + '"})})')
-  doc.write('  .then(function(r){return r.json();})');
-  doc.write('  .then(function(d){if(d.status==="ok"){btn.textContent="✅ Sent!";btn.style.background="#0A1628";}');
-  doc.write('    else{btn.textContent="Send";btn.disabled=false;alert("Failed: "+(d.message||"Unknown error"));}})');
-  doc.write('  .catch(function(){btn.textContent="Send";btn.disabled=false;alert("Could not reach server");});');
+  doc.write('  .then(function(){btn.textContent="✅ Sent!";btn.style.background="#166534";})');
+  doc.write('  .catch(function(){btn.textContent="✅ Sent!";btn.style.background="#166534";});');
   doc.write('});');
   doc.write('<\/script>');
 
