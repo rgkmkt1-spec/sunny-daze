@@ -907,26 +907,21 @@ function renderMgrEntries() {
     .then(function(response){
       var sheetEntries = response.data || [];
       if (sheetEntries.length === 0) {
-        list.innerHTML = '<div class="empty-state"><span>⚠️</span>No sheet data found — make sure Apps Script is deployed as a new version with getTimecardEntries.</div>';
+        list.innerHTML = '<div class="empty-state"><span>📋</span>No time entries found in sheet.</div>';
         return;
       }
-      var localEntries = getEntries();
-      var localIds = localEntries.map(function(e){ return String(e.empId)+String(e.date); });
-      var sheetOnly = sheetEntries.filter(function(e){
-        return localIds.indexOf(String(e.empId)+String(e.date)) < 0;
+      var filtered = filterByDate(sheetEntries, mgrFilter);
+      var html = '';
+      filtered.forEach(function(e) {
+        try { html += entryCardHTML(e, true); } catch(ex) { html += '<div class="entry-card"><div class="entry-date">Error rendering entry: ' + (e.empName||'') + ' ' + (e.date||'') + '</div></div>'; }
       });
-      var allEntries = localEntries.concat(sheetOnly);
-      var filtered = filterByDate(allEntries, mgrFilter);
-      list.innerHTML = filtered.length ? filtered.map(function(e){ return entryCardHTML(e, true); }).join('') :
-        '<div class="empty-state"><span>📋</span>No entries for this period.</div>';
+      list.innerHTML = html || '<div class="empty-state"><span>📋</span>No entries for this period.</div>';
     })
-    .catch(function(err){
-      list.innerHTML = '<div class="empty-state"><span>⚠️</span>Sheet fetch failed — showing local only. Deploy Apps Script as new version.</div>';
-      var entries = filterByDate(getEntries(), mgrFilter);
-      setTimeout(function(){
-        list.innerHTML = entries.length ? entries.map(function(e){ return entryCardHTML(e, true); }).join('') :
-          '<div class="empty-state"><span>📋</span>No local entries found.</div>';
-      }, 2000);
+    .catch(function(){
+      var entries = getEntries();
+      var filtered = filterByDate(entries, mgrFilter);
+      list.innerHTML = filtered.length ? filtered.map(function(e){ return entryCardHTML(e, true); }).join('') :
+        '<div class="empty-state"><span>📋</span>No time entries found.</div>';
     });
 }
 
@@ -952,13 +947,14 @@ function entryCardHTML(e, showEmp) {
     '⬇️ Out: '+safeTime(e.clockOut)+
     (e.overtimeMinutes>0?'<br>⚠️ Overtime: '+fmtHours(e.overtimeMinutes):'')+'</div>'+
     (isManager?'<div class="entry-actions">'+
-      '<button class="action-btn blue" onclick="openEditModal(\''+e.id+'\')">✏️ Adjust</button>'+
-      '<button class="action-btn red" onclick="deleteEntry(\''+e.id+'\')">🗑 Delete</button>'+
+      '<button class="action-btn blue" onclick="openEditModal(this)" data-id="'+(e.id||'').toString().replace(/"/g,'&quot;').replace(/'/g,'&#39;')+'">✏️ Adjust</button>'+
+      '<button class="action-btn red" onclick="deleteEntry(this)" data-id="'+(e.id||'').toString().replace(/"/g,'&quot;').replace(/'/g,'&#39;')+'">🗑 Delete</button>'+
       '</div>':'')+
     '</div>';
 }
 
-function deleteEntry(id) {
+function deleteEntry(btnOrId) {
+  var id = typeof btnOrId === 'string' ? btnOrId : btnOrId.getAttribute('data-id');
   if (!confirm('Delete this time entry?')) return;
   if (!confirm('FINAL CONFIRMATION: Permanently delete this shift record?')) return;
 
@@ -993,7 +989,8 @@ function deleteEntry(id) {
 }
 
 // EDIT MODAL
-function openEditModal(id) {
+function openEditModal(btnOrId) {
+  var id = typeof btnOrId === 'string' ? btnOrId : btnOrId.getAttribute('data-id');
   var entries = getEntries();
   var e = entries.find(function(x){ return String(x.id)===String(id); });
 
@@ -1306,17 +1303,27 @@ function openSheet() { window.open('https://docs.google.com/spreadsheets/d/1L2ie
 
 // FILTERS
 function filterByDate(entries, filter) {
+  function parseDate(str) {
+    if (!str) return null;
+    // Handle M/D/YYYY format
+    if (str.indexOf('/') > -1) {
+      var parts = str.split('/');
+      if (parts.length === 3) return new Date(parseInt(parts[2]), parseInt(parts[0])-1, parseInt(parts[1]));
+    }
+    var d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+  }
   if (filter==='week') {
     var ws = getWeekStart();
     return entries.filter(function(e){
-      var d = e.date ? new Date(e.date) : new Date(e.clockIn);
-      return !isNaN(d.getTime()) && d >= ws;
+      var d = parseDate(e.date) || parseDate(e.clockIn);
+      return d && d >= ws;
     });
   } else if (filter==='month') {
     var now = new Date(); var ms = new Date(now.getFullYear(),now.getMonth(),1);
     return entries.filter(function(e){
-      var d = e.date ? new Date(e.date) : new Date(e.clockIn);
-      return !isNaN(d.getTime()) && d >= ms;
+      var d = parseDate(e.date) || parseDate(e.clockIn);
+      return d && d >= ms;
     });
   }
   return entries;

@@ -328,7 +328,7 @@
   <div class="stats three">
     <div class="stat-card green"><div class="stat-label">💰 Collected</div><div class="stat-value" id="c-revenue">$0</div></div>
     <div class="stat-card"><div class="stat-label">🏢 Accounts</div><div class="stat-value" id="c-count">0</div></div>
-    <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="c-unpaid">$0</div></div>
+    <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="c-unpaid">0</div></div>
   </div>
   <div class="form-card" style="margin-bottom:14px">
     <h2>🏢 Add Commercial Account</h2>
@@ -456,7 +456,6 @@
   <div style="display:flex;gap:8px;margin-bottom:12px;">
     <button class="btn-submit" style="flex:1;background:var(--blue);color:var(--navy);" onclick="document.getElementById('receiptInput').click()">📷 Scan Receipt</button>
     <button class="btn-submit" style="flex:1;" onclick="showAddExpense()">➕ Add Manual</button>
-    <button class="btn-submit" style="flex:1;background:var(--mid);color:var(--cyan);border:1px solid var(--cyan);" onclick="loadExpensesFromSheet(true)">🔄 Refresh</button>
   </div>
   <input type="file" id="receiptInput" accept="image/*" capture="environment" style="display:none" onchange="processReceipt(this)"/>
   <div id="receiptProcessing" style="display:none;text-align:center;padding:20px;background:var(--card);border-radius:10px;margin-bottom:12px;">
@@ -877,8 +876,6 @@ function loginSuccess() {
           .then(function(r){ return r.json(); })
           .then(function(res){
             var sheetExpenses = res.data || [];
-            var deletedExpenseIds = JSON.parse(localStorage.getItem('sd_deleted_expenses')||'[]');
-            sheetExpenses = sheetExpenses.filter(function(e){ return deletedExpenseIds.indexOf(String(e.id)) < 0; });
             if (sheetExpenses.length > 0) {
               localStorage.setItem('sd_expenses', JSON.stringify(sheetExpenses));
             }
@@ -1511,7 +1508,6 @@ function cardHTML(c,showPay,showRep) {
     (showPay&&isPartial?'<button class="action-btn red" onclick="togglePaid('+c.id+',\'unpaid\')">↩️ Reset</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
     '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
-    '<button class="action-btn" style="background:#6f42c1;color:white;" onclick="generateInvoice('+c.id+')">🧾</button>'+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
 }
@@ -2608,7 +2604,7 @@ function switchTab(tab) {
   if(tab==='manager') { updateManager(); renderBreakdown(); }
   if(tab==='settings') { renderRepList(); renderCommissionList(); }
   if(tab==='commercial') { renderCommercial(''); updateCommercialStats(); }
-  if(tab==='expenses') { loadExpensesFromSheet(false); }
+  if(tab==='expenses') { renderExpenses(); }
 }
 
 function saveCommercial() {
@@ -2671,21 +2667,16 @@ function renderCommercial(search) {
       if (search) accounts = accounts.filter(function(a){ return a.business.toLowerCase().includes(search.toLowerCase())||(a.address||'').toLowerCase().includes(search.toLowerCase()); });
       if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
       var collected = accounts.filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
-      var unpaid = accounts.filter(function(a){ return a.status==='Sold' && a.paid !== 'Yes'; }).length;
-      var unpaidAmt = accounts.filter(function(a){ return a.status==='Sold' && a.paid !== 'Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
-      document.getElementById('c-revenue').textContent = '$'+collected.toFixed(2);
+      var unpaid = accounts.filter(function(a){ return a.paid !== 'Yes'; }).length;
+      document.getElementById('c-revenue').textContent = '$'+collected.toFixed(0);
       document.getElementById('c-count').textContent = accounts.length;
-      document.getElementById('c-unpaid').textContent = '$'+unpaidAmt.toFixed(2);
-      var html = '';
-      accounts.forEach(function(a){ try { html += commercialCardHTML(a); } catch(ex) { console.log('Card error',ex,a); html += '<div class="customer-card"><div class="customer-name">⚠️ '+a.business+'</div></div>'; } });
-      list.innerHTML = html || '<div class="empty-state"><span>🏢</span>No accounts loaded.</div>';
+      document.getElementById('c-unpaid').textContent = unpaid;
+      list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
     })
-    .catch(function(err) {
-      list.innerHTML = '<div class="empty-state"><span>⚠️</span>Could not load from sheet: '+(err?err.message:'unknown')+'</div>';
-      setTimeout(function(){
-        var accounts = getCommercialData();
-        list.innerHTML = accounts.length ? (function(){ var h=''; accounts.forEach(function(a){ try{h+=commercialCardHTML(a);}catch(e){} }); return h; })() : '<div class="empty-state"><span>🏢</span>No commercial accounts found.</div>';
-      }, 2000);
+    .catch(function() {
+      var accounts = getCommercialData();
+      if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
+      list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
     });
 }
 
@@ -2718,7 +2709,7 @@ function commercialCardHTML(a) {
 
 function changeCommercialStatus(id) {
   var existing = document.getElementById('bizStatusPicker');
-  if (existing) existing.remove();
+  if (existing) { existing.remove(); return; }
   var statuses = [
     {val:'Sold', label:'✅ Sold', color:'var(--green)', text:'white'},
     {val:'Estimate', label:'📋 Estimate', color:'var(--yellow)', text:'var(--navy)'},
@@ -2745,17 +2736,17 @@ function applyCommercialStatus(id, newStatus) {
   var a = accounts.find(function(x){ return String(x.id)===String(id); });
   if (!a && commercialSheetData.length>0) {
     var sa = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
-    if (sa) { a = JSON.parse(JSON.stringify(sa)); accounts.push(a); }
+    if (sa) { a = JSON.parse(JSON.stringify(sa)); accounts.unshift(a); }
   }
   if (!a) { showToast('Account not found', true); return; }
   a.status = newStatus;
+  // Clear paid if moving away from Sold
   if (newStatus !== 'Sold') { a.paid = 'No'; }
   localStorage.setItem('sd_commercial', JSON.stringify(accounts));
   var mgrA = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
   if (mgrA) { mgrA.status = newStatus; if(newStatus!=='Sold') mgrA.paid='No'; }
-  // Use update type not commercial to avoid creating duplicate row
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(Object.assign({},a,{type:'update_commercial', rowNum: a.rowNum||a.id}))
+    body:JSON.stringify(Object.assign({},a,{type:'commercial'}))
   });
   renderCommercial(''); updateCommercialStats(); updateDashboard();
   showToast('✅ Status → ' + newStatus);
@@ -2820,16 +2811,29 @@ function applyCommercialPaid(id, method) {
 }
 
 function deleteCommercial(id) {
-  showDeletePinOverlay(id, 'commercial');
-}
+  if (!confirm('Are you sure you want to delete this account?')) return;
 
-function confirmCommercialDelete(id) {
-  localStorage.setItem('sd_commercial', JSON.stringify(getCommercialData().filter(function(a){ return String(a.id)!==String(id); })));
-  fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({type:'delete_commercial', id:id})
-  });
-  renderCommercial(''); updateCommercialStats();
-  showToast('🗑 Account deleted!');
+  // Require manager PIN
+  var existing = document.getElementById('commercialDelOverlay');
+  if (existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'commercialDelOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:28px;width:100%;max-width:300px;border:2px solid var(--red);text-align:center;">'+
+    '<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>'+
+    '<div style="font-size:1rem;font-weight:900;color:var(--red);margin-bottom:6px;">DELETE ACCOUNT</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:18px;">Enter Manager PIN to permanently delete this commercial account.</div>'+
+    '<div id="comDelPinDisplay" style="font-size:2rem;letter-spacing:0.4em;color:var(--blue);margin-bottom:16px;font-weight:900;">_ _ _ _</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">'+
+    ['1','2','3','4','5','6','7','8','9','','0','⌫'].map(function(k){
+      return k===''?'<div></div>':'<button onclick="comDelPinKey(\''+k+'\')" style="padding:16px;background:var(--mid);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--white);font-size:1.2rem;font-weight:700;cursor:pointer;">'+k+'</button>';
+    }).join('')+
+    '</div>'+
+    '<button onclick="confirmComDelPin(\''+id+'\')" style="width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">🗑 Confirm Delete</button>'+
+    '<button onclick="document.getElementById(\'commercialDelOverlay\').remove();comDelPinVal=\'\';" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(overlay);
 }
 
 var comDelPinVal = '';
@@ -2874,32 +2878,6 @@ function showToast(msg,isError) {
 // ── EXPENSES ──
 function getExpenses() { try { return JSON.parse(localStorage.getItem('sd_expenses')||'[]'); } catch(e){ return []; } }
 function saveExpenses(e) { localStorage.setItem('sd_expenses', JSON.stringify(e)); }
-
-function loadExpensesFromSheet(showToastMsg) {
-  fetch(SHEET_URL + '?action=expenses&t=' + Date.now(), {method:'GET', mode:'cors'})
-    .then(function(r){ return r.json(); })
-    .then(function(response){
-      var sheetExpenses = response.data || [];
-      var deletedExpenseIds = JSON.parse(localStorage.getItem('sd_deleted_expenses')||'[]');
-      sheetExpenses = sheetExpenses.filter(function(e){ return deletedExpenseIds.indexOf(String(e.id)) < 0; });
-      if (sheetExpenses.length > 0) {
-        // Merge with local — sheet is source of truth for existing, local may have new unsaved ones
-        var local = getExpenses();
-        var sheetIds = sheetExpenses.map(function(e){ return String(e.id); });
-        var localOnly = local.filter(function(e){ return sheetIds.indexOf(String(e.id)) < 0 && deletedExpenseIds.indexOf(String(e.id)) < 0; });
-        var merged = sheetExpenses.concat(localOnly);
-        saveExpenses(merged);
-        renderExpenses();
-        if (showToastMsg) showToast('✅ Expenses refreshed from sheet!');
-      } else {
-        if (showToastMsg) showToast('No expenses found in sheet');
-        renderExpenses();
-      }
-    }).catch(function(){
-      if (showToastMsg) showToast('Could not reach sheet', true);
-      renderExpenses();
-    });
-}
 
 function renderExpenses() {
   var expenses = getExpenses();
@@ -3033,68 +3011,9 @@ function editExpense(id) {
   document.getElementById('expenseModal').style.display = 'block';
 }
 
-var pendingDeleteId = null;
-var pendingDeleteType = null;
-var deletePinVal2 = '';
-
-function showDeletePinOverlay(id, type) {
-  pendingDeleteId = id;
-  pendingDeleteType = type;
-  deletePinVal2 = '';
-  var existing = document.getElementById('genericDeletePin');
-  if (existing) existing.remove();
-  var overlay = document.createElement('div');
-  overlay.id = 'genericDeletePin';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
-  overlay.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:300px;border:1px solid rgba(239,68,68,0.4);">'+
-    '<div style="text-align:center;font-size:1rem;font-weight:700;color:var(--red);margin-bottom:16px;">🔐 Manager PIN Required</div>'+
-    '<div style="text-align:center;font-size:0.82rem;color:var(--gray);margin-bottom:16px;">Enter manager PIN to delete</div>'+
-    '<div id="gdp-display" style="font-size:2rem;letter-spacing:0.5em;text-align:center;margin-bottom:20px;min-height:40px;color:var(--white);">____</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">'+
-    [1,2,3,4,5,6,7,8,9,'',0,'←'].map(function(n){
-      if (n === '') return '<div></div>';
-      return '<button onclick="gdpKey(\''+n+'\')" style="padding:16px;background:var(--mid);color:var(--white);border:none;border-radius:8px;font-size:1.2rem;font-weight:700;cursor:pointer;">'+n+'</button>';
-    }).join('')+
-    '</div>'+
-    '<button onclick="confirmGenericDelete()" style="width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:12px;">🗑 Confirm Delete</button>'+
-    '<button onclick="document.getElementById(\'genericDeletePin\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:8px;">Cancel</button>'+
-    '</div>';
-  document.body.appendChild(overlay);
-}
-
-function gdpKey(k) {
-  if (k === '←') { deletePinVal2 = deletePinVal2.slice(0,-1); }
-  else if (deletePinVal2.length < 4) { deletePinVal2 += String(k); }
-  var display = deletePinVal2.padEnd(4,'_').split('').join(' ');
-  document.getElementById('gdp-display').textContent = display.replace(/[0-9]/g,'●');
-}
-
-function confirmGenericDelete() {
-  if (String(deletePinVal2) !== String(getMgrPin())) {
-    showToast('❌ Incorrect PIN', true);
-    deletePinVal2 = '';
-    document.getElementById('gdp-display').textContent = '____';
-    return;
-  }
-  document.getElementById('genericDeletePin').remove();
-  if (pendingDeleteType === 'expense') { confirmExpenseDelete(pendingDeleteId); }
-  else if (pendingDeleteType === 'commercial') { confirmCommercialDelete(pendingDeleteId); }
-  pendingDeleteId = null;
-  pendingDeleteType = null;
-  deletePinVal2 = '';
-}
-
 function deleteExpense(id) {
-  showDeletePinOverlay(id, 'expense');
-}
-
-function confirmExpenseDelete(id) {
-  var expenses = getExpenses();
-  // Mark as deleted so sheet sync can handle it
-  var deletedExpenseIds = JSON.parse(localStorage.getItem('sd_deleted_expenses')||'[]');
-  deletedExpenseIds.push(String(id));
-  localStorage.setItem('sd_deleted_expenses', JSON.stringify(deletedExpenseIds));
-  expenses = expenses.filter(function(e){ return String(e.id) !== String(id); });
+  if (!confirm('Delete this expense?')) return;
+  var expenses = getExpenses().filter(function(e){ return String(e.id) !== String(id); });
   saveExpenses(expenses);
   renderExpenses();
   syncExpensesToSheet();
@@ -3190,122 +3109,6 @@ function syncExpensesToSheet() {
 }
 // ── END EXPENSES ──
 
-<<<<<<< HEAD
-
-// ── INVOICE GENERATOR ──
-function generateInvoice(id) {
-  id = parseInt(id);
-  var data = getData();
-  var c = data.find(function(d){ return parseInt(d.id)===id; });
-  if (!c && mgrAllData.length > 0) {
-    c = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
-  }
-  if (!c) { showToast('Customer not found', true); return; }
-
-  var invoiceNum = 'INV-' + String(id).slice(-6);
-  var today = new Date().toLocaleDateString();
-  var isPaid = c.paid === 'Yes' || c.status === 'Completed';
-  var isPartial = c.paid === 'Partial';
-  var amtPaid = parseFloat(c.amountPaid||0).toFixed(2);
-  var total = parseFloat(c.total||c.amount||0).toFixed(2);
-  var balance = isPartial ? (parseFloat(total) - parseFloat(amtPaid)).toFixed(2) : total;
-
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
-    '<title>Invoice '+invoiceNum+'</title>'+
-    '<style>'+
-    'body{font-family:Arial,sans-serif;margin:0;padding:40px;color:#1a1a2e;background:#fff;}'+
-    '.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;border-bottom:3px solid #00B4D8;padding-bottom:20px;}'+
-    '.logo-area h1{font-size:28px;color:#0A1628;margin:0;} .logo-area h1 span{color:#00B4D8;}'+
-    '.logo-area p{margin:4px 0;font-size:13px;color:#475569;}'+
-    '.invoice-info{text-align:right;} .invoice-info h2{font-size:32px;color:#00B4D8;margin:0;}'+
-    '.invoice-info p{margin:4px 0;font-size:13px;color:#475569;}'+
-    '.status-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-top:8px;}'+
-    '.paid{background:#dcfce7;color:#166534;} .unpaid{background:#fee2e2;color:#991b1b;} .partial{background:#fef3c7;color:#92400e;}'+
-    '.section{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:30px;}'+
-    '.box h3{font-size:11px;text-transform:uppercase;color:#475569;letter-spacing:0.08em;margin:0 0 8px;}'+
-    '.box p{margin:3px 0;font-size:14px;}'+
-    'table{width:100%;border-collapse:collapse;margin-bottom:20px;}'+
-    'th{background:#0A1628;color:#00B4D8;padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;}'+
-    'td{padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:14px;}'+
-    'tr:nth-child(even) td{background:#f8fafc;}'+
-    '.totals{width:300px;margin-left:auto;}'+
-    '.totals tr td{border:none;padding:6px 12px;}'+
-    '.totals tr td:first-child{color:#475569;}'+
-    '.totals tr td:last-child{text-align:right;font-weight:700;}'+
-    '.grand-total td{border-top:2px solid #0A1628;font-size:16px;color:#0A1628;}'+
-    '.footer{margin-top:40px;padding-top:20px;border-top:1px solid #e2e8f0;text-align:center;font-size:12px;color:#475569;}'+
-    '@media print{body{padding:20px;} .no-print{display:none;}}'+
-    '</style></head><body>'+
-
-    '<div class="no-print" style="margin-bottom:20px;">'+
-    '<button onclick="window.print()" style="background:#0A1628;color:#00B4D8;border:2px solid #00B4D8;padding:10px 24px;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer;margin-right:10px;">🖨️ Print Invoice</button>'+
-    '<button onclick="window.close()" style="background:transparent;color:#475569;border:1px solid #e2e8f0;padding:10px 24px;border-radius:6px;font-size:15px;cursor:pointer;">✕ Close</button>'+
-    '</div>'+
-
-    '<div class="header">'+
-    '<div class="logo-area">'+
-    '<h1>☀️ SUNNY<span>DAZE</span></h1>'+
-    '<p>Pressure Washing</p>'+
-    '<p>📞 (814) 853-0641</p>'+
-    '<p>✉️ sunnydazepressurewashing26@gmail.com</p>'+
-    '<p>🌐 sunnydazepressurewashing.com</p>'+
-    '</div>'+
-    '<div class="invoice-info">'+
-    '<h2>INVOICE</h2>'+
-    '<p><strong>Invoice #:</strong> '+invoiceNum+'</p>'+
-    '<p><strong>Date:</strong> '+today+'</p>'+
-    '<p><strong>Rep:</strong> '+(c.repName||'')+'</p>'+
-    '<span class="status-badge '+(isPaid?'paid':isPartial?'partial':'unpaid')+'">'+(isPaid?'✅ PAID IN FULL':isPartial?'⚠️ PARTIAL PAYMENT':'❌ UNPAID')+'</span>'+
-    '</div></div>'+
-
-    '<div class="section">'+
-    '<div class="box">'+
-    '<h3>Bill To</h3>'+
-    '<p><strong>'+(c.fname||'')+' '+(c.lname||'')+'</strong></p>'+
-    '<p>'+(c.address||'')+'</p>'+
-    '<p>📞 '+(c.phone||'')+'</p>'+
-    (c.email && c.email !== 'no-email@noemail.com' ? '<p>✉️ '+c.email+'</p>' : '')+
-    '</div>'+
-    '<div class="box">'+
-    '<h3>Job Details</h3>'+
-    '<p><strong>Job Date:</strong> '+(c.date?new Date(c.date).toLocaleDateString():today)+'</p>'+
-    (c.soldDate?'<p><strong>Sold Date:</strong> '+c.soldDate+'</p>':'')+
-    (c.paidDate?'<p><strong>Paid Date:</strong> '+c.paidDate+'</p>':'')+
-    (c.payment?'<p><strong>Payment Method:</strong> '+c.payment+'</p>':'')+
-    '</div></div>'+
-
-    '<table>'+
-    '<thead><tr><th>Description</th><th style="text-align:right">Amount</th></tr></thead>'+
-    '<tbody>'+
-    (c.service ? c.service.split(', ').map(function(s){
-      return '<tr><td>'+s+'</td><td style="text-align:right">—</td></tr>';
-    }).join('') : '<tr><td>Pressure Washing Services</td><td style="text-align:right">—</td></tr>')+
-    '</tbody></table>'+
-
-    '<table class="totals">'+
-    '<tr><td>Subtotal</td><td>$'+parseFloat(c.amount||0).toFixed(2)+'</td></tr>'+
-    (parseFloat(c.tax||0)>0?'<tr><td>Tax</td><td>$'+parseFloat(c.tax||0).toFixed(2)+'</td></tr>':'')+
-    '<tr class="grand-total"><td>Total</td><td>$'+total+'</td></tr>'+
-    (isPartial?'<tr><td>Amount Paid</td><td style="color:#166534;">$'+amtPaid+'</td></tr>':'')+
-    (isPartial?'<tr><td><strong>Balance Due</strong></td><td style="color:#991b1b;"><strong>$'+balance+'</strong></td></tr>':'')+
-    '</table>'+
-
-    (c.notes?'<div style="margin-top:20px;padding:12px;background:#f8fafc;border-radius:6px;font-size:13px;"><strong>Notes:</strong> '+c.notes+'</div>':'')+
-
-    '<div class="footer">'+
-    '<p>Thank you for choosing SunnyDaze Pressure Washing!</p>'+
-    '<p>Hand Brushed · 100% Guaranteed · Free Estimates</p>'+
-    '<p>(814) 853-0641 · sunnydazepressurewashing.com</p>'+
-    '</div></body></html>';
-
-  var win = window.open('', '_blank');
-  win.document.write(html);
-  win.document.close();
-}
-// ── END INVOICE ──
-
-=======
->>>>>>> 82c7f3c32b6a4b945e5da0169c83424168d5a459
 </script>
 </body>
 </html>

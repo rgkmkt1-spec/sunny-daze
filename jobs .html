@@ -328,7 +328,7 @@
   <div class="stats three">
     <div class="stat-card green"><div class="stat-label">💰 Collected</div><div class="stat-value" id="c-revenue">$0</div></div>
     <div class="stat-card"><div class="stat-label">🏢 Accounts</div><div class="stat-value" id="c-count">0</div></div>
-    <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="c-unpaid">$0</div></div>
+    <div class="stat-card red"><div class="stat-label">⚠️ Unpaid</div><div class="stat-value" id="c-unpaid">0</div></div>
   </div>
   <div class="form-card" style="margin-bottom:14px">
     <h2>🏢 Add Commercial Account</h2>
@@ -402,32 +402,7 @@
     <div class="stat-card orange"><div class="stat-label">🔔 Follow Ups</div><div class="stat-value" id="m-followups">0</div></div>
     <div class="stat-card"><div class="stat-label">✅ Close Rate</div><div class="stat-value" id="m-closerate">0%</div></div>
   </div>
-  <div class="section-title" style="margin-top:14px">📈 Revenue & Profit Breakdown</div>
-  <div style="background:var(--card);border-radius:12px;border:1px solid rgba(0,180,216,0.2);overflow:hidden;margin-bottom:14px;">
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;background:var(--mid);padding:8px 12px;font-size:0.65rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:0.05em;">
-      <div></div><div style="text-align:right;">Daily</div><div style="text-align:right;">Weekly</div><div style="text-align:right;">Monthly</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.05);">
-      <div style="font-size:0.78rem;font-weight:700;color:var(--green);">💰 Revenue</div>
-      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--green);" id="bp-rev-day">$0</div>
-      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--green);" id="bp-rev-week">$0</div>
-      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--green);" id="bp-rev-month">$0</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.05);">
-      <div style="font-size:0.78rem;font-weight:700;color:var(--red);">💸 Expenses</div>
-      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--red);" id="bp-exp-day">$0</div>
-      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--red);" id="bp-exp-week">$0</div>
-      <div style="text-align:right;font-size:0.78rem;font-weight:700;color:var(--red);" id="bp-exp-month">$0</div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:10px 12px;border-top:1px solid rgba(255,255,255,0.05);">
-      <div style="font-size:0.78rem;font-weight:700;color:var(--cyan);">📈 Net Profit</div>
-      <div style="text-align:right;font-size:0.78rem;font-weight:700;" id="bp-profit-day">$0</div>
-      <div style="text-align:right;font-size:0.78rem;font-weight:700;" id="bp-profit-week">$0</div>
-      <div style="text-align:right;font-size:0.78rem;font-weight:700;" id="bp-profit-month">$0</div>
-    </div>
-  </div>
-
-  <div class="section-title" style="margin-top:14px">👤 Individual Performance</div>
+  <div class="section-title">👤 Individual Performance</div>
   <div id="rep-sections"></div>
 
   <div class="section-title" style="margin-top:14px">💵 Commission Report</div>
@@ -445,18 +420,14 @@
 </div>
 
 <div class="view" id="view-expenses">
-  <div class="stats" style="grid-template-columns:1fr 1fr;">
+  <div class="stats" style="grid-template-columns:1fr 1fr 1fr;">
     <div class="stat-card green"><div class="stat-label">💰 Revenue</div><div class="stat-value" id="exp-revenue">$0</div></div>
     <div class="stat-card red"><div class="stat-label">💸 Expenses</div><div class="stat-value" id="exp-total">$0</div></div>
-  </div>
-  <div class="stats" style="grid-template-columns:1fr 1fr;">
-    <div class="stat-card" id="exp-profit-card"><div class="stat-label">📈 Net Profit</div><div class="stat-value" id="exp-profit">$0</div><div style="font-size:0.65rem;color:var(--gray);margin-top:2px;">Before Payroll</div></div>
-    <div class="stat-card" id="exp-profit2-card"><div class="stat-label">💵 Net Profit</div><div class="stat-value" id="exp-profit2">$0</div><div style="font-size:0.65rem;color:var(--gray);margin-top:2px;">After Payroll</div></div>
+    <div class="stat-card" id="exp-profit-card"><div class="stat-label">📈 Net Profit</div><div class="stat-value" id="exp-profit">$0</div></div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:12px;">
     <button class="btn-submit" style="flex:1;background:var(--blue);color:var(--navy);" onclick="document.getElementById('receiptInput').click()">📷 Scan Receipt</button>
     <button class="btn-submit" style="flex:1;" onclick="showAddExpense()">➕ Add Manual</button>
-    <button class="btn-submit" style="flex:1;background:var(--mid);color:var(--cyan);border:1px solid var(--cyan);" onclick="loadExpensesFromSheet(true)">🔄 Refresh</button>
   </div>
   <input type="file" id="receiptInput" accept="image/*" capture="environment" style="display:none" onchange="processReceipt(this)"/>
   <div id="receiptProcessing" style="display:none;text-align:center;padding:20px;background:var(--card);border-radius:10px;margin-bottom:12px;">
@@ -492,7 +463,7 @@
     </div>
     <div class="form-group">
       <label>Amount</label>
-      <input type="text" id="exp-amount" class="form-input" placeholder="0.00" inputmode="decimal"/>
+      <input type="number" id="exp-amount" class="form-input" placeholder="0.00" step="0.01"/>
     </div>
     <div class="form-group">
       <label>Date</label>
@@ -509,13 +480,9 @@
 
 <div class="view" id="view-settings">
   <div class="settings-card">
-    <h2>⚙️ Rep Management</h2>    <div id="rep-pin-list"></div>
+    <h2>⚙️ Rep Management</h2>
+    <div id="rep-pin-list"></div>
     <button class="btn-submit" onclick="addNewRep()" style="margin-top:12px;background:var(--green);">➕ ADD NEW REP</button>
-  </div>
-  <div class="settings-card">
-    <h2>🔄 Data Tools</h2>
-    <p style="font-size:0.82rem;color:var(--gray);margin-bottom:14px;">If a customer is missing from the app but exists in the sheet, clear the deleted items list then log out and back in.</p>
-    <button class="btn-submit" style="background:var(--orange);width:100%;" onclick="localStorage.removeItem('sd_blacklist');sd_blacklist=[];showToast('✅ Cleared! Log out and back in to reload.');renderLeads('');renderJobs('');">🔄 Clear Deleted Items List</button>
   </div>
   <div class="settings-card">
     <h2>📄 Tax Forms</h2>
@@ -733,7 +700,7 @@ function updatePinDisplay() {
 function checkPin() {
   var reps = getReps();
   if (pinMode === 'manager') {
-    if (String(pinValue) === String(getMgrPin())) {
+    if (pinValue === getMgrPin()) {
       document.getElementById('pinScreen').classList.remove('show');
       // Offer to register manager fingerprint if not done yet
       var mgrFp = localStorage.getItem('sd_mgr_fp');
@@ -748,7 +715,7 @@ function checkPin() {
   } else {
     var rep = null;
     for (var i = 0; i < reps.length; i++) {
-      if (reps[i].id === pendingRep.id && String(reps[i].pin) === String(pinValue)) { rep = reps[i]; break; }
+      if (reps[i].id === pendingRep.id && reps[i].pin === pinValue) { rep = reps[i]; break; }
     }
     if (rep) {
       document.getElementById('pinScreen').classList.remove('show');
@@ -837,7 +804,6 @@ function unlockManager() {
     document.getElementById('headerRep').textContent = '👔 Manager View';
     document.getElementById('tab-commercial').style.display = 'block';
     document.getElementById('tab-manager').style.display = 'block';
-    document.getElementById('tab-expenses').style.display = 'block';
     document.getElementById('tab-settings').style.display = 'block';
     switchTab('manager');
     showToast('👔 Manager access granted!');
@@ -856,7 +822,6 @@ function loginSuccess() {
   if (isManager) {
     document.getElementById('tab-commercial').style.display = 'block';
     document.getElementById('tab-manager').style.display = 'block';
-    document.getElementById('tab-expenses').style.display = 'block';
     document.getElementById('tab-settings').style.display = 'block';
     // Load sheet leads fresh on every manager login
     fetch(SHEET_URL + '?t=' + Date.now(), {method:'GET', mode:'cors'})
@@ -872,17 +837,6 @@ function loginSuccess() {
         localStorage.setItem('sd_customers', JSON.stringify(sheetData));
         mgrAllData = sheetData;
         renderLeads(''); renderJobs(''); updateDashboard();
-        // Also load expenses from sheet
-        fetch(SHEET_URL + '?action=expenses&t=' + Date.now(), {method:'GET', mode:'cors'})
-          .then(function(r){ return r.json(); })
-          .then(function(res){
-            var sheetExpenses = res.data || [];
-            var deletedExpenseIds = JSON.parse(localStorage.getItem('sd_deleted_expenses')||'[]');
-            sheetExpenses = sheetExpenses.filter(function(e){ return deletedExpenseIds.indexOf(String(e.id)) < 0; });
-            if (sheetExpenses.length > 0) {
-              localStorage.setItem('sd_expenses', JSON.stringify(sheetExpenses));
-            }
-          }).catch(function(){});
       }).catch(function(){
         mgrAllData = [];
         renderLeads(''); renderJobs('');
@@ -1229,66 +1183,6 @@ function renderJobs(search) {
   }
 }
 
-function renderBreakdown() {
-  var data = getData();
-  var expenses = getExpenses();
-  var now = new Date();
-  var todayStr = now.toLocaleDateString();
-  var weekStart = new Date(now); weekStart.setDate(now.getDate() - now.getDay()); weekStart.setHours(0,0,0,0);
-  var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  function parseLocalDate(str) {
-    if (!str) return null;
-    // Handle YYYY-MM-DD — parse as local not UTC
-    if (str.indexOf('-') > -1) {
-      var p = str.split('-');
-      if (p.length === 3) return new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
-    }
-    // Handle M/D/YYYY
-    if (str.indexOf('/') > -1) {
-      var p2 = str.split('/');
-      if (p2.length === 3) return new Date(parseInt(p2[2]), parseInt(p2[0])-1, parseInt(p2[1]));
-    }
-    return new Date(str);
-  }
-
-  function revInPeriod(start, isDay) {
-    return data.filter(function(d){
-      if (d.status !== 'Completed') return false;
-      var dt = parseLocalDate(d.date);
-      if (!dt || isNaN(dt.getTime())) return false;
-      if (isDay) return dt.toLocaleDateString() === todayStr;
-      return dt >= start;
-    }).reduce(function(s,d){ return s+parseFloat(d.total||d.amount||0); }, 0);
-  }
-
-  function expInPeriod(start, isDay) {
-    return expenses.filter(function(e){
-      var d = parseLocalDate(e.date);
-      if (!d || isNaN(d.getTime())) return false;
-      if (isDay) return d.toLocaleDateString() === todayStr;
-      return d >= start;
-    }).reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
-  }
-
-  var periods = [
-    { suffix:'day', start: null, isDay: true },
-    { suffix:'week', start: weekStart, isDay: false },
-    { suffix:'month', start: monthStart, isDay: false }
-  ];
-
-  periods.forEach(function(p) {
-    var rev = revInPeriod(p.start, p.isDay);
-    var exp = expInPeriod(p.start, p.isDay);
-    var profit = rev - exp;
-    document.getElementById('bp-rev-'+p.suffix).textContent = '$'+rev.toFixed(2);
-    document.getElementById('bp-exp-'+p.suffix).textContent = '$'+exp.toFixed(2);
-    var el = document.getElementById('bp-profit-'+p.suffix);
-    el.textContent = '$'+profit.toFixed(2);
-    el.style.color = profit >= 0 ? 'var(--green)' : 'var(--red)';
-  });
-}
-
 function updateManager() {
   var data = getData();
   var reps = getReps();
@@ -1490,7 +1384,7 @@ function cardHTML(c,showPay,showRep) {
 
   return '<div class="customer-card '+sc+'">'+
     '<div class="customer-top"><div><div class="customer-name">'+name+'</div><div class="customer-details">'+
-    (c.phone?'📞 <a href="tel:'+c.phone+'" style="color:inherit;text-decoration:none;">'+c.phone+'</a><br>':'')+(c.email&&c.email!=='no-email@noemail.com'?'✉️ <a href="mailto:'+c.email+'" style="color:inherit;text-decoration:none;">'+c.email+'</a><br>':'')+(c.address?'📍 <a href="https://maps.google.com/maps/search/'+encodeURIComponent((c.fname||'')+' '+(c.lname||'')+' '+c.address)+'" target="_blank" style="color:#00B4D8;text-decoration:none;">'+c.address+'</a> <a href="https://maps.google.com/maps/search/'+encodeURIComponent((c.fname||'')+' '+(c.lname||'')+' '+c.address)+'" target="_blank" style="background:#00B4D8;color:#0A1628;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;text-decoration:none;margin-left:4px;">📌 PIN</a><br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+(c.soldDate?'<br>🤝 Sold: '+fmtDate(c.soldDate):'')+(c.paidDate?'<br>💰 Paid: '+fmtDate(c.paidDate):'')+
+    (c.phone?'📞 <a href="tel:'+c.phone+'" style="color:inherit;text-decoration:none;">'+c.phone+'</a><br>':'')+(c.email&&c.email!=='no-email@noemail.com'?'✉️ <a href="mailto:'+c.email+'" style="color:inherit;text-decoration:none;">'+c.email+'</a><br>':'')+(c.address?'📍 <a href="https://maps.google.com/maps/search/'+encodeURIComponent((c.fname||'')+' '+(c.lname||'')+' '+c.address)+'" target="_blank" style="color:#00B4D8;text-decoration:none;">'+c.address+'</a> <a href="https://maps.google.com/maps/search/'+encodeURIComponent((c.fname||'')+' '+(c.lname||'')+' '+c.address)+'" target="_blank" style="background:#00B4D8;color:#0A1628;font-size:0.65rem;font-weight:700;padding:2px 6px;border-radius:4px;text-decoration:none;margin-left:4px;">📌 PIN</a><br>':'')+(c.date?'📅 '+fmtDate(c.date):'')+(c.followup?' · 🔔 '+fmtDate(c.followup):'')+
     '</div></div>'+(amount>0?'<div class="customer-amount">$'+parseFloat(amount).toFixed(2)+'</div>':'')+'</div>'+
     '<div class="badges"><span class="badge '+bc+'">'+c.status+'</span>'+
     (c.service?'<span class="badge badge-blue">'+c.service+'</span>':'')+
@@ -1511,7 +1405,6 @@ function cardHTML(c,showPay,showRep) {
     (showPay&&isPartial?'<button class="action-btn red" onclick="togglePaid('+c.id+',\'unpaid\')">↩️ Reset</button>':'')+
     '<button class="action-btn blue" onclick="editCustomer('+c.id+')">✏️ Edit</button>'+
     '<button onclick="changeStatus('+c.id+')" style="'+statusColor+';padding:6px 12px;border-radius:6px;font-size:0.72rem;font-weight:700;cursor:pointer;border:2px solid;min-width:80px;">'+statusIcon+' '+statusLabel+'</button>'+
-    '<button class="action-btn" style="background:#6f42c1;color:white;" onclick="generateInvoice('+c.id+')">🧾</button>'+
     '<button class="action-btn red" onclick="deleteCustomer('+c.id+')">🗑</button>'+
     '</div></div>';
 }
@@ -1798,10 +1691,7 @@ function applyStatus(id, newStatus) {
   if (localC) {
     localC.status = newStatus;
     if (newStatus === 'Sold') {
-      // Auto set job date to today when moved to Sold
-      localC.date = new Date().toLocaleDateString();
-      localC.soldDate = new Date().toLocaleDateString();
-      // Reset payment data fresh
+      // Moving TO Sold — reset payment data fresh
       localC.paid = 'No';
       localC.amountPaid = 0;
       localC.balance = parseFloat(localC.total||localC.amount||0);
@@ -1897,7 +1787,7 @@ function delPinKey(k) {
 
 function confirmDeletePin(id) {
   id = parseInt(id);
-  if (String(delPinVal) !== String(getMgrPin())) {
+  if (delPinVal !== getMgrPin()) {
     document.getElementById('delPinDisplay').textContent = '✗ ✗ ✗ ✗';
     document.getElementById('delPinDisplay').style.color = 'var(--red)';
     delPinVal = '';
@@ -2213,7 +2103,6 @@ function applyPayment(id, method, total, amountReceived) {
     c.balance = 0;
     c.status = 'Completed';
     c.completedDate = new Date().toLocaleDateString();
-    c.paidDate = new Date().toLocaleDateString();
     c.nextPaymentDate = null;
     for (var i=0; i<data.length; i++) { if (parseInt(data[i].id)===id) { data[i]=c; break; } }
     saveData(data);
@@ -2321,17 +2210,10 @@ function showNextStepPicker(id, c, method, amountReceived) {
 
     // Option 2 - Set up full payment plan
     '<div style="font-size:0.7rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Or Set Up Full Payment Plan</div>'+
-    '<div style="margin-bottom:10px;">'+
-    '<div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Payment Frequency</div>'+
-    '<select id="quickPlanFreq" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" onchange="quickPlanPreview()">'+
-    '<option value="weekly">Weekly</option>'+
-    '<option value="biweekly">Every 2 Weeks</option>'+
-    '<option value="monthly" selected>Monthly</option>'+
-    '</select></div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'+
-    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Payment Amount</div>'+
+    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Monthly Amount</div>'+
     '<input type="number" id="quickPlanAmt" placeholder="$100" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" oninput="quickPlanPreview()"/></div>'+
-    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Number of Payments</div>'+
+    '<div><div style="font-size:0.68rem;color:var(--gray);margin-bottom:3px;">Months</div>'+
     '<input type="number" id="quickPlanMonths" placeholder="5" min="1" style="width:100%;background:var(--mid);border:1px solid rgba(111,66,193,0.4);border-radius:8px;padding:9px 10px;color:var(--white);font-size:0.9rem;outline:none;" oninput="quickPlanPreview()"/></div>'+
     '</div>'+
     '<div id="quickPlanPreview" style="font-size:0.72rem;color:#a78bfa;margin-bottom:10px;"></div>'+
@@ -2343,13 +2225,11 @@ function showNextStepPicker(id, c, method, amountReceived) {
 
 function quickPlanPreview() {
   var amt = parseFloat(document.getElementById('quickPlanAmt').value);
-  var payments = parseInt(document.getElementById('quickPlanMonths').value);
-  var freq = document.getElementById('quickPlanFreq') ? document.getElementById('quickPlanFreq').value : 'monthly';
+  var months = parseInt(document.getElementById('quickPlanMonths').value);
   var prev = document.getElementById('quickPlanPreview');
-  if (!amt || !payments) { prev.textContent=''; return; }
-  var total = amt * payments;
-  var freqLabel = {weekly:'weekly', biweekly:'every 2 weeks', monthly:'monthly'}[freq];
-  prev.textContent = payments+' payments of $'+amt.toFixed(2)+' '+freqLabel+' = $'+total.toFixed(2)+' total';
+  if (!amt || !months) { prev.textContent=''; return; }
+  var total = amt * months;
+  prev.textContent = months+' payments of $'+amt.toFixed(2)+' = $'+total.toFixed(2)+' total';
 }
 
 function applySingleNextDate() {
@@ -2401,13 +2281,11 @@ function applyQuickPlan() {
   // Read values BEFORE removing the picker (removing destroys the inputs)
   var amtEl = document.getElementById('quickPlanAmt');
   var monthsEl = document.getElementById('quickPlanMonths');
-  var freqEl = document.getElementById('quickPlanFreq');
   var amt = amtEl ? parseFloat(amtEl.value) : 0;
   var months = monthsEl ? parseInt(monthsEl.value) : 0;
-  var freq = freqEl ? freqEl.value : 'monthly';
 
-  if (!amt || amt<=0) { showToast('Enter payment amount', true); return; }
-  if (!months || months<1) { showToast('Enter number of payments', true); return; }
+  if (!amt || amt<=0) { showToast('Enter monthly amount', true); return; }
+  if (!months || months<1) { showToast('Enter number of months', true); return; }
 
   // NOW remove the picker
   var picker = document.getElementById('nextStepPicker');
@@ -2421,28 +2299,20 @@ function applyQuickPlan() {
   }
   if (!c) { showToast('Customer not found', true); return; }
 
-  // Build due dates based on frequency
-  var daysToAdd = { weekly: 7, biweekly: 14, monthly: 0 };
-  var start = new Date();
-  // First payment based on frequency
-  if (freq === 'weekly') start.setDate(start.getDate() + 7);
-  else if (freq === 'biweekly') start.setDate(start.getDate() + 14);
-  else { start.setMonth(start.getMonth()+1); start.setDate(1); }
-
+  // Build due dates starting next month
+  var start = new Date(); start.setMonth(start.getMonth()+1); start.setDate(1);
   var dueDates = [];
   for (var i=0; i<months; i++) {
     var d = new Date(start);
-    if (freq === 'monthly') d.setMonth(d.getMonth()+i);
-    else d.setDate(d.getDate() + (daysToAdd[freq] * i));
+    d.setMonth(d.getMonth()+i);
     dueDates.push((d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear());
   }
 
-  var freqLabel = {weekly:'Weekly', biweekly:'Every 2 Weeks', monthly:'Monthly'}[freq];
-  c.paymentPlan = { amount:amt, payments:months, frequency:freq, freqLabel:freqLabel, method:c.payment||'', dueDates:dueDates, startDate:start.toISOString().split('T')[0], createdDate:new Date().toLocaleDateString() };
+  c.paymentPlan = { monthlyAmount:amt, months:months, method:c.payment||'', dueDates:dueDates, startDate:start.toISOString().split('T')[0], createdDate:new Date().toLocaleDateString() };
   c.nextPaymentDate = dueDates[0];
   c.paid = c.paid || 'Partial'; // ensure paid status is set
   var nb = (c.notes||'').replace(/\s*next payment[:\s]+[0-9\/\-]+/gi,'').replace(/\s*payment plan[:\s]+[^\n]*/gi,'').trim();
-  c.notes = nb+(nb?'\n':'')+'Payment plan: $'+amt+' '+freqLabel+' x '+months+' payments\nNext payment: '+dueDates[0];
+  c.notes = nb+(nb?'\n':'')+'Payment plan: $'+amt+'/mo x '+months+' months\nNext payment: '+dueDates[0];
 
   // Make sure data array is updated
   var found = false;
@@ -2455,7 +2325,7 @@ function applyQuickPlan() {
 
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},c,{type:'update',originalFname:c.fname,originalLname:c.lname||'',originalRepId:c.repId}))});
   renderJobs(''); updateDashboard();
-  showToast('💳 Plan set! $'+amt+' '+freqLabel+' x '+months+' payments. First due '+dueDates[0]);
+  showToast('💳 Plan set! $'+amt+'/mo x '+months+' months. First due '+dueDates[0]);
 }
 
 function lookupZip(zip) {
@@ -2605,10 +2475,10 @@ function switchTab(tab) {
     }
   }
   if(tab==='jobs') renderJobs('');
-  if(tab==='manager') { updateManager(); renderBreakdown(); }
+  if(tab==='manager') updateManager();
   if(tab==='settings') { renderRepList(); renderCommissionList(); }
   if(tab==='commercial') { renderCommercial(''); updateCommercialStats(); }
-  if(tab==='expenses') { loadExpensesFromSheet(false); }
+  if(tab==='expenses') { renderExpenses(); }
 }
 
 function saveCommercial() {
@@ -2671,21 +2541,16 @@ function renderCommercial(search) {
       if (search) accounts = accounts.filter(function(a){ return a.business.toLowerCase().includes(search.toLowerCase())||(a.address||'').toLowerCase().includes(search.toLowerCase()); });
       if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
       var collected = accounts.filter(function(a){ return a.paid==='Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
-      var unpaid = accounts.filter(function(a){ return a.status==='Sold' && a.paid !== 'Yes'; }).length;
-      var unpaidAmt = accounts.filter(function(a){ return a.status==='Sold' && a.paid !== 'Yes'; }).reduce(function(s,a){ return s+(parseFloat(a.amount)||0); }, 0);
-      document.getElementById('c-revenue').textContent = '$'+collected.toFixed(2);
+      var unpaid = accounts.filter(function(a){ return a.paid !== 'Yes'; }).length;
+      document.getElementById('c-revenue').textContent = '$'+collected.toFixed(0);
       document.getElementById('c-count').textContent = accounts.length;
-      document.getElementById('c-unpaid').textContent = '$'+unpaidAmt.toFixed(2);
-      var html = '';
-      accounts.forEach(function(a){ try { html += commercialCardHTML(a); } catch(ex) { console.log('Card error',ex,a); html += '<div class="customer-card"><div class="customer-name">⚠️ '+a.business+'</div></div>'; } });
-      list.innerHTML = html || '<div class="empty-state"><span>🏢</span>No accounts loaded.</div>';
+      document.getElementById('c-unpaid').textContent = unpaid;
+      list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
     })
-    .catch(function(err) {
-      list.innerHTML = '<div class="empty-state"><span>⚠️</span>Could not load from sheet: '+(err?err.message:'unknown')+'</div>';
-      setTimeout(function(){
-        var accounts = getCommercialData();
-        list.innerHTML = accounts.length ? (function(){ var h=''; accounts.forEach(function(a){ try{h+=commercialCardHTML(a);}catch(e){} }); return h; })() : '<div class="empty-state"><span>🏢</span>No commercial accounts found.</div>';
-      }, 2000);
+    .catch(function() {
+      var accounts = getCommercialData();
+      if (!accounts.length) { list.innerHTML = '<div class="empty-state"><span>🏢</span>No commercial accounts yet.</div>'; return; }
+      list.innerHTML = accounts.map(function(a) { return commercialCardHTML(a); }).join('');
     });
 }
 
@@ -2718,7 +2583,7 @@ function commercialCardHTML(a) {
 
 function changeCommercialStatus(id) {
   var existing = document.getElementById('bizStatusPicker');
-  if (existing) existing.remove();
+  if (existing) { existing.remove(); return; }
   var statuses = [
     {val:'Sold', label:'✅ Sold', color:'var(--green)', text:'white'},
     {val:'Estimate', label:'📋 Estimate', color:'var(--yellow)', text:'var(--navy)'},
@@ -2745,17 +2610,17 @@ function applyCommercialStatus(id, newStatus) {
   var a = accounts.find(function(x){ return String(x.id)===String(id); });
   if (!a && commercialSheetData.length>0) {
     var sa = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
-    if (sa) { a = JSON.parse(JSON.stringify(sa)); accounts.push(a); }
+    if (sa) { a = JSON.parse(JSON.stringify(sa)); accounts.unshift(a); }
   }
   if (!a) { showToast('Account not found', true); return; }
   a.status = newStatus;
+  // Clear paid if moving away from Sold
   if (newStatus !== 'Sold') { a.paid = 'No'; }
   localStorage.setItem('sd_commercial', JSON.stringify(accounts));
   var mgrA = commercialSheetData.find(function(x){ return String(x.id)===String(id); });
   if (mgrA) { mgrA.status = newStatus; if(newStatus!=='Sold') mgrA.paid='No'; }
-  // Use update type not commercial to avoid creating duplicate row
   fetch(SHEET_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(Object.assign({},a,{type:'update_commercial', rowNum: a.rowNum||a.id}))
+    body:JSON.stringify(Object.assign({},a,{type:'commercial'}))
   });
   renderCommercial(''); updateCommercialStats(); updateDashboard();
   showToast('✅ Status → ' + newStatus);
@@ -2820,16 +2685,29 @@ function applyCommercialPaid(id, method) {
 }
 
 function deleteCommercial(id) {
-  showDeletePinOverlay(id, 'commercial');
-}
+  if (!confirm('Are you sure you want to delete this account?')) return;
 
-function confirmCommercialDelete(id) {
-  localStorage.setItem('sd_commercial', JSON.stringify(getCommercialData().filter(function(a){ return String(a.id)!==String(id); })));
-  fetch(SHEET_URL, {method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({type:'delete_commercial', id:id})
-  });
-  renderCommercial(''); updateCommercialStats();
-  showToast('🗑 Account deleted!');
+  // Require manager PIN
+  var existing = document.getElementById('commercialDelOverlay');
+  if (existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.id = 'commercialDelOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
+  overlay.innerHTML =
+    '<div style="background:var(--card);border-radius:14px;padding:28px;width:100%;max-width:300px;border:2px solid var(--red);text-align:center;">'+
+    '<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>'+
+    '<div style="font-size:1rem;font-weight:900;color:var(--red);margin-bottom:6px;">DELETE ACCOUNT</div>'+
+    '<div style="font-size:0.78rem;color:var(--gray);margin-bottom:18px;">Enter Manager PIN to permanently delete this commercial account.</div>'+
+    '<div id="comDelPinDisplay" style="font-size:2rem;letter-spacing:0.4em;color:var(--blue);margin-bottom:16px;font-weight:900;">_ _ _ _</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">'+
+    ['1','2','3','4','5','6','7','8','9','','0','⌫'].map(function(k){
+      return k===''?'<div></div>':'<button onclick="comDelPinKey(\''+k+'\')" style="padding:16px;background:var(--mid);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--white);font-size:1.2rem;font-weight:700;cursor:pointer;">'+k+'</button>';
+    }).join('')+
+    '</div>'+
+    '<button onclick="confirmComDelPin(\''+id+'\')" style="width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-bottom:8px;">🗑 Confirm Delete</button>'+
+    '<button onclick="document.getElementById(\'commercialDelOverlay\').remove();comDelPinVal=\'\';" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(overlay);
 }
 
 var comDelPinVal = '';
@@ -2841,7 +2719,7 @@ function comDelPinKey(k) {
 }
 
 function confirmComDelPin(id) {
-  if (String(comDelPinVal) !== String(getMgrPin())) {
+  if (comDelPinVal !== getMgrPin()) {
     document.getElementById('comDelPinDisplay').textContent = '✗ ✗ ✗ ✗';
     document.getElementById('comDelPinDisplay').style.color = 'var(--red)';
     comDelPinVal = '';
@@ -2875,49 +2753,16 @@ function showToast(msg,isError) {
 function getExpenses() { try { return JSON.parse(localStorage.getItem('sd_expenses')||'[]'); } catch(e){ return []; } }
 function saveExpenses(e) { localStorage.setItem('sd_expenses', JSON.stringify(e)); }
 
-function loadExpensesFromSheet(showToastMsg) {
-  fetch(SHEET_URL + '?action=expenses&t=' + Date.now(), {method:'GET', mode:'cors'})
-    .then(function(r){ return r.json(); })
-    .then(function(response){
-      var sheetExpenses = response.data || [];
-      var deletedExpenseIds = JSON.parse(localStorage.getItem('sd_deleted_expenses')||'[]');
-      sheetExpenses = sheetExpenses.filter(function(e){ return deletedExpenseIds.indexOf(String(e.id)) < 0; });
-      if (sheetExpenses.length > 0) {
-        // Merge with local — sheet is source of truth for existing, local may have new unsaved ones
-        var local = getExpenses();
-        var sheetIds = sheetExpenses.map(function(e){ return String(e.id); });
-        var localOnly = local.filter(function(e){ return sheetIds.indexOf(String(e.id)) < 0 && deletedExpenseIds.indexOf(String(e.id)) < 0; });
-        var merged = sheetExpenses.concat(localOnly);
-        saveExpenses(merged);
-        renderExpenses();
-        if (showToastMsg) showToast('✅ Expenses refreshed from sheet!');
-      } else {
-        if (showToastMsg) showToast('No expenses found in sheet');
-        renderExpenses();
-      }
-    }).catch(function(){
-      if (showToastMsg) showToast('Could not reach sheet', true);
-      renderExpenses();
-    });
-}
-
 function renderExpenses() {
   var expenses = getExpenses();
   var revenue = getCompletedRevenue();
   var total = expenses.reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
   var profit = revenue - total;
-
-  document.getElementById('exp-revenue').textContent = '$'+revenue.toFixed(2);
-  document.getElementById('exp-total').textContent = '$'+total.toFixed(2);
-  document.getElementById('exp-profit').textContent = '$'+profit.toFixed(2);
-  document.getElementById('exp-profit-card').style.borderColor = profit >= 0 ? 'var(--green)' : 'var(--red)';
-
-  // Get payroll async from sheet
-  getPayrollTotal(function(payroll) {
-    var profitAfterPayroll = profit - payroll;
-    document.getElementById('exp-profit2').textContent = '$'+profitAfterPayroll.toFixed(2);
-    document.getElementById('exp-profit2-card').style.borderColor = profitAfterPayroll >= 0 ? 'var(--green)' : 'var(--red)';
-  });
+  document.getElementById('exp-revenue').textContent = '$'+revenue.toFixed(0);
+  document.getElementById('exp-total').textContent = '$'+total.toFixed(0);
+  document.getElementById('exp-profit').textContent = '$'+profit.toFixed(0);
+  var card = document.getElementById('exp-profit-card');
+  card.style.borderColor = profit >= 0 ? 'var(--green)' : 'var(--red)';
   var list = document.getElementById('expense-list');
   if (!expenses.length) { list.innerHTML='<div class="empty-state"><span>💸</span>No expenses yet. Scan a receipt or add manually!</div>'; return; }
   list.innerHTML = expenses.sort(function(a,b){ return new Date(b.date)-new Date(a.date); }).map(function(e){
@@ -2929,37 +2774,11 @@ function renderExpenses() {
       '<div class="customer-amount" style="color:var(--red);">-$'+parseFloat(e.amount).toFixed(2)+'</div>'+
       '</div>'+
       '<div class="card-actions">'+
-      '<button class="action-btn blue" onclick="editExpense('+e.id+')">✏️ Edit</button>'+
       '<button class="action-btn red" onclick="deleteExpense('+e.id+')">🗑 Delete</button>'+
       '</div></div>';
   }).join('');
-  // Only sync to sheet when explicitly saving/deleting, not on every render
-}
-
-function getPayrollTotal(callback) {
-  // Fetch time clock entries from sheet
-  fetch(SHEET_URL + '?action=timecard&t=' + Date.now(), {method:'GET', mode:'cors'})
-    .then(function(r){ return r.json(); })
-    .then(function(response){
-      var entries = response.data || [];
-      var wages = JSON.parse(localStorage.getItem('tc_wages') || '{}');
-      var emps = JSON.parse(localStorage.getItem('tc_employees') || '[]');
-      var now = new Date();
-      var monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      var total = 0;
-      emps.forEach(function(emp) {
-        var wage = parseFloat(wages[emp.id] || emp.wage || 0);
-        if (!wage) return;
-        var empEntries = entries.filter(function(e) {
-          if (String(e.empId) !== String(emp.id) && String(e.empName||'').toLowerCase() !== String(emp.name||'').toLowerCase()) return false;
-          var d = new Date(e.date);
-          return !isNaN(d.getTime()) && d >= monthStart;
-        });
-        var minutes = empEntries.reduce(function(s,e){ return s+(e.totalMinutes||0); }, 0);
-        total += (minutes/60) * wage;
-      });
-      if (callback) callback(total);
-    }).catch(function(){ if (callback) callback(0); });
+  // Sync to sheet
+  syncExpensesToSheet(expenses, revenue, total, profit);
 }
 
 function getCompletedRevenue() {
@@ -2980,124 +2799,32 @@ function showAddExpense() {
 
 function saveExpense() {
   var vendor = document.getElementById('exp-vendor').value.trim();
-  var amount = parseFloat(parseFloat(document.getElementById('exp-amount').value).toFixed(2));
+  var amount = parseFloat(document.getElementById('exp-amount').value);
   var date = document.getElementById('exp-date').value;
   if (!vendor) { showToast('Enter vendor name', true); return; }
   if (!amount || amount <= 0) { showToast('Enter amount', true); return; }
   if (!date) { showToast('Enter date', true); return; }
-  var editId = document.getElementById('expenseModal').dataset.editId;
+  var expense = {
+    id: Date.now(),
+    category: document.getElementById('exp-category').value,
+    vendor: vendor,
+    amount: amount,
+    date: date,
+    notes: document.getElementById('exp-notes').value.trim()
+  };
   var expenses = getExpenses();
-  if (editId) {
-    // Update existing
-    var idx = expenses.findIndex(function(e){ return String(e.id)===String(editId); });
-    if (idx > -1) {
-      expenses[idx].category = document.getElementById('exp-category').value;
-      expenses[idx].vendor = vendor;
-      expenses[idx].amount = amount;
-      expenses[idx].date = date;
-      expenses[idx].notes = document.getElementById('exp-notes').value.trim();
-    }
-    delete document.getElementById('expenseModal').dataset.editId;
-  } else {
-    var expense = {
-      id: Date.now(),
-      category: document.getElementById('exp-category').value,
-      vendor: vendor,
-      amount: amount,
-      date: date,
-      notes: document.getElementById('exp-notes').value.trim()
-    };
-    expenses.unshift(expense);
-  }
+  expenses.unshift(expense);
   saveExpenses(expenses);
   document.getElementById('expenseModal').style.display = 'none';
   showToast('✅ Expense saved!');
   renderExpenses();
-  syncExpensesToSheet();
-}
-
-function editExpense(id) {
-  var expenses = getExpenses();
-  var e = expenses.find(function(x){ return String(x.id)===String(id); });
-  if (!e) return;
-  document.getElementById('exp-date').value = e.date || '';
-  document.getElementById('exp-vendor').value = e.vendor || '';
-  document.getElementById('exp-amount').value = e.amount || '';
-  document.getElementById('exp-notes').value = e.notes || '';
-  document.getElementById('receiptPreview').style.display = 'none';
-  var sel = document.getElementById('exp-category');
-  for (var i=0; i<sel.options.length; i++) {
-    if (sel.options[i].value === e.category) { sel.selectedIndex = i; break; }
-  }
-  document.getElementById('expenseModal').dataset.editId = id;
-  document.getElementById('expenseModal').style.display = 'block';
-}
-
-var pendingDeleteId = null;
-var pendingDeleteType = null;
-var deletePinVal2 = '';
-
-function showDeletePinOverlay(id, type) {
-  pendingDeleteId = id;
-  pendingDeleteType = type;
-  deletePinVal2 = '';
-  var existing = document.getElementById('genericDeletePin');
-  if (existing) existing.remove();
-  var overlay = document.createElement('div');
-  overlay.id = 'genericDeletePin';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.97);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px;';
-  overlay.innerHTML = '<div style="background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:300px;border:1px solid rgba(239,68,68,0.4);">'+
-    '<div style="text-align:center;font-size:1rem;font-weight:700;color:var(--red);margin-bottom:16px;">🔐 Manager PIN Required</div>'+
-    '<div style="text-align:center;font-size:0.82rem;color:var(--gray);margin-bottom:16px;">Enter manager PIN to delete</div>'+
-    '<div id="gdp-display" style="font-size:2rem;letter-spacing:0.5em;text-align:center;margin-bottom:20px;min-height:40px;color:var(--white);">____</div>'+
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">'+
-    [1,2,3,4,5,6,7,8,9,'',0,'←'].map(function(n){
-      if (n === '') return '<div></div>';
-      return '<button onclick="gdpKey(\''+n+'\')" style="padding:16px;background:var(--mid);color:var(--white);border:none;border-radius:8px;font-size:1.2rem;font-weight:700;cursor:pointer;">'+n+'</button>';
-    }).join('')+
-    '</div>'+
-    '<button onclick="confirmGenericDelete()" style="width:100%;padding:13px;background:var(--red);color:white;border:none;border-radius:8px;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:12px;">🗑 Confirm Delete</button>'+
-    '<button onclick="document.getElementById(\'genericDeletePin\').remove()" style="width:100%;padding:10px;background:transparent;color:var(--gray);border:1px solid rgba(255,255,255,0.15);border-radius:8px;font-size:0.85rem;cursor:pointer;margin-top:8px;">Cancel</button>'+
-    '</div>';
-  document.body.appendChild(overlay);
-}
-
-function gdpKey(k) {
-  if (k === '←') { deletePinVal2 = deletePinVal2.slice(0,-1); }
-  else if (deletePinVal2.length < 4) { deletePinVal2 += String(k); }
-  var display = deletePinVal2.padEnd(4,'_').split('').join(' ');
-  document.getElementById('gdp-display').textContent = display.replace(/[0-9]/g,'●');
-}
-
-function confirmGenericDelete() {
-  if (String(deletePinVal2) !== String(getMgrPin())) {
-    showToast('❌ Incorrect PIN', true);
-    deletePinVal2 = '';
-    document.getElementById('gdp-display').textContent = '____';
-    return;
-  }
-  document.getElementById('genericDeletePin').remove();
-  if (pendingDeleteType === 'expense') { confirmExpenseDelete(pendingDeleteId); }
-  else if (pendingDeleteType === 'commercial') { confirmCommercialDelete(pendingDeleteId); }
-  pendingDeleteId = null;
-  pendingDeleteType = null;
-  deletePinVal2 = '';
 }
 
 function deleteExpense(id) {
-  showDeletePinOverlay(id, 'expense');
-}
-
-function confirmExpenseDelete(id) {
-  var expenses = getExpenses();
-  // Mark as deleted so sheet sync can handle it
-  var deletedExpenseIds = JSON.parse(localStorage.getItem('sd_deleted_expenses')||'[]');
-  deletedExpenseIds.push(String(id));
-  localStorage.setItem('sd_deleted_expenses', JSON.stringify(deletedExpenseIds));
-  expenses = expenses.filter(function(e){ return String(e.id) !== String(id); });
+  if (!confirm('Delete this expense?')) return;
+  var expenses = getExpenses().filter(function(e){ return String(e.id) !== String(id); });
   saveExpenses(expenses);
   renderExpenses();
-  syncExpensesToSheet();
   showToast('🗑 Expense deleted');
 }
 
@@ -3105,43 +2832,35 @@ function processReceipt(input) {
   var file = input.files[0];
   if (!file) return;
   document.getElementById('receiptProcessing').style.display = 'block';
-  
-  // Resize image to max 800px before sending to keep payload small
-  var img = new Image();
-  var originalUrl = URL.createObjectURL(file);
-  img.onload = function() {
-    var canvas = document.createElement('canvas');
-    var maxSize = 800;
-    var w = img.width, h = img.height;
-    if (w > maxSize || h > maxSize) {
-      if (w > h) { h = Math.round(h * maxSize/w); w = maxSize; }
-      else { w = Math.round(w * maxSize/h); h = maxSize; }
-    }
-    canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    var base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
-    
-    // Call secure proxy - API key stored safely in Vercel environment variables
-    fetch('https://sunnydaze-receipt-proxy-three.vercel.app/api/scan', {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var base64 = e.target.result.split(',')[1];
+    var mediaType = file.type || 'image/jpeg';
+    fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ imageData: base64, mediaType: 'image/jpeg' })
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: 'This is a receipt. Extract the following and respond ONLY with a JSON object, no markdown: { "vendor": "store/business name", "amount": total amount as number, "date": "YYYY-MM-DD format", "category": one of [Fuel, Supplies, Equipment, Vehicle, Phone, Marketing, Other], "notes": "brief description of what was purchased" }' }
+          ]
+        }]
+      })
     })
     .then(function(r){ return r.json(); })
     .then(function(data){
       document.getElementById('receiptProcessing').style.display = 'none';
-      if (data.error) { 
-        document.getElementById('receiptProcessing').style.display = 'none';
-        showToast('Server error: ' + data.error, true); 
-        showAddExpense(); 
-        return; 
-      }
-      var text = data.content && data.content[0] ? data.content[0].text : (data.result || '');
+      var text = data.content && data.content[0] ? data.content[0].text : '';
       try {
         var clean = text.replace(/```json|```/g, '').trim();
         var receipt = JSON.parse(clean);
+        // Pre-fill form
         document.getElementById('exp-vendor').value = receipt.vendor || '';
-        document.getElementById('exp-amount').value = receipt.amount ? parseFloat(receipt.amount).toFixed(2) : '';
+        document.getElementById('exp-amount').value = receipt.amount || '';
         document.getElementById('exp-date').value = receipt.date || new Date().toISOString().split('T')[0];
         document.getElementById('exp-notes').value = receipt.notes || '';
         if (receipt.category) {
@@ -3150,162 +2869,35 @@ function processReceipt(input) {
             if (sel.options[i].value === receipt.category) { sel.selectedIndex = i; break; }
           }
         }
-        document.getElementById('receiptImg').src = originalUrl;
+        // Show receipt image preview
+        document.getElementById('receiptImg').src = e.target.result;
         document.getElementById('receiptPreview').style.display = 'block';
         document.getElementById('expenseModal').style.display = 'block';
         showToast('✅ Receipt scanned! Review and save.');
       } catch(ex) {
-        showToast('Could not read receipt — fill in manually', true);
+        showToast('Could not read receipt — please fill in manually', true);
         showAddExpense();
       }
     })
-    .catch(function(err){
+    .catch(function(){
       document.getElementById('receiptProcessing').style.display = 'none';
-      showToast('Error: ' + (err.message || 'Could not reach server'), true);
+      showToast('Could not read receipt — please fill in manually', true);
       showAddExpense();
     });
   };
-  img.onerror = function() {
-    document.getElementById('receiptProcessing').style.display = 'none';
-    showToast('Could not load image', true);
-    showAddExpense();
-  };
-  img.src = originalUrl;
+  reader.readAsDataURL(file);
   input.value = '';
 }
 
-function syncExpensesToSheet() {
-  var expenses = getExpenses();
-  var revenue = getCompletedRevenue();
-  var total = expenses.reduce(function(s,e){ return s+parseFloat(e.amount||0); }, 0);
-  var profit = revenue - total;
-  getPayrollTotal(function(payroll) {
-    var profitAfterPayroll = profit - payroll;
-    fetch(SHEET_URL, {
-      method: 'POST', mode: 'no-cors',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ type: 'sync_expenses', expenses: expenses, revenue: revenue, total: total, profit: profit, payroll: payroll, profitAfterPayroll: profitAfterPayroll })
-    });
+function syncExpensesToSheet(expenses, revenue, total, profit) {
+  fetch(SHEET_URL, {
+    method: 'POST', mode: 'no-cors',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ type: 'sync_expenses', expenses: expenses, revenue: revenue, total: total, profit: profit })
   });
 }
 // ── END EXPENSES ──
 
-<<<<<<< HEAD
-
-// ── INVOICE GENERATOR ──
-function generateInvoice(id) {
-  id = parseInt(id);
-  var data = getData();
-  var c = data.find(function(d){ return parseInt(d.id)===id; });
-  if (!c && mgrAllData.length > 0) {
-    c = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
-  }
-  if (!c) { showToast('Customer not found', true); return; }
-
-  var invoiceNum = 'INV-' + String(id).slice(-6);
-  var today = new Date().toLocaleDateString();
-  var isPaid = c.paid === 'Yes' || c.status === 'Completed';
-  var isPartial = c.paid === 'Partial';
-  var amtPaid = parseFloat(c.amountPaid||0).toFixed(2);
-  var total = parseFloat(c.total||c.amount||0).toFixed(2);
-  var balance = isPartial ? (parseFloat(total) - parseFloat(amtPaid)).toFixed(2) : total;
-
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
-    '<title>Invoice '+invoiceNum+'</title>'+
-    '<style>'+
-    'body{font-family:Arial,sans-serif;margin:0;padding:40px;color:#1a1a2e;background:#fff;}'+
-    '.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;border-bottom:3px solid #00B4D8;padding-bottom:20px;}'+
-    '.logo-area h1{font-size:28px;color:#0A1628;margin:0;} .logo-area h1 span{color:#00B4D8;}'+
-    '.logo-area p{margin:4px 0;font-size:13px;color:#475569;}'+
-    '.invoice-info{text-align:right;} .invoice-info h2{font-size:32px;color:#00B4D8;margin:0;}'+
-    '.invoice-info p{margin:4px 0;font-size:13px;color:#475569;}'+
-    '.status-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-top:8px;}'+
-    '.paid{background:#dcfce7;color:#166534;} .unpaid{background:#fee2e2;color:#991b1b;} .partial{background:#fef3c7;color:#92400e;}'+
-    '.section{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:30px;}'+
-    '.box h3{font-size:11px;text-transform:uppercase;color:#475569;letter-spacing:0.08em;margin:0 0 8px;}'+
-    '.box p{margin:3px 0;font-size:14px;}'+
-    'table{width:100%;border-collapse:collapse;margin-bottom:20px;}'+
-    'th{background:#0A1628;color:#00B4D8;padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;}'+
-    'td{padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:14px;}'+
-    'tr:nth-child(even) td{background:#f8fafc;}'+
-    '.totals{width:300px;margin-left:auto;}'+
-    '.totals tr td{border:none;padding:6px 12px;}'+
-    '.totals tr td:first-child{color:#475569;}'+
-    '.totals tr td:last-child{text-align:right;font-weight:700;}'+
-    '.grand-total td{border-top:2px solid #0A1628;font-size:16px;color:#0A1628;}'+
-    '.footer{margin-top:40px;padding-top:20px;border-top:1px solid #e2e8f0;text-align:center;font-size:12px;color:#475569;}'+
-    '@media print{body{padding:20px;} .no-print{display:none;}}'+
-    '</style></head><body>'+
-
-    '<div class="no-print" style="margin-bottom:20px;">'+
-    '<button onclick="window.print()" style="background:#0A1628;color:#00B4D8;border:2px solid #00B4D8;padding:10px 24px;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer;margin-right:10px;">🖨️ Print Invoice</button>'+
-    '<button onclick="window.close()" style="background:transparent;color:#475569;border:1px solid #e2e8f0;padding:10px 24px;border-radius:6px;font-size:15px;cursor:pointer;">✕ Close</button>'+
-    '</div>'+
-
-    '<div class="header">'+
-    '<div class="logo-area">'+
-    '<h1>☀️ SUNNY<span>DAZE</span></h1>'+
-    '<p>Pressure Washing</p>'+
-    '<p>📞 (814) 853-0641</p>'+
-    '<p>✉️ sunnydazepressurewashing26@gmail.com</p>'+
-    '<p>🌐 sunnydazepressurewashing.com</p>'+
-    '</div>'+
-    '<div class="invoice-info">'+
-    '<h2>INVOICE</h2>'+
-    '<p><strong>Invoice #:</strong> '+invoiceNum+'</p>'+
-    '<p><strong>Date:</strong> '+today+'</p>'+
-    '<p><strong>Rep:</strong> '+(c.repName||'')+'</p>'+
-    '<span class="status-badge '+(isPaid?'paid':isPartial?'partial':'unpaid')+'">'+(isPaid?'✅ PAID IN FULL':isPartial?'⚠️ PARTIAL PAYMENT':'❌ UNPAID')+'</span>'+
-    '</div></div>'+
-
-    '<div class="section">'+
-    '<div class="box">'+
-    '<h3>Bill To</h3>'+
-    '<p><strong>'+(c.fname||'')+' '+(c.lname||'')+'</strong></p>'+
-    '<p>'+(c.address||'')+'</p>'+
-    '<p>📞 '+(c.phone||'')+'</p>'+
-    (c.email && c.email !== 'no-email@noemail.com' ? '<p>✉️ '+c.email+'</p>' : '')+
-    '</div>'+
-    '<div class="box">'+
-    '<h3>Job Details</h3>'+
-    '<p><strong>Job Date:</strong> '+(c.date?new Date(c.date).toLocaleDateString():today)+'</p>'+
-    (c.soldDate?'<p><strong>Sold Date:</strong> '+c.soldDate+'</p>':'')+
-    (c.paidDate?'<p><strong>Paid Date:</strong> '+c.paidDate+'</p>':'')+
-    (c.payment?'<p><strong>Payment Method:</strong> '+c.payment+'</p>':'')+
-    '</div></div>'+
-
-    '<table>'+
-    '<thead><tr><th>Description</th><th style="text-align:right">Amount</th></tr></thead>'+
-    '<tbody>'+
-    (c.service ? c.service.split(', ').map(function(s){
-      return '<tr><td>'+s+'</td><td style="text-align:right">—</td></tr>';
-    }).join('') : '<tr><td>Pressure Washing Services</td><td style="text-align:right">—</td></tr>')+
-    '</tbody></table>'+
-
-    '<table class="totals">'+
-    '<tr><td>Subtotal</td><td>$'+parseFloat(c.amount||0).toFixed(2)+'</td></tr>'+
-    (parseFloat(c.tax||0)>0?'<tr><td>Tax</td><td>$'+parseFloat(c.tax||0).toFixed(2)+'</td></tr>':'')+
-    '<tr class="grand-total"><td>Total</td><td>$'+total+'</td></tr>'+
-    (isPartial?'<tr><td>Amount Paid</td><td style="color:#166534;">$'+amtPaid+'</td></tr>':'')+
-    (isPartial?'<tr><td><strong>Balance Due</strong></td><td style="color:#991b1b;"><strong>$'+balance+'</strong></td></tr>':'')+
-    '</table>'+
-
-    (c.notes?'<div style="margin-top:20px;padding:12px;background:#f8fafc;border-radius:6px;font-size:13px;"><strong>Notes:</strong> '+c.notes+'</div>':'')+
-
-    '<div class="footer">'+
-    '<p>Thank you for choosing SunnyDaze Pressure Washing!</p>'+
-    '<p>Hand Brushed · 100% Guaranteed · Free Estimates</p>'+
-    '<p>(814) 853-0641 · sunnydazepressurewashing.com</p>'+
-    '</div></body></html>';
-
-  var win = window.open('', '_blank');
-  win.document.write(html);
-  win.document.close();
-}
-// ── END INVOICE ──
-
-=======
->>>>>>> 82c7f3c32b6a4b945e5da0169c83424168d5a459
 </script>
 </body>
 </html>
