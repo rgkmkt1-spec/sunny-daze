@@ -3193,6 +3193,7 @@ function syncExpensesToSheet() {
 
 // ── INVOICE GENERATOR ──
 function generateInvoice(id) {
+  try {
   id = parseInt(id);
   var data = getData();
   var c = data.find(function(d){ return parseInt(d.id)===id; });
@@ -3349,6 +3350,7 @@ function generateInvoice(id) {
   win.document.open();
   win.document.write(html);
   win.document.close();
+  } catch(err) { alert('Invoice error: ' + err.message); }
 }
 // ── END INVOICE ──
 
