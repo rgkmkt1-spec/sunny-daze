@@ -3344,10 +3344,11 @@ function generateInvoice(id) {
   html += '<\/script>';
   html += '<\/body><\/html>';
 
-  var blob = new Blob([html], {type: 'text/html'});
-  var url = URL.createObjectURL(blob);
-  window.open(url, '_blank');
-  setTimeout(function(){ URL.revokeObjectURL(url); }, 30000);
+  var win = window.open('', '_blank');
+  if (!win) { showToast('Please allow popups for this site', true); return; }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
 }
 // ── END INVOICE ──
 
