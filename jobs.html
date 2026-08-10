@@ -3217,8 +3217,7 @@ function generateInvoice(id) {
   var notes = (c.notes||'').replace(/"/g,'&quot;').replace(/\n/g,' ').substring(0,200);
   var jobDate = c.date ? new Date(c.date).toLocaleDateString() : today;
 
-  var win = window.open('', '_blank');
-  if (!win) { showToast('Allow popups for this site', true); return; }
+  var blob = null; // will use blob URL
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Invoice '+invoiceNum+'</title>';
   html += '<style>';
@@ -3347,9 +3346,13 @@ function generateInvoice(id) {
   html += '<\/script>';
   html += '<\/body><\/html>';
 
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
+  var blob = new Blob([html], {type: 'text/html'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 10000);
 }
 // ── END INVOICE ──
 
