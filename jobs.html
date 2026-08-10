@@ -3212,35 +3212,39 @@ function generateInvoice(id) {
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
     '<title>Invoice '+invoiceNum+'</title>'+
     '<style>'+
-    'body{font-family:Arial,sans-serif;margin:0;padding:40px;color:#1a1a2e;background:#fff;}'+
+    '* { box-sizing: border-box; }'+
+    'body{font-family:Arial,sans-serif;margin:0;padding:40px;color:#1a1a2e;background:#f0f4f8;min-height:100vh;}'+
+    '.invoice-wrap{background:#fff;max-width:860px;margin:0 auto;padding:50px;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);}'+
     '.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;border-bottom:3px solid #00B4D8;padding-bottom:20px;}'+
-    '.logo-area h1{font-size:28px;color:#0A1628;margin:0;} .logo-area h1 span{color:#00B4D8;}'+
-    '.logo-area p{margin:4px 0;font-size:13px;color:#475569;}'+
-    '.invoice-info{text-align:right;} .invoice-info h2{font-size:32px;color:#00B4D8;margin:0;}'+
-    '.invoice-info p{margin:4px 0;font-size:13px;color:#475569;}'+
-    '.status-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-top:8px;}'+
+    '.logo-area h1{font-size:38px;color:#0A1628;margin:0;} .logo-area h1 span{color:#00B4D8;}'+
+    '.logo-area p{margin:5px 0;font-size:15px;color:#475569;}'+
+    '.invoice-info{text-align:right;} .invoice-info h2{font-size:44px;color:#00B4D8;margin:0;letter-spacing:0.05em;}'+
+    '.invoice-info p{margin:5px 0;font-size:15px;color:#475569;}'+
+    '.status-badge{display:inline-block;padding:6px 18px;border-radius:20px;font-size:14px;font-weight:700;margin-top:10px;}'+
     '.paid{background:#dcfce7;color:#166534;} .unpaid{background:#fee2e2;color:#991b1b;} .partial{background:#fef3c7;color:#92400e;}'+
     '.section{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-bottom:30px;}'+
-    '.box h3{font-size:11px;text-transform:uppercase;color:#475569;letter-spacing:0.08em;margin:0 0 8px;}'+
-    '.box p{margin:3px 0;font-size:14px;}'+
-    'table{width:100%;border-collapse:collapse;margin-bottom:20px;}'+
-    'th{background:#0A1628;color:#00B4D8;padding:10px 12px;text-align:left;font-size:12px;text-transform:uppercase;}'+
-    'td{padding:10px 12px;border-bottom:1px solid #e2e8f0;font-size:14px;}'+
+    '.box{background:#f8fafc;padding:18px;border-radius:8px;border-left:4px solid #00B4D8;}'+
+    '.box h3{font-size:12px;text-transform:uppercase;color:#475569;letter-spacing:0.08em;margin:0 0 10px;}'+
+    '.box p{margin:5px 0;font-size:15px;}'+
+    'table{width:100%;border-collapse:collapse;margin-bottom:24px;}'+
+    'th{background:#0A1628;color:#00B4D8;padding:12px 16px;text-align:left;font-size:13px;text-transform:uppercase;letter-spacing:0.05em;}'+
+    'td{padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:15px;}'+
     'tr:nth-child(even) td{background:#f8fafc;}'+
-    '.totals{width:300px;margin-left:auto;}'+
-    '.totals tr td{border:none;padding:6px 12px;}'+
+    '.totals{width:320px;margin-left:auto;}'+
+    '.totals tr td{border:none;padding:8px 16px;font-size:15px;}'+
     '.totals tr td:first-child{color:#475569;}'+
     '.totals tr td:last-child{text-align:right;font-weight:700;}'+
-    '.grand-total td{border-top:2px solid #0A1628;font-size:16px;color:#0A1628;}'+
-    '.footer{margin-top:40px;padding-top:20px;border-top:1px solid #e2e8f0;text-align:center;font-size:12px;color:#475569;}'+
-    '@media print{body{padding:20px;} .no-print{display:none;}}'+
+    '.grand-total td{border-top:2px solid #0A1628;font-size:18px;color:#0A1628;padding-top:12px;}'+
+    '.footer{margin-top:40px;padding-top:20px;border-top:1px solid #e2e8f0;text-align:center;font-size:14px;color:#475569;line-height:2;}'+
+    '@media print{body{background:#fff;padding:0;} .invoice-wrap{box-shadow:none;padding:30px;} .no-print{display:none;}}'+
     '</style></head><body>'+
 
-    '<div class="no-print" style="margin-bottom:20px;">'+
-    '<button onclick="window.print()" style="background:#0A1628;color:#00B4D8;border:2px solid #00B4D8;padding:10px 24px;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer;margin-right:10px;">🖨️ Print Invoice</button>'+
-    '<button onclick="window.close()" style="background:transparent;color:#475569;border:1px solid #e2e8f0;padding:10px 24px;border-radius:6px;font-size:15px;cursor:pointer;">✕ Close</button>'+
+    '<div class="no-print" style="max-width:860px;margin:0 auto 20px;display:flex;gap:12px;">'+
+    '<button onclick="window.print()" style="background:#0A1628;color:#00B4D8;border:2px solid #00B4D8;padding:12px 28px;border-radius:6px;font-size:16px;font-weight:700;cursor:pointer;">🖨️ Print Invoice</button>'+
+    '<button onclick="window.close()" style="background:transparent;color:#475569;border:1px solid #ccc;padding:12px 28px;border-radius:6px;font-size:16px;cursor:pointer;">✕ Close</button>'+
     '</div>'+
 
+    '<div class="invoice-wrap">'+
     '<div class="header">'+
     '<div class="logo-area">'+
     '<h1>☀️ SUNNY<span>DAZE</span></h1>'+
