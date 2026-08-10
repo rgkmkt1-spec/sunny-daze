@@ -3241,6 +3241,8 @@ function generateInvoice(id) {
 
     '<div class="no-print" style="max-width:860px;margin:0 auto 20px;display:flex;gap:12px;">'+
     '<button onclick="window.print()" style="background:#0A1628;color:#00B4D8;border:2px solid #00B4D8;padding:12px 28px;border-radius:6px;font-size:16px;font-weight:700;cursor:pointer;">🖨️ Print Invoice</button>'+
+    (c.email && c.email !== 'no-email@noemail.com' && c.email !== '' ?
+    '<a href="'+mailtoLink+'" style="background:#22C55E;color:white;border:none;padding:12px 28px;border-radius:6px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;">📧 Email Customer</a>' : '')+
     '<button onclick="window.close()" style="background:transparent;color:#475569;border:1px solid #ccc;padding:12px 28px;border-radius:6px;font-size:16px;cursor:pointer;">✕ Close</button>'+
     '</div>'+
 
@@ -3299,7 +3301,41 @@ function generateInvoice(id) {
     '<p>Thank you for choosing SunnyDaze Pressure Washing!</p>'+
     '<p>Hand Brushed · 100% Guaranteed · Free Estimates</p>'+
     '<p>(814) 853-0641 · sunnydazepressurewashing.com</p>'+
-    '</div></body></html>';
+    '</div>'+
+    '<div class="no-print" style="margin-top:30px;padding:20px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">'+
+    '<p style="font-size:15px;font-weight:700;color:#0A1628;margin:0 0 12px;">📧 Send Invoice by Email</p>'+
+    '<div style="display:flex;gap:10px;align-items:center;">'+
+    '<input id="manualEmail" type="email" placeholder="Enter customer email" value="'+custEmail+'" style="flex:1;padding:12px;border:1px solid #ccc;border-radius:6px;font-size:15px;outline:none;"/>'+
+    '<button onclick="sendManualEmail()" style="background:#22C55E;color:white;border:none;padding:12px 20px;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap;">📧 Send</button>'+
+    '</div>'+
+    '</div>'+
+    '<p>(814) 853-0641 · sunnydazepressurewashing.com</p>'+
+    '<span id="mailBody" data-body="'+mailBody+'" style="display:none;"></span>'+
+    '</div></body>'+
+    '<scr'+'ipt>'+
+    'function sendManualEmail(){'+
+    '  var em=document.getElementById("manualEmail").value.trim();'+
+    '  if(!em){alert("Please enter an email");return;}'+
+    '  var s=encodeURIComponent("Invoice from SunnyDaze Pressure Washing");'+
+    '  var b=document.getElementById("mailBody").dataset.body;'+
+    '  window.location.href="mailto:"+em+"?subject="+s+"&body="+b;'+
+    '}'+
+    '</'+'script>'+
+    '</html>';
+
+  // Build mailto URL safely before constructing HTML
+  var custEmail = (c.email && c.email !== 'no-email@noemail.com') ? c.email : '';
+  var mailSubject = encodeURIComponent('Invoice from SunnyDaze Pressure Washing');
+  var mailBody = encodeURIComponent(
+    'Hi ' + (c.fname||'') + ',\n\n' +
+    'Thank you for choosing SunnyDaze Pressure Washing!\n\n' +
+    'Invoice #: ' + invoiceNum + '\n' +
+    'Total: $' + total + '\n' +
+    'Status: ' + (isPaid ? 'Paid in Full' : isPartial ? 'Partial Payment' : 'Unpaid') + '\n\n' +
+    'Questions? Call (814) 853-0641\n\n' +
+    'Thank you,\nSunnyDaze Pressure Washing\n(814) 853-0641\nsunnydazepressurewashing.com'
+  );
+  var mailtoLink = custEmail ? ('mailto:' + custEmail + '?subject=' + mailSubject + '&body=' + mailBody) : '';
 
   var win = window.open('', '_blank');
   win.document.write(html);
