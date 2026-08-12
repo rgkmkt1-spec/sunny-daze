@@ -3310,67 +3310,126 @@ function sendInvoiceEmail() {
 
 // ── END INVOICE ──
 
+// ── REBOOK ──
+function rebookCustomer(id) {
+  id = parseInt(id);
+  var data = getData();
+  var c = data.find(function(d){ return parseInt(d.id)===id; });
+  if (!c && mgrAllData.length > 0) c = mgrAllData.find(function(d){ return parseInt(d.id)===id; });
+  if (!c) { showToast('Customer not found', true); return; }
+
+  // Close history modal if open
+  var modal = document.getElementById('customerHistoryModal');
+  if (modal) modal.style.display = 'none';
+
+  // Switch to log tab
+  switchTab('log');
+
+  setTimeout(function(){
+    // Set residential type
+    setCustomerType('residential');
+
+    setTimeout(function(){
+      var fname = document.getElementById('l-fname');
+      var lname = document.getElementById('l-lname');
+      var phone = document.getElementById('l-phone');
+      var email = document.getElementById('l-email');
+      var address = document.getElementById('l-address');
+      var city = document.getElementById('l-city');
+      var state = document.getElementById('l-state');
+      var zip = document.getElementById('l-zip');
+
+      if (fname) fname.value = c.fname || '';
+      if (lname) lname.value = c.lname || '';
+      if (phone) phone.value = c.phone || '';
+      if (email && c.email && c.email !== 'no-email@noemail.com') email.value = c.email;
+
+      // Parse address
+      if (c.address) {
+        var parts = c.address.split(',');
+        if (address && parts[0]) address.value = parts[0].trim();
+        if (city && parts[1]) city.value = parts[1].trim();
+        if (parts[2]) {
+          var stateZip = parts[2].trim().split(' ').filter(Boolean);
+          if (state && stateZip[0]) state.value = stateZip[0];
+          if (zip && stateZip[1]) zip.value = stateZip[1];
+        }
+      }
+
+      // Clear service checkboxes and amount
+      document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){ 
+        if (cb.classList.contains('service-cb') || cb.name === 'service') cb.checked = false; 
+      });
+      var amt = document.getElementById('l-amount');
+      if (amt) amt.value = '';
+      var jobDate = document.getElementById('l-date');
+      if (jobDate) jobDate.value = new Date().toISOString().split('T')[0];
+
+      showToast('✅ Customer info loaded! Select services and status.');
+    }, 200);
+  }, 300);
+}
+// ── END REBOOK ──
+
 
 // ── CUSTOMER HISTORY ──
 function showCustomerHistory(el) {
   var id = parseInt(el.getAttribute('data-id'));
   var allData = getData();
   if (mgrAllData && mgrAllData.length > 0) {
-    // Merge local and sheet data
     var localIds = allData.map(function(d){ return parseInt(d.id); });
     mgrAllData.forEach(function(d){ if (localIds.indexOf(parseInt(d.id)) < 0) allData.push(d); });
   }
 
-  // Find all jobs for this customer by matching first+last name
-  var current = allData.find(function(d){ return parseInt(d.id)===parseInt(id); });
-  var fname = current ? (current.fname||'') : '';
-  var lname = current ? (current.lname||'') : '';
+  var current = allData.find(function(d){ return parseInt(d.id)===id; });
+  if (!current) { showToast('Customer not found', true); return; }
+  var fname = current.fname || '';
+  var lname = current.lname || '';
 
   var jobs = allData.filter(function(d){
-    return (d.fname||'').toLowerCase() === fname.toLowerCase() &&
-           (d.lname||'').toLowerCase() === lname.toLowerCase();
-  }).sort(function(a,b){ return new Date(b.date||b.soldDate||0) - new Date(a.date||a.soldDate||0); });
+    return (d.fname||'').toLowerCase()===fname.toLowerCase() &&
+           (d.lname||'').toLowerCase()===lname.toLowerCase();
+  }).sort(function(a,b){ return new Date(b.date||0) - new Date(a.date||0); });
 
   if (!jobs.length) { showToast('No history found', true); return; }
 
-  // Stats
-  var totalRevenue = jobs.filter(function(j){ return j.status==='Completed'; })
+  var totalRevenue = jobs.filter(function(j){ return j.status==='Completed' || j.paid==='Yes'; })
     .reduce(function(s,j){ return s+parseFloat(j.total||j.amount||0); }, 0);
-  var totalJobs = jobs.length;
-  var lastJob = jobs[0].date ? new Date(jobs[0].date).toLocaleDateString() : 'N/A';
 
-  document.getElementById('historyTitle').textContent = '👤 ' + fname + ' ' + lname;
+  document.getElementById('historyTitle').textContent = fname + ' ' + lname;
   document.getElementById('historyStats').innerHTML =
     '<div class="stat-card green"><div class="stat-label">💰 Revenue</div><div class="stat-value" style="font-size:1rem;">$'+totalRevenue.toFixed(0)+'</div></div>'+
-    '<div class="stat-card"><div class="stat-label">🔨 Jobs</div><div class="stat-value" style="font-size:1rem;">'+totalJobs+'</div></div>'+
-    '<div class="stat-card"><div class="stat-label">📅 Last Job</div><div class="stat-value" style="font-size:0.7rem;">'+lastJob+'</div></div>';
+    '<div class="stat-card"><div class="stat-label">🔨 Jobs</div><div class="stat-value" style="font-size:1rem;">'+jobs.length+'</div></div>'+
+    '<div class="stat-card"><div class="stat-label">📅 Last Job</div><div class="stat-value" style="font-size:0.7rem;">'+(jobs[0].date?new Date(jobs[0].date).toLocaleDateString():'N/A')+'</div></div>';
 
-  var html = '';
-  jobs.forEach(function(j){
-    var statusColors = {Completed:'var(--green)',Sold:'var(--blue)',Estimate:'var(--cyan)','Follow Up':'var(--orange)',Lost:'var(--gray)'};
+  // Wire rebook button to most recent job
+  document.getElementById('historyRebookBtn').onclick = function(){ rebookCustomer(parseInt(jobs[0].id)); };
+
+  var statusColors = {Completed:'var(--green)',Sold:'var(--blue)',Estimate:'var(--cyan)','Follow Up':'var(--orange)',Lost:'var(--gray)',Cancelled:'var(--gray)'};
+  var html = jobs.map(function(j){
     var color = statusColors[j.status] || 'var(--gray)';
-    html += '<div class="customer-card" style="margin-bottom:12px;">';
-    html += '<div class="customer-top">';
-    html += '<div>';
-    html += '<div style="font-size:0.8rem;color:'+color+';font-weight:700;">'+j.status+'</div>';
-    html += '<div style="font-size:0.85rem;color:var(--gray);">'+(j.service||'Service not specified')+'</div>';
-    html += '<div style="font-size:0.75rem;color:var(--gray);">'+(j.date?new Date(j.date).toLocaleDateString():'No date')+'</div>';
-    html += '</div>';
-    html += '<div style="text-align:right;">';
-    html += '<div class="customer-amount">$'+parseFloat(j.total||j.amount||0).toFixed(2)+'</div>';
-    html += '<div style="font-size:0.7rem;color:var(--gray);">'+( j.paid==='Yes'?'✅ Paid':j.paid==='Partial'?'⚠️ Partial':'❌ Unpaid')+'</div>';
-    html += '</div></div>';
-    html += '<div class="card-actions" style="margin-top:8px;">';
-    html += '<button class="action-btn" style="background:#6f42c1;color:white;" onclick="closeHistoryAndInvoice('+parseInt(j.id)+')">🧾 Invoice</button>';
-    html += '<button class="action-btn" style="background:#0077B6;color:white;" onclick="closeHistoryAndRebook('+parseInt(j.id)+')">🔄 Rebook</button>';
-    html += '</div>';
-    html += '</div>';
-  });
+    return '<div style="background:#1E293B;border:1px solid #00B4D8;border-radius:10px;padding:14px;margin-bottom:12px;">'+
+      '<div class="customer-top">'+
+      '<div>'+
+      '<div style="font-size:0.78rem;color:'+color+';font-weight:700;text-transform:uppercase;">'+j.status+'</div>'+
+      '<div style="font-size:0.82rem;color:var(--white);font-weight:600;margin:2px 0;">'+(j.service||'No service listed')+'</div>'+
+      '<div style="font-size:0.72rem;color:var(--gray);">'+(j.date?new Date(j.date).toLocaleDateString():'No date')+(j.payment?' · '+j.payment:'')+'</div>'+
+      '</div>'+
+      '<div style="text-align:right;">'+
+      '<div class="customer-amount">$'+parseFloat(j.total||j.amount||0).toFixed(2)+'</div>'+
+      '<div style="font-size:0.68rem;margin-top:3px;color:'+(j.paid==='Yes'?'var(--green)':j.paid==='Partial'?'var(--orange)':'var(--red)')+';">'+(j.paid==='Yes'?'✅ Paid':j.paid==='Partial'?'⚠️ Partial':'❌ Unpaid')+'</div>'+
+      '</div></div>'+
+      '<div class="card-actions" style="margin-top:8px;">'+
+      '<button class="action-btn" style="background:#6f42c1;color:white;" onclick="closeHistoryAndInvoice('+parseInt(j.id)+')">🧾 Invoice</button>'+
+      '</div>'+
+      '</div>';
+  }).join('');
 
   document.getElementById('historyList').innerHTML = html;
   document.getElementById('customerHistoryModal').style.display = 'block';
   window.scrollTo(0,0);
 }
+
 function closeHistoryAndInvoice(id){ document.getElementById('customerHistoryModal').style.display='none'; generateInvoice(id); }
 function closeHistoryAndRebook(id){ document.getElementById('customerHistoryModal').style.display='none'; rebookCustomer(id); }
 // ── END CUSTOMER HISTORY ──
@@ -3403,15 +3462,27 @@ function closeHistoryAndRebook(id){ document.getElementById('customerHistoryModa
 </style>
 
 <!-- CUSTOMER HISTORY MODAL -->
-<div id="customerHistoryModal" style="display:none;position:fixed;inset:0;background:var(--dark);z-index:9998;overflow-y:auto;padding:16px;">
-  <div style="max-width:500px;margin:0 auto;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <h2 id="historyTitle" style="color:var(--cyan);font-size:1.1rem;margin:0;"></h2>
-      <button onclick="document.getElementById('customerHistoryModal').style.display='none'" style="background:var(--mid);color:var(--white);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-weight:700;">✕ Close</button>
+<div id="customerHistoryModal" style="display:none;position:fixed;inset:0;z-index:9998;overflow-y:auto;">
+  <div style="min-height:100%;background:#0A1628;padding:16px;">
+    <div style="max-width:480px;margin:0 auto;">
+
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;background:#00B4D8;padding:14px 16px;border-radius:10px;">
+        <h2 id="historyTitle" style="color:#0A1628;font-size:1.2rem;margin:0;font-weight:900;"></h2>
+        <button onclick="document.getElementById('customerHistoryModal').style.display='none'" 
+          style="background:#0A1628;color:#00B4D8;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.9rem;">✕ Close</button>
+      </div>
+
+      <!-- Stats -->
+      <div id="historyStats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;"></div>
+
+      <!-- Rebook Button -->
+      <button id="historyRebookBtn" style="width:100%;padding:14px;background:#0077B6;color:#fff;border:2px solid #00B4D8;border-radius:10px;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:16px;">🔄 Rebook This Customer</button>
+
+      <!-- Job List -->
+      <div id="historyList"></div>
     </div>
-    <div id="historyStats" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;"></div>
-    <div id="historyList"></div>
   </div>
 </div>
-</body>
-</html>
+
+
